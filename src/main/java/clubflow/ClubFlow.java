@@ -1,5 +1,10 @@
 package clubflow;
 
+import clubflow.command.CommandParser;
+import clubflow.command.ExitCommand;
+import clubflow.command.TestCommand;
+import clubflow.exception.CommandParseException;
+
 public class ClubFlow {
 
     UserInterface ui;
@@ -8,12 +13,21 @@ public class ClubFlow {
     public ClubFlow(){
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
+
+        parser.register("test", new TestCommand(ui)); //TODO: REMOVE!!! FOR TESTING ONLY
+        parser.register("exit", new ExitCommand(ui));
     }
 
     public void run(){
         ui.welcome();
         while (true){
-            ui.print(ui.prompt());
+            try{
+                if (parser.parse(ui.prompt())){
+                    break;
+                }
+            } catch (CommandParseException e) {
+                ui.print(e.toString());
+            }
         }
     }
 

@@ -1,9 +1,18 @@
-package clubflow;
+package clubflow.command;
+
+import clubflow.UserInterface;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 
 public abstract class Command {
+
+    protected UserInterface ui;
+
+    public Command(UserInterface ui){
+        this.ui = ui;
+    }
+
     public abstract String[] requiredArgIds();
     public abstract String[] optionalArgIds();
 
@@ -14,5 +23,5 @@ public abstract class Command {
         return result;
     }
 
-    public abstract boolean execute(ArrayList<CommandArg> args);
+    public abstract boolean execute(HashMap<String, String> args);
 }
