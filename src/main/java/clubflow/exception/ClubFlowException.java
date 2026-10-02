@@ -6,7 +6,8 @@ package clubflow.exception;
  */
 public abstract class ClubFlowException extends Exception{
 
-    private String issue, description;
+    private String issue;
+    private String description;
 
     /**
      * Creates an exception.
