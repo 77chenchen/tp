@@ -5,11 +5,17 @@ import clubflow.command.ExitCommand;
 import clubflow.command.TestCommand;
 import clubflow.exception.CommandParseException;
 
+/**
+ * Represents the ClubFlow application.
+ */
 public class ClubFlow {
 
-    UserInterface ui;
-    CommandParser parser;
+    private UserInterface ui;
+    private CommandParser parser;
 
+    /**
+     * Initializes the ClubFlow app.
+     */
     public ClubFlow(){
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
@@ -18,19 +24,27 @@ public class ClubFlow {
         parser.register("exit", new ExitCommand(ui));
     }
 
+    /**
+     * Starts running the ClubFlow app.
+     */
     public void run(){
         ui.welcome();
         while (true){
             try{
-                if (parser.parse(ui.prompt())){
+                String input = ui.prompt();
+                boolean terminate = parser.parse(input);
+                if (terminate){
                     break;
                 }
             } catch (CommandParseException e) {
-                ui.print(e.toString());
+                ui.print(e.getMessage());
             }
         }
     }
 
+    /**
+     * Main method.
+     */
     public static void main(String[] args){
         new ClubFlow().run();
     }

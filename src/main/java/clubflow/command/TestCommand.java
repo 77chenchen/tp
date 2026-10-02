@@ -2,9 +2,11 @@ package clubflow.command;
 
 import clubflow.UserInterface;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
+/**
+ * Test command to show how the command creation system work.
+ */
 public class TestCommand extends Command{
 
     public TestCommand(UserInterface ui) {

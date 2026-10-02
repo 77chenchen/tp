@@ -3,26 +3,53 @@ package clubflow.command;
 import clubflow.exception.CommandParseException;
 import clubflow.UserInterface;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 
+/**
+ * Represents a compiler that parses and executes user's command input in plaintext.
+ * Stores all command that can be registered.
+ */
 public class CommandParser {
 
     private static final char QUOTE_CHAR = '\"';
     private static final char SPACE_CHAR = ' ';
     private static final char SLASH_CHAR = '/';
 
-    UserInterface ui;
-    HashMap<String, Command> commands;
+    private UserInterface ui;
+    private HashMap<String, Command> commands;
 
+    /**
+     * Creates a command parser.
+     * @param ui User interface to print command messages in.
+     */
     public CommandParser(UserInterface ui){
         this.ui = ui;
         commands = new HashMap<String, Command>();
     }
 
+    /**
+     * Registers a command into the command parser.
+     * @param keyword The keyword to set for the command.
+     *                e.g "test a/1 b/1" has keyword "test".
+     *                Command keywords are case-insensitive.
+     * @param command The command to be registered.
+     */
     public void register(String keyword, Command command){
+        if (commands.containsKey(keyword)){
+            ui.print("Command with keyword \"" + keyword + "\" already exists!");
+        }
         commands.put(keyword.toLowerCase(), command);
     }
 
+    /**
+     * Parses a user text input into a command object and command arguments, and executing it.
+     * @param input User's text input to parse.
+     * @return True if the command would terminate the app, False if not.
+     * @throws CommandParseException If text input cannot be parsed into a command object.
+     */
     public boolean parse(String input) throws CommandParseException {
         ArrayList<String> sepList = separate(input);
         String commandKeyword = sepList.getFirst().toLowerCase();
@@ -36,10 +63,18 @@ public class CommandParser {
         return command.execute(args);
     }
 
+    /*
+     * Basically s.split(" "), but it ignores the spaces in between quotation marks.
+     * For example, s = "test a/123 b/"I love CS2113" c/test"
+     * 1. s.split(" ") returns [test, a/123, b/"I, love, CS2113", c/test]
+     * 2. separate(s) returns [test, a/123, b/"I love CS2113", c/test]
+     * The 2nd one is what we want.
+     */
     private ArrayList<String> separate(String s){
         return separate(null, s);
     }
 
+    //I think regex can do the task of this, but now I could only do recursive programming for this task
     private ArrayList<String> separate(ArrayList<String> sepList, String s){
         ArrayList<String> resultSepList = (sepList == null? new ArrayList<String>() : sepList);
         String sTrim = s.trim();
@@ -62,6 +97,15 @@ public class CommandParser {
         return separate(resultSepList, sTrim.substring(spaceIndex + 1));
     }
 
+    /*
+     * Parses arguments into hashmap.
+     * Also verifies if whether the command has all the required and no invalid parameters.
+     * For example, command "test a/123 b/"I love CS2113" c/test" would return a hash map of:
+     * ("a", "123"),
+     * ("b", "I love CS2113")
+     * ("c", test")
+     * This allows the arguments to be easily read.
+     */
     private HashMap<String, String> parseArgs(ArrayList<String> sepList, Command command) throws CommandParseException {
         ArrayList<String> strArgs = sepList;
         strArgs.removeFirst();
@@ -99,6 +143,13 @@ public class CommandParser {
         return args;
     }
 
+    /*
+     * Gets the ID and the value of an argument from its text form.
+     * Each command is in the format ARGUMENT_ID/ARGUMENT_VALUE
+     * E.g. The argument "p/Testing":
+     *      ARGUMENT_ID is "p", and ARGUMENT_VALUE is "testing".
+     * Also validates if a particular argument is written wrongly.
+     */
     private String[] parseArg(String strArg) throws CommandParseException {
         String[] separatedArg = strArg.split(String.valueOf(SLASH_CHAR), 2);
         String argId;

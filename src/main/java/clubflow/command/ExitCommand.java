@@ -4,8 +4,15 @@ import clubflow.UserInterface;
 
 import java.util.HashMap;
 
+/**
+ * Represents command that exits the program.
+ */
 public class ExitCommand extends Command{
 
+    /**
+     * Creates exit command
+     * @param ui User interface to print messages in.
+     */
     public ExitCommand(UserInterface ui) {
         super(ui);
     }
