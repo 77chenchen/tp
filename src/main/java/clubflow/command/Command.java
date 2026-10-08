@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import clubflow.UserInterface;
+import clubflow.exception.CommandParseException;
 
 import java.util.HashMap;
 
@@ -37,15 +38,43 @@ public abstract class Command {
     public abstract String[] optionalArgIds();
 
     /**
-     * Returns all IDs of arguments that is valid. Equals requiredArgIds + optionalArgIds.
+     * Returns IDs that may be entered as flags without a slash or value.
+     * Commands without flags can use this default empty result.
+     *
+     * @return valid flag argument IDs
+     */
+    public String[] flagArgIds() {
+        return new String[]{};
+    }
+
+    /**
+     * Returns all IDs of arguments that are valid.
      * Used for command parser validation.
-     * @return IDs of arguments that is valid.
+     *
+     * @return required, optional, and flag argument IDs
      */
     public String[] validArgIds(){
-        String[] result = new String[requiredArgIds().length + optionalArgIds().length];
-        System.arraycopy(requiredArgIds(), 0, result, 0, requiredArgIds().length);
-        System.arraycopy(optionalArgIds(), 0, result, requiredArgIds().length, optionalArgIds().length);
+        String[] requiredArgIds = requiredArgIds();
+        String[] optionalArgIds = optionalArgIds();
+        String[] flagArgIds = flagArgIds();
+        String[] result = new String[requiredArgIds.length + optionalArgIds.length + flagArgIds.length];
+
+        System.arraycopy(requiredArgIds, 0, result, 0, requiredArgIds.length);
+        System.arraycopy(optionalArgIds, 0, result, requiredArgIds.length, optionalArgIds.length);
+        System.arraycopy(flagArgIds, 0, result, requiredArgIds.length + optionalArgIds.length,
+                flagArgIds.length);
         return result;
+    }
+
+    /**
+     * Validates combinations of arguments that are specific to this command.
+     * Commands without additional validation rules can use this default implementation.
+     *
+     * @param args parsed command arguments
+     * @throws CommandParseException if the combination of arguments is invalid
+     */
+    public void validateArgs(HashMap<String, String> args) throws CommandParseException {
+        // No command-specific validation is required by default.
     }
 
     /**

@@ -63,18 +63,25 @@ public class CommandParser {
         return command.execute(args);
     }
 
-    /*
-     * Basically s.split(" "), but it ignores the spaces in between quotation marks.
-     * For example, s = "test a/123 b/"I love CS2113" c/test"
-     * 1. s.split(" ") returns [test, a/123, b/"I, love, CS2113", c/test]
-     * 2. separate(s) returns [test, a/123, b/"I love CS2113", c/test]
-     * The 2nd one is what we want.
+    /**
+     * Separates an input line at spaces while preserving spaces inside double quotes.
+     * For example, {@code test a/1 b/"I love CS2113"} becomes three tokens rather
+     * than splitting {@code "I love CS2113"} into two tokens.
+     *
+     * @param input input line to separate
+     * @return separated command and argument tokens
      */
-    private ArrayList<String> separate(String s){
-        return separate(null, s);
+    private ArrayList<String> separate(String input){
+        return separate(null, input);
     }
 
-    //I think regex can do the task of this, but now I could only do recursive programming for this task
+    /**
+     * Recursively separates the remaining input and accumulates its tokens.
+     *
+     * @param sepList tokens collected so far, or null when starting
+     * @param s remaining input to separate
+     * @return all separated tokens
+     */
     private ArrayList<String> separate(ArrayList<String> sepList, String s){
         ArrayList<String> resultSepList = (sepList == null? new ArrayList<String>() : sepList);
         String sTrim = s.trim();
@@ -97,14 +104,15 @@ public class CommandParser {
         return separate(resultSepList, sTrim.substring(spaceIndex + 1));
     }
 
-    /*
-     * Parses arguments into hashmap.
-     * Also verifies if whether the command has all the required and no invalid parameters.
-     * For example, command "test a/123 b/"I love CS2113" c/test" would return a hash map of:
-     * ("a", "123"),
-     * ("b", "I love CS2113")
-     * ("c", test")
-     * This allows the arguments to be easily read.
+    /**
+     * Parses and validates the arguments for a command.
+     * Validation covers duplicate IDs, valid IDs, required IDs, flags, and any
+     * additional rules supplied by {@link Command#validateArgs(HashMap)}.
+     *
+     * @param sepList separated input containing the command keyword followed by arguments
+     * @param command command whose argument rules should be applied
+     * @return arguments mapped from their IDs to their values
+     * @throws CommandParseException if any argument is malformed or invalid
      */
     private HashMap<String, String> parseArgs(ArrayList<String> sepList, Command command) throws CommandParseException {
         ArrayList<String> strArgs = sepList;
@@ -115,9 +123,10 @@ public class CommandParser {
 
         Set<String> validArgIds = Set.of(command.validArgIds());
         Set<String> requiredArgIds = Set.of(command.requiredArgIds());
+        Set<String> flagArgIds = Set.of(command.flagArgIds());
 
         for(String strArg : strArgs){
-            String[] arg = parseArg(strArg);
+            String[] arg = parseArg(strArg, flagArgIds);
             String argId = arg[0];
             if (argIds.contains(argId)){
                 throw new CommandParseException("Multiple arguments starts with \"" + argId + "/\".");
@@ -140,17 +149,29 @@ public class CommandParser {
                     + " are required but missing.");
         }
 
+        command.validateArgs(args);
         return args;
     }
 
-    /*
-     * Gets the ID and the value of an argument from its text form.
-     * Each command is in the format ARGUMENT_ID/ARGUMENT_VALUE
-     * E.g. The argument "p/Testing":
-     *      ARGUMENT_ID is "p", and ARGUMENT_VALUE is "testing".
-     * Also validates if a particular argument is written wrongly.
+    /**
+     * Parses either an {@code ID/value} argument or a declared bare flag.
+     * A flag is represented in the result with an empty value. Value arguments
+     * must contain a slash, while declared flags must not contain one.
+     *
+     * @param strArg argument text to parse
+     * @param flagArgIds IDs that are valid as bare flags for the current command
+     * @return a two-element array containing the lowercase ID and its value
+     * @throws CommandParseException if the argument or its quotation marks are malformed
      */
-    private String[] parseArg(String strArg) throws CommandParseException {
+    private String[] parseArg(String strArg, Set<String> flagArgIds) throws CommandParseException {
+        String lowercaseArg = strArg.toLowerCase();
+        if (strArg.indexOf(SLASH_CHAR) == -1) {
+            if (flagArgIds.contains(lowercaseArg)) {
+                return new String[]{lowercaseArg, ""};
+            }
+            throw new CommandParseException("Argument \"" + strArg + "\" has no \"" + SLASH_CHAR + "\".");
+        }
+
         String[] separatedArg = strArg.split(String.valueOf(SLASH_CHAR), 2);
         String argId;
         String argVal;
@@ -159,6 +180,10 @@ public class CommandParser {
             argVal = separatedArg[1];
         } catch (Exception e) {
             throw new CommandParseException("Argument \"" + strArg + "\" has no \"" + SLASH_CHAR +"\".");
+        }
+
+        if (flagArgIds.contains(argId)) {
+            throw new CommandParseException("Flag \"" + argId + "\" must not contain \"" + SLASH_CHAR + "\".");
         }
 
         int startQuoteIndex = argVal.indexOf(QUOTE_CHAR);
