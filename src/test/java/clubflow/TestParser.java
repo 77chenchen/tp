@@ -1,6 +1,7 @@
 package clubflow;
 
 import clubflow.command.TestCommand;
+import clubflow.command.ViewEventCommand;
 import clubflow.exception.CommandParseException;
 import org.junit.jupiter.api.Test;
 import clubflow.command.CommandParser;
@@ -9,6 +10,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+/**
+ * Tests generic command parsing and bare flag handling.
+ */
 public class TestParser {
     @Test
     void testCommandParser() {
@@ -63,6 +67,28 @@ public class TestParser {
                         " b/2 c/3")),
                 () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello\" \"world\"" +
                         " b/2 c/3"))
+        );
+    }
+
+    @Test
+    void parse_flagArgument_validatesFlagAndArgumentCombination() {
+        UserInterface ui = new UserInterface("[TEST] ", "> ");
+        CommandParser parser = new CommandParser(ui);
+        ClubData clubData = new ClubData();
+        parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+
+        assertAll(
+                () -> assertDoesNotThrow(() -> parser.parse("viewEvent e/XMAS")),
+                () -> assertDoesNotThrow(() -> parser.parse("viewEvent all")),
+                () -> assertDoesNotThrow(() -> parser.parse("VIEWEVENT ALL")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent")),
+                () -> assertThrows(CommandParseException.class,
+                        () -> parser.parse("viewEvent e/XMAS all")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent all/")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent e/")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent e/\"\"")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent e")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("viewEvent unknown"))
         );
     }
 
