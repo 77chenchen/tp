@@ -5,7 +5,9 @@ import clubflow.exception.CommandParseException;
 import org.junit.jupiter.api.Test;
 import clubflow.command.CommandParser;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class TestParser {
     @Test
@@ -57,8 +59,10 @@ public class TestParser {
                 () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello world b/2 c/3")),
                 () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/hello\"world b/2 c/3")),
                 () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello\"world b/2 c/3")),
-                () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello world\"garbage b/2 c/3")),
-                () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello\" \"world\" b/2 c/3"))
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello world\"garbage" +
+                        " b/2 c/3")),
+                () -> assertThrows(CommandParseException.class, () -> parser.parse("test a/\"hello\" \"world\"" +
+                        " b/2 c/3"))
         );
     }
 
