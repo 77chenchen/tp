@@ -1,5 +1,6 @@
-package clubflow.member;
+package clubflow;
 
+import clubflow.member.Member;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

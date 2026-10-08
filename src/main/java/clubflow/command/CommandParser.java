@@ -82,7 +82,7 @@ public class CommandParser {
         int quoteIndex = sTrim.indexOf(QUOTE_CHAR);
         int spaceIndex = sTrim.indexOf(SPACE_CHAR);
         if (quoteIndex != -1 && quoteIndex < spaceIndex){
-            int nextQuoteIndex = sTrim.indexOf(QUOTE_CHAR, spaceIndex);
+            int nextQuoteIndex = sTrim.indexOf(QUOTE_CHAR, quoteIndex + 1);
             if (nextQuoteIndex != -1) {
                 spaceIndex = sTrim.indexOf(SPACE_CHAR, nextQuoteIndex);
             }
