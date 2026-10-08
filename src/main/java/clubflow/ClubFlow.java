@@ -1,11 +1,14 @@
 package clubflow;
 
 import clubflow.command.CommandParser;
+import clubflow.command.CreateMemberCommand;
+import clubflow.command.DeleteMemberCommand;
 import clubflow.command.CreateEventCommand;
 import clubflow.command.DeleteEventCommand;
 import clubflow.command.ExitCommand;
 import clubflow.command.TestCommand;
 import clubflow.command.ViewEventCommand;
+import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
 
 /**
@@ -35,6 +38,12 @@ public class ClubFlow {
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+
+        CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
+        parser.register("createMember", createMemberCommand);
+        parser.register("addMember", createMemberCommand);
+        parser.register("viewMember", new ViewMemberCommand(ui, clubData));
+        parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
 
         parser.register("exit", new ExitCommand(ui));
     }

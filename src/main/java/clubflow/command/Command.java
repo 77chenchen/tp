@@ -3,12 +3,17 @@ package clubflow.command;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Represents a command that can be executed.
  */
 public abstract class Command {
+
+    /** Separates repeated values stored by the parser under one argument ID. */
+    static final String REPEATED_ARGUMENT_SEPARATOR = "\u001F";
 
     /**
      * User Interface to print command messages in.
@@ -48,6 +53,16 @@ public abstract class Command {
     }
 
     /**
+     * Returns IDs which users may specify more than once.
+     * Commands without repeatable arguments can use this default empty result.
+     *
+     * @return repeatable argument IDs
+     */
+    public String[] repeatableArgIds() {
+        return new String[]{};
+    }
+
+    /**
      * Returns all IDs of arguments that are valid.
      * Used for command parser validation.
      *
@@ -75,6 +90,20 @@ public abstract class Command {
      */
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         // No command-specific validation is required by default.
+    }
+
+    /**
+     * Returns all values supplied for an argument, including repeated values.
+     *
+     * @param args parsed command arguments
+     * @param argId ID of the argument to retrieve
+     * @return values supplied for the argument, or an empty list if it was omitted
+     */
+    protected List<String> getArgumentValues(HashMap<String, String> args, String argId) {
+        if (!args.containsKey(argId)) {
+            return List.of();
+        }
+        return Arrays.asList(args.get(argId).split(REPEATED_ARGUMENT_SEPARATOR, -1));
     }
 
     /**

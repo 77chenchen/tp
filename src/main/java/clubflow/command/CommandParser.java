@@ -124,12 +124,18 @@ public class CommandParser {
         Set<String> validArgIds = Set.of(command.validArgIds());
         Set<String> requiredArgIds = Set.of(command.requiredArgIds());
         Set<String> flagArgIds = Set.of(command.flagArgIds());
+        Set<String> repeatableArgIds = Set.of(command.repeatableArgIds());
 
         for(String strArg : strArgs){
             String[] arg = parseArg(strArg, flagArgIds);
             String argId = arg[0];
             if (argIds.contains(argId)){
-                throw new CommandParseException("Multiple arguments starts with \"" + argId + "/\".");
+                if (repeatableArgIds.contains(argId)) {
+                    String previousValues = args.get(argId);
+                    args.put(argId, previousValues + Command.REPEATED_ARGUMENT_SEPARATOR + arg[1]);
+                    continue;
+                }
+                throw new CommandParseException("Multiple arguments start with \"" + argId + "/\".");
             }
             args.put(argId, arg[1]);
             argIds.add(argId);
@@ -154,17 +160,25 @@ public class CommandParser {
     }
 
     /**
-     * Parses either an {@code ID/value} argument or a declared bare flag.
-     * A flag is represented in the result with an empty value. Value arguments
-     * must contain a slash, while declared flags must not contain one.
+     * Parses an {@code ID/value} argument or a declared flag.
+     * Flags may use either {@code flag} or {@code /flag} syntax and are represented
+     * in the result with an empty value.
      *
      * @param strArg argument text to parse
-     * @param flagArgIds IDs that are valid as bare flags for the current command
+     * @param flagArgIds IDs that are valid as flags for the current command
      * @return a two-element array containing the lowercase ID and its value
      * @throws CommandParseException if the argument or its quotation marks are malformed
      */
     private String[] parseArg(String strArg, Set<String> flagArgIds) throws CommandParseException {
         String lowercaseArg = strArg.toLowerCase();
+        if (strArg.startsWith(String.valueOf(SLASH_CHAR))) {
+            String flagId = lowercaseArg.substring(1);
+            if (!flagId.isBlank() && flagId.indexOf(SLASH_CHAR) == -1 && flagArgIds.contains(flagId)) {
+                return new String[]{flagId, ""};
+            }
+            throw new CommandParseException("Argument \"" + strArg + "\" is not a valid flag.");
+        }
+
         if (strArg.indexOf(SLASH_CHAR) == -1) {
             if (flagArgIds.contains(lowercaseArg)) {
                 return new String[]{lowercaseArg, ""};
@@ -206,4 +220,3 @@ public class CommandParser {
         return new String[] {argId, argVal.replace(String.valueOf(QUOTE_CHAR), "")};
     }
 }
-

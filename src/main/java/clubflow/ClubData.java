@@ -50,6 +50,32 @@ public class ClubData {
     }
 
     /**
+     * Finds a member using the one-based index shown by the member list.
+     *
+     * @param index one-based member index
+     * @return matching member, or an empty Optional if the index is out of range
+     */
+    public Optional<Member> findMemberByIndex(int index) {
+        if (index < 1 || index > members.size()) {
+            return Optional.empty();
+        }
+        return Optional.of(members.get(index - 1));
+    }
+
+    /**
+     * Removes a member using the one-based index shown by the member list.
+     *
+     * @param index one-based member index
+     * @return the removed member, or an empty Optional if the index is out of range
+     */
+    public Optional<Member> removeMemberByIndex(int index) {
+        if (index < 1 || index > members.size()) {
+            return Optional.empty();
+        }
+        return Optional.of(members.remove(index - 1));
+    }
+
+    /**
      * Returns a read-only snapshot of the club's events.
      * Later changes to ClubData are not reflected in the returned list.
      *
