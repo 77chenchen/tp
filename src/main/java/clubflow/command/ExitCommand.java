@@ -3,6 +3,7 @@ package clubflow.command;
 import clubflow.UserInterface;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * Represents command that exits the program.
@@ -29,6 +30,7 @@ public class ExitCommand extends Command{
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
         ui.print("Goodbye!");
         return true;
     }

@@ -2,6 +2,7 @@ package clubflow.command;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -21,7 +22,7 @@ public class ViewMemberCommand extends Command {
      */
     public ViewMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override
@@ -36,6 +37,7 @@ public class ViewMemberCommand extends Command {
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
         List<Member> members = clubData.getMembers();
         if (members.isEmpty()) {
             ui.print("No members found.");

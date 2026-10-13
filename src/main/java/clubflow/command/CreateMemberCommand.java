@@ -2,6 +2,7 @@ package clubflow.command;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -22,7 +23,7 @@ public class CreateMemberCommand extends Command {
      */
     public CreateMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override
@@ -84,6 +85,8 @@ public class CreateMemberCommand extends Command {
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        assert args.containsKey(MemberArgumentIds.NAME) : "Validated arguments must contain a member name";
         List<String> functions = getArgumentValues(args, MemberArgumentIds.FUNCTION);
         Member member = new Member(
                 args.get(MemberArgumentIds.NAME),

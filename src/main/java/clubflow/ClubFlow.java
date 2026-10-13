@@ -1,41 +1,45 @@
 package clubflow;
 
 import clubflow.command.CommandParser;
-import clubflow.command.CreateMemberCommand;
-import clubflow.command.DeleteMemberCommand;
 import clubflow.command.CreateEventCommand;
+import clubflow.command.CreateMemberCommand;
 import clubflow.command.DeleteEventCommand;
+import clubflow.command.DeleteMemberCommand;
 import clubflow.command.ExitCommand;
-import clubflow.command.TestCommand;
+import clubflow.command.LoadCommand;
+import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
-import clubflow.command.LoadCommand;
-import clubflow.command.SaveCommand;
+
+import java.util.NoSuchElementException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents the ClubFlow application.
  */
 public class ClubFlow {
+    private static final Logger LOGGER = Logger.getLogger(ClubFlow.class.getName());
 
     /** Terminal interface shared by the parser and commands. */
-    private UserInterface ui;
+    private final UserInterface ui;
 
     /** Parses user input and dispatches registered commands. */
-    private CommandParser parser;
+    private final CommandParser parser;
 
     /** In-memory store shared by all commands that manage club data. */
-    private ClubData clubData;
+    private final ClubData clubData;
 
     /**
      * Initializes the ClubFlow app.
      */
-    public ClubFlow(){
+    public ClubFlow() {
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
         clubData = new ClubData();
 
-        parser.register("test", new TestCommand(ui)); //TODO: REMOVE!!! FOR TESTING ONLY
+        //parser.register("test", new TestCommand(ui)); //TODO: REMOVE!!! FOR TESTING ONLY
 
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
@@ -50,21 +54,37 @@ public class ClubFlow {
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));
         parser.register("exit", new ExitCommand(ui));
+
+        assert ui != null && parser != null && clubData != null
+                : "Application components must be initialized";
+        LOGGER.info("ClubFlow initialized");
     }
 
     /**
      * Starts running the ClubFlow app.
      */
-    public void run(){
+    public void run() {
         ui.welcome();
-        while (true){
-            try{
+        LOGGER.info("ClubFlow started");
+        while (true) {
+            try {
                 String input = ui.prompt();
                 boolean terminate = parser.parse(input);
-                if (terminate){
+                if (terminate) {
+                    LOGGER.info("ClubFlow exited normally");
                     break;
                 }
             } catch (CommandParseException e) {
+                LOGGER.log(Level.FINE, "Rejected invalid command", e);
+                ui.print(e.getMessage());
+            } catch (NoSuchElementException e) {
+                // End-of-input is normal when input is redirected from a file or pipe.
+                LOGGER.info("Input stream closed; ClubFlow is stopping");
+                ui.print(e.getMessage());
+                break;
+            } catch (RuntimeException e) {
+                // Keep implementation details in the log while showing a safe message to the user.
+                LOGGER.log(Level.SEVERE, "Unexpected error while processing a command", e);
                 ui.print(e.getMessage());
             }
         }
@@ -73,7 +93,7 @@ public class ClubFlow {
     /**
      * Main method.
      */
-    public static void main(String[] args){
+    public static void main(String[] args) {
         new ClubFlow().run();
     }
 }

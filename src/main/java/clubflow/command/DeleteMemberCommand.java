@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
 
 import clubflow.ClubData;
@@ -22,7 +23,7 @@ public class DeleteMemberCommand extends Command {
      */
     public DeleteMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override
@@ -54,6 +55,8 @@ public class DeleteMemberCommand extends Command {
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        assert args.containsKey(MemberArgumentIds.INDEX) : "Validated arguments must contain a member index";
         int index = Integer.parseInt(args.get(MemberArgumentIds.INDEX));
         Optional<Member> memberToDelete = clubData.findMemberByIndex(index);
         if (memberToDelete.isEmpty()) {
@@ -67,7 +70,9 @@ public class DeleteMemberCommand extends Command {
             return false;
         }
 
-        clubData.removeMemberByIndex(index);
+        Optional<Member> removedMember = clubData.removeMemberByIndex(index);
+        assert removedMember.isPresent() && removedMember.get() == member
+                : "The selected member must still exist when deletion occurs";
         ui.print("Deleted member: " + member.getName());
         return false;
     }

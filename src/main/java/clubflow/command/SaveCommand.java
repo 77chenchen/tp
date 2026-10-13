@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -14,6 +17,8 @@ import clubflow.exception.CommandParseException;
  * Saves the current club data to a user-supplied relative path or the default save file.
  */
 public class SaveCommand extends Command {
+    private static final Logger LOGGER = Logger.getLogger(SaveCommand.class.getName());
+
     /** Club data shared with the other commands. */
     private final ClubData clubData;
 
@@ -25,7 +30,7 @@ public class SaveCommand extends Command {
      */
     public SaveCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override 
@@ -56,7 +61,7 @@ public class SaveCommand extends Command {
         }
 
         try {
-            if(Path.of(pathString).isAbsolute()) {
+            if (Path.of(pathString).isAbsolute()) {
                 throw new CommandParseException("The save path must be relative");
             }
         } catch (InvalidPathException e) {
@@ -72,6 +77,7 @@ public class SaveCommand extends Command {
      */
     @Override 
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
         String pathString = args.getOrDefault("p", "saves/clubs.cf");
         Path path = Path.of(pathString);
 
@@ -79,6 +85,7 @@ public class SaveCommand extends Command {
             new SaveLoadManager().save(clubData, path);
             ui.print("Data saved successfully!");
         } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not save club data to " + path, e);
             ui.print("Data not saved! " + e.getMessage());
         }
 

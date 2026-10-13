@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -14,6 +17,8 @@ import clubflow.exception.CommandParseException;
  * Loads club data from a user-supplied relative path into the shared data store.
  */
 public class LoadCommand extends Command {
+    private static final Logger LOGGER = Logger.getLogger(LoadCommand.class.getName());
+
     /** Club data shared with the other commands. */
     private final ClubData clubData;
 
@@ -25,7 +30,7 @@ public class LoadCommand extends Command {
      */
     public LoadCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override 
@@ -52,7 +57,7 @@ public class LoadCommand extends Command {
         }
 
         try {
-            if(Path.of(pathString).isAbsolute()) {
+            if (Path.of(pathString).isAbsolute()) {
                 throw new CommandParseException("The load path must be relative");
             }
         } catch (InvalidPathException e) {
@@ -68,6 +73,8 @@ public class LoadCommand extends Command {
      */
     @Override 
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        assert args.containsKey("p") : "Validated arguments must contain a load path";
         String pathString = args.get("p");
         Path path = Path.of(pathString);
 
@@ -76,6 +83,7 @@ public class LoadCommand extends Command {
             clubData.replaceWith(loaded);
             ui.print("Data loaded successfully!");
         } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not load club data from " + path, e);
             ui.print("Data not loaded! " + e.getMessage());
         }
 
