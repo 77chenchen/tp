@@ -34,14 +34,19 @@ public class Storage {
         for (Member member : data.getMembers()) {
             // formatted member line
             // Member | Name | Tele | Email | Function
-            String line = "MEMBER|" + member.getName() + "|" + member.getTelegramHandle() + "|" + member.getEmail() + "|" + String.join(",", member.getFunctions());
-            lines.add(line);
+            String memberLine = String.join("|",
+                    "MEMBER", member.getName(), member.getTelegramHandle(), member.getEmail(),
+                    String.join(",", member.getFunctions()));
+            lines.add(memberLine);
         }
         for (Event event : data.getEvents()) {
             // formatted event line
             // Event | Tag | Name | Date | Deadline | Budget | Venue | Logistics
-            String line = "EVENT|" + event.getTag() + "|" + event.getName() + "|" + event.getDate() + "|" + event.getDeadline() + "|" + event.getBudget() + "|" + event.getVenue() + "|" + event.getLogistics();
-            lines.add(line);
+            String eventLine = String.join("|",
+                    "EVENT", event.getTag(), event.getName(),
+                    String.valueOf(event.getDate()), String.valueOf(event.getDeadline()),
+                    String.valueOf(event.getBudget()), event.getVenue(), event.getLogistics());
+            lines.add(eventLine);
         }
 
         Path parent = path.getParent();
