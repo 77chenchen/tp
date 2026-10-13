@@ -10,6 +10,8 @@ import clubflow.command.TestCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
+import clubflow.command.LoadCommand;
+import clubflow.command.SaveCommand;
 
 /**
  * Represents the ClubFlow application.
@@ -45,6 +47,8 @@ public class ClubFlow {
         parser.register("viewMember", new ViewMemberCommand(ui, clubData));
         parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
 
+        parser.register("save", new SaveCommand(ui, clubData));
+        parser.register("load", new LoadCommand(ui, clubData));
         parser.register("exit", new ExitCommand(ui));
     }
 

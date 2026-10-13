@@ -44,6 +44,13 @@ public class CreateMemberCommand extends Command {
         return new String[]{MemberArgumentIds.FUNCTION};
     }
 
+    /**
+     * Validates member details and rejects characters reserved by the save file format.
+     * Commas are allowed in ordinary fields but not in function names.
+     *
+     * @param args parsed member arguments
+     * @throws CommandParseException if a required value or file-format constraint is invalid
+     */
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         if (args.get(MemberArgumentIds.NAME).isBlank()) {
@@ -61,6 +68,17 @@ public class CreateMemberCommand extends Command {
 
         if (getArgumentValues(args, MemberArgumentIds.FUNCTION).stream().anyMatch(String::isBlank)) {
             throw new CommandParseException("A function must be provided after f/.");
+        }
+
+        for (String value : args.values()) {
+            if (value.contains("|")) {
+                throw new CommandParseException("Fields cannot contain |.");
+            }
+        }
+        for (String function : getArgumentValues(args, MemberArgumentIds.FUNCTION)) {
+            if (function.contains(",")) {
+                throw new CommandParseException("Function names cannot contain commas.");
+            }
         }
     }
 

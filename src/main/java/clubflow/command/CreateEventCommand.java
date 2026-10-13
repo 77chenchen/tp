@@ -44,10 +44,22 @@ public class CreateEventCommand extends Command {
         };
     }
 
+    /**
+     * Validates event details and rejects the field separator used by the save file format.
+     *
+     * @param args parsed event arguments
+     * @throws CommandParseException if a required value, format, or separator is invalid
+     */
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         if (args.get(EventArgumentIds.TAG).isBlank()) {
             throw new CommandParseException("An event tag must be provided after e/.");
+        }
+
+        for (String value : args.values()) {
+            if (value.contains("|")) {
+                throw new CommandParseException("Fields cannot contain |.");
+            }
         }
 
         // Validate formats here so malformed user input becomes a friendly command error.
