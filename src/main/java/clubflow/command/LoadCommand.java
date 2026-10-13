@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
-import clubflow.Storage;
+import clubflow.SaveLoadManager;
 import clubflow.exception.CommandParseException;
 
 /**
@@ -72,7 +72,7 @@ public class LoadCommand extends Command {
         Path path = Path.of(pathString);
 
         try {
-            ClubData loaded = new Storage().load(path);
+            ClubData loaded = new SaveLoadManager().load(path);
             clubData.replaceWith(loaded);
             ui.print("Data loaded successfully!");
         } catch (IOException e) {

@@ -15,9 +15,9 @@ import java.time.format.DateTimeParseException;
  * Saves and loads club data as one member or event record per line in a UTF-8 text file.
  * Fields are separated by {@code |}, and a member's functions are separated by commas.
  */
-public class Storage {
+public class SaveLoadManager {
     /** Creates a storage handler. */
-    public Storage() {
+    public SaveLoadManager() {
     }
 
     /**

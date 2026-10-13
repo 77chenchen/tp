@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
-import clubflow.Storage;
+import clubflow.SaveLoadManager;
 import clubflow.exception.CommandParseException;
 
 /**
@@ -76,7 +76,7 @@ public class SaveCommand extends Command {
         Path path = Path.of(pathString);
 
         try {
-            new Storage().save(clubData, path);
+            new SaveLoadManager().save(clubData, path);
             ui.print("Data saved successfully!");
         } catch (IOException e) {
             ui.print("Data not saved! " + e.getMessage());
