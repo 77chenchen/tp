@@ -4,30 +4,35 @@ import clubflow.exception.CommandParseException;
 import clubflow.UserInterface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Represents a compiler that parses and executes user's command input in plaintext.
  * Stores all command that can be registered.
  */
 public class CommandParser {
+    private static final Logger LOGGER = Logger.getLogger(CommandParser.class.getName());
 
     private static final char QUOTE_CHAR = '\"';
     private static final char SPACE_CHAR = ' ';
     private static final char SLASH_CHAR = '/';
 
-    private UserInterface ui;
-    private HashMap<String, Command> commands;
+    private final UserInterface ui;
+    private final HashMap<String, Command> commands;
 
     /**
      * Creates a command parser.
      * @param ui User interface to print command messages in.
      */
-    public CommandParser(UserInterface ui){
-        this.ui = ui;
-        commands = new HashMap<String, Command>();
+    public CommandParser(UserInterface ui) {
+        this.ui = Objects.requireNonNull(ui, "User interface must not be null");
+        commands = new HashMap<>();
     }
 
     /**
@@ -37,11 +42,21 @@ public class CommandParser {
      *                Command keywords are case-insensitive.
      * @param command The command to be registered.
      */
-    public void register(String keyword, Command command){
-        if (commands.containsKey(keyword)){
-            ui.print("Command with keyword \"" + keyword + "\" already exists!");
+    public void register(String keyword, Command command) {
+        Objects.requireNonNull(keyword, "Command keyword must not be null");
+        Objects.requireNonNull(command, "Command must not be null");
+        if (keyword.isBlank() || keyword.chars().anyMatch(Character::isWhitespace)) {
+            throw new IllegalArgumentException("Command keyword must be a non-blank word");
         }
-        commands.put(keyword.toLowerCase(), command);
+        validateCommandDefinition(command);
+
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        if (commands.putIfAbsent(normalizedKeyword, command) != null) {
+            throw new IllegalArgumentException("Command with keyword \"" + keyword + "\" already exists!");
+        }
+
+        assert commands.get(normalizedKeyword) == command : "Registered command must be retrievable";
+        LOGGER.fine(() -> "Registered command: " + normalizedKeyword);
     }
 
     /**
@@ -51,16 +66,69 @@ public class CommandParser {
      * @throws CommandParseException If text input cannot be parsed into a command object.
      */
     public boolean parse(String input) throws CommandParseException {
+        if (input == null) {
+            throw new CommandParseException("Command must not be null.");
+        }
+        if (input.isBlank()) {
+            throw new CommandParseException("Command must not be blank.");
+        }
+
         ArrayList<String> sepList = separate(input);
-        String commandKeyword = sepList.getFirst().toLowerCase();
+        String commandKeyword = sepList.getFirst().toLowerCase(Locale.ROOT);
 
         Command command = commands.get(commandKeyword);
         if (command == null){
             throw new CommandParseException("Command \"" + commandKeyword + "\" does not exist.");
         }
 
+        LOGGER.fine(() -> "Executing command: " + commandKeyword);
         HashMap<String, String> args = parseArgs(sepList, command);
         return command.execute(args);
+    }
+
+    /**
+     * Verifies that a command declares a consistent set of argument IDs.
+     * Invalid declarations indicate a programming error, rather than bad user input.
+     *
+     * @param command command whose metadata should be checked
+     * @throws IllegalArgumentException if argument IDs are blank, duplicated, or inconsistent
+     */
+    private void validateCommandDefinition(Command command) {
+        String[] requiredIds = Objects.requireNonNull(command.requiredArgIds(),
+                "Required argument IDs must not be null");
+        String[] optionalIds = Objects.requireNonNull(command.optionalArgIds(),
+                "Optional argument IDs must not be null");
+        String[] flagIds = Objects.requireNonNull(command.flagArgIds(),
+                "Flag argument IDs must not be null");
+        String[] repeatableIds = Objects.requireNonNull(command.repeatableArgIds(),
+                "Repeatable argument IDs must not be null");
+
+        Set<String> allIds = new HashSet<>();
+        addUniqueIds(allIds, requiredIds);
+        addUniqueIds(allIds, optionalIds);
+        addUniqueIds(allIds, flagIds);
+
+        Set<String> repeatableIdSet = new HashSet<>(Arrays.asList(repeatableIds));
+        if (repeatableIdSet.size() != repeatableIds.length || !allIds.containsAll(repeatableIdSet)) {
+            throw new IllegalArgumentException("Repeatable argument IDs must be unique valid argument IDs");
+        }
+    }
+
+    /**
+     * Adds command argument IDs while rejecting invalid or duplicate declarations.
+     *
+     * @param allIds IDs already declared by the command
+     * @param ids IDs to validate and add
+     */
+    private void addUniqueIds(Set<String> allIds, String[] ids) {
+        for (String id : ids) {
+            if (id == null || id.isBlank() || id.indexOf(SLASH_CHAR) >= 0 || !id.equals(id.toLowerCase(Locale.ROOT))) {
+                throw new IllegalArgumentException("Argument IDs must be non-blank lowercase strings without '/'");
+            }
+            if (!allIds.add(id)) {
+                throw new IllegalArgumentException("Duplicate argument ID declared: " + id);
+            }
+        }
     }
 
     /**
@@ -71,7 +139,7 @@ public class CommandParser {
      * @param input input line to separate
      * @return separated command and argument tokens
      */
-    private ArrayList<String> separate(String input){
+    private ArrayList<String> separate(String input) {
         return separate(null, input);
     }
 
@@ -82,20 +150,20 @@ public class CommandParser {
      * @param s remaining input to separate
      * @return all separated tokens
      */
-    private ArrayList<String> separate(ArrayList<String> sepList, String s){
-        ArrayList<String> resultSepList = (sepList == null? new ArrayList<String>() : sepList);
+    private ArrayList<String> separate(ArrayList<String> sepList, String s) {
+        ArrayList<String> resultSepList = (sepList == null ? new ArrayList<>() : sepList);
         String sTrim = s.trim();
 
         int quoteIndex = sTrim.indexOf(QUOTE_CHAR);
         int spaceIndex = sTrim.indexOf(SPACE_CHAR);
-        if (quoteIndex != -1 && quoteIndex < spaceIndex){
+        if (quoteIndex != -1 && quoteIndex < spaceIndex) {
             int nextQuoteIndex = sTrim.indexOf(QUOTE_CHAR, quoteIndex + 1);
             if (nextQuoteIndex != -1) {
                 spaceIndex = sTrim.indexOf(SPACE_CHAR, nextQuoteIndex);
             }
         }
 
-        if (spaceIndex == -1){
+        if (spaceIndex == -1) {
             resultSepList.add(sTrim);
             return resultSepList;
         }
@@ -118,18 +186,18 @@ public class CommandParser {
         ArrayList<String> strArgs = sepList;
         strArgs.removeFirst();
 
-        HashMap<String, String> args = new HashMap<String, String>();
-        Set<String> argIds = new HashSet<String>();
+        HashMap<String, String> args = new HashMap<>();
+        Set<String> argIds = new HashSet<>();
 
         Set<String> validArgIds = Set.of(command.validArgIds());
         Set<String> requiredArgIds = Set.of(command.requiredArgIds());
         Set<String> flagArgIds = Set.of(command.flagArgIds());
         Set<String> repeatableArgIds = Set.of(command.repeatableArgIds());
 
-        for(String strArg : strArgs){
+        for (String strArg : strArgs) {
             String[] arg = parseArg(strArg, flagArgIds);
             String argId = arg[0];
-            if (argIds.contains(argId)){
+            if (argIds.contains(argId)) {
                 if (repeatableArgIds.contains(argId)) {
                     String previousValues = args.get(argId);
                     args.put(argId, previousValues + Command.REPEATED_ARGUMENT_SEPARATOR + arg[1]);
@@ -141,14 +209,14 @@ public class CommandParser {
             argIds.add(argId);
         }
 
-        if (!validArgIds.containsAll(argIds)){
+        if (!validArgIds.containsAll(argIds)) {
             Set<String> wrongArgIds = new HashSet<>(argIds);
             wrongArgIds.removeAll(validArgIds);
             throw new CommandParseException("Argument(s) starting with " + String.join(", ", wrongArgIds)
                     + " are invalid.");
         }
 
-        if (!argIds.containsAll(requiredArgIds)){
+        if (!argIds.containsAll(requiredArgIds)) {
             Set<String> missingArgId = new HashSet<>(requiredArgIds);
             missingArgId.removeAll(argIds);
             throw new CommandParseException("Argument(s) starting with " + String.join(", ", missingArgId)
@@ -156,6 +224,8 @@ public class CommandParser {
         }
 
         command.validateArgs(args);
+        assert validArgIds.containsAll(args.keySet()) : "Parser returned an invalid argument ID";
+        assert args.keySet().containsAll(requiredArgIds) : "Parser omitted a required argument";
         return args;
     }
 
@@ -170,7 +240,7 @@ public class CommandParser {
      * @throws CommandParseException if the argument or its quotation marks are malformed
      */
     private String[] parseArg(String strArg, Set<String> flagArgIds) throws CommandParseException {
-        String lowercaseArg = strArg.toLowerCase();
+        String lowercaseArg = strArg.toLowerCase(Locale.ROOT);
         if (strArg.startsWith(String.valueOf(SLASH_CHAR))) {
             String flagId = lowercaseArg.substring(1);
             if (!flagId.isBlank() && flagId.indexOf(SLASH_CHAR) == -1 && flagArgIds.contains(flagId)) {
@@ -189,10 +259,10 @@ public class CommandParser {
         String[] separatedArg = strArg.split(String.valueOf(SLASH_CHAR), 2);
         String argId;
         String argVal;
-        try{
-            argId = separatedArg[0].toLowerCase();
+        try {
+            argId = separatedArg[0].toLowerCase(Locale.ROOT);
             argVal = separatedArg[1];
-        } catch (Exception e) {
+        } catch (ArrayIndexOutOfBoundsException e) {
             throw new CommandParseException("Argument \"" + strArg + "\" has no \"" + SLASH_CHAR +"\".");
         }
 
@@ -201,18 +271,18 @@ public class CommandParser {
         }
 
         int startQuoteIndex = argVal.indexOf(QUOTE_CHAR);
-        if (startQuoteIndex != -1){
-            if (startQuoteIndex != 0){
+        if (startQuoteIndex != -1) {
+            if (startQuoteIndex != 0) {
                 throw new CommandParseException("Argument " + strArg
                         + " has incorrect position of starting quotation mark ("
                         + QUOTE_CHAR + ").");
             }
             int endQuoteIndex = argVal.indexOf(QUOTE_CHAR, startQuoteIndex + 1);
-            if (endQuoteIndex == -1){
+            if (endQuoteIndex == -1) {
                 throw new CommandParseException("Argument " + strArg
                         + " does not have an ending quotations mark(" + QUOTE_CHAR + ").");
             }
-            if (endQuoteIndex < argVal.length() - 1){
+            if (endQuoteIndex < argVal.length() - 1) {
                 throw new CommandParseException("Argument " + strArg
                         + " has incorrect position of ending quotation mark (" + QUOTE_CHAR + ").");
             }

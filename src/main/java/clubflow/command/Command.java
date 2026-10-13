@@ -6,6 +6,7 @@ import clubflow.exception.CommandParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a command that can be executed.
@@ -18,14 +19,14 @@ public abstract class Command {
     /**
      * User Interface to print command messages in.
      */
-    protected UserInterface ui;
+    protected final UserInterface ui;
 
     /**
      * Creates a command.
      * @param ui User Interface to print command messages in.
      */
-    public Command(UserInterface ui){
-        this.ui = ui;
+    public Command(UserInterface ui) {
+        this.ui = Objects.requireNonNull(ui, "User interface must not be null");
     }
 
     /**
@@ -68,7 +69,7 @@ public abstract class Command {
      *
      * @return required, optional, and flag argument IDs
      */
-    public String[] validArgIds(){
+    public String[] validArgIds() {
         String[] requiredArgIds = requiredArgIds();
         String[] optionalArgIds = optionalArgIds();
         String[] flagArgIds = flagArgIds();
@@ -100,6 +101,8 @@ public abstract class Command {
      * @return values supplied for the argument, or an empty list if it was omitted
      */
     protected List<String> getArgumentValues(HashMap<String, String> args, String argId) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        Objects.requireNonNull(argId, "Argument ID must not be null");
         if (!args.containsKey(argId)) {
             return List.of();
         }

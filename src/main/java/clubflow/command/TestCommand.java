@@ -3,6 +3,7 @@ package clubflow.command;
 import clubflow.UserInterface;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * Test command to show how the command creation system work.
@@ -25,7 +26,8 @@ public class TestCommand extends Command{
 
     @Override
     public boolean execute(HashMap<String, String> args) {
-        for(String arg : args.keySet()){
+        Objects.requireNonNull(args, "Arguments must not be null");
+        for (String arg : args.keySet()) {
             ui.print(arg + ": " + args.get(arg));
         }
         return false;

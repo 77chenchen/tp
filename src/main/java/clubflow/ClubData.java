@@ -2,7 +2,9 @@ package clubflow;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 import clubflow.event.Event;
 import clubflow.member.Member;
@@ -11,6 +13,8 @@ import clubflow.member.Member;
  * Stores the members and events managed by ClubFlow.
  */
 public class ClubData {
+    private static final Logger LOGGER = Logger.getLogger(ClubData.class.getName());
+
     // These mutable lists remain private; callers receive read-only snapshots.
     private final List<Member> members = new ArrayList<>();
     private final List<Event> events = new ArrayList<>();
@@ -21,7 +25,11 @@ public class ClubData {
      * @param member member to add
      */
     public void addMember(Member member) {
+        Objects.requireNonNull(member, "Member must not be null");
+        int previousSize = members.size();
         members.add(member);
+        assert members.size() == previousSize + 1 : "Adding a member must increase the member count";
+        LOGGER.fine(() -> "Added member; member count is now " + members.size());
     }
 
     /**
@@ -32,10 +40,15 @@ public class ClubData {
      * @return true if the event was added, or false if its tag already exists
      */
     public boolean addEvent(Event event) {
+        Objects.requireNonNull(event, "Event must not be null");
         if (findEventByTag(event.getTag()).isPresent()) {
+            LOGGER.fine(() -> "Rejected duplicate event tag: " + event.getTag());
             return false;
         }
+        int previousSize = events.size();
         events.add(event);
+        assert events.size() == previousSize + 1 : "Adding an event must increase the event count";
+        LOGGER.fine(() -> "Added event; event count is now " + events.size());
         return true;
     }
 
@@ -72,7 +85,11 @@ public class ClubData {
         if (index < 1 || index > members.size()) {
             return Optional.empty();
         }
-        return Optional.of(members.remove(index - 1));
+        int previousSize = members.size();
+        Member removedMember = members.remove(index - 1);
+        assert members.size() == previousSize - 1 : "Removing a member must decrease the member count";
+        LOGGER.fine(() -> "Removed member; member count is now " + members.size());
+        return Optional.of(removedMember);
     }
 
     /**
@@ -92,6 +109,7 @@ public class ClubData {
      * @return matching event, or an empty Optional if none exists
      */
     public Optional<Event> findEventByTag(String tag) {
+        Objects.requireNonNull(tag, "Event tag must not be null");
         return events.stream()
                 .filter(event -> event.getTag().equalsIgnoreCase(tag))
                 .findFirst();
@@ -104,11 +122,17 @@ public class ClubData {
      * @return true if an event was removed
      */
     public boolean removeEventByTag(String tag) {
+        Objects.requireNonNull(tag, "Event tag must not be null");
         Optional<Event> eventToRemove = findEventByTag(tag);
         if (eventToRemove.isEmpty()) {
             return false;
         }
-        return events.remove(eventToRemove.get());
+        int previousSize = events.size();
+        boolean removed = events.remove(eventToRemove.get());
+        assert removed && events.size() == previousSize - 1
+                : "A found event must be removed exactly once";
+        LOGGER.fine(() -> "Removed event; event count is now " + events.size());
+        return removed;
     }
 
     /**
@@ -118,6 +142,7 @@ public class ClubData {
      * @param loaded club data whose members and events should become current
      */
     public void replaceWith(ClubData loaded) {
+        Objects.requireNonNull(loaded, "Loaded club data must not be null");
         List<Member> loadedMembers = loaded.getMembers();
         List<Event> loadedEvents = loaded.getEvents();
 
@@ -126,5 +151,10 @@ public class ClubData {
 
         members.addAll(loadedMembers);
         events.addAll(loadedEvents);
+
+        assert members.size() == loadedMembers.size() : "All loaded members must be copied";
+        assert events.size() == loadedEvents.size() : "All loaded events must be copied";
+        LOGGER.info(() -> "Replaced club data with " + members.size() + " members and "
+                + events.size() + " events");
     }
 }

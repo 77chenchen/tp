@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -22,7 +23,7 @@ public class ViewEventCommand extends Command {
      */
     public ViewEventCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override
@@ -57,6 +58,9 @@ public class ViewEventCommand extends Command {
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        assert args.containsKey(EventArgumentIds.ALL) ^ args.containsKey(EventArgumentIds.TAG)
+                : "Validated arguments must select one view mode";
         if (args.containsKey(EventArgumentIds.ALL)) {
             ui.print("Displaying all events.");
             for (Event event : clubData.getEvents()) {

@@ -1,13 +1,12 @@
 package clubflow.exception;
 
+import java.util.Objects;
+
 /**
  * Represents an exception thrown by the app.
  * Standardizes the printing of error messages.
  */
-public abstract class ClubFlowException extends Exception{
-
-    private String issue;
-    private String description;
+public abstract class ClubFlowException extends Exception {
 
     /**
      * Creates an exception.
@@ -16,14 +15,14 @@ public abstract class ClubFlowException extends Exception{
      * @param issue The main issue of what happened.
      * @param description A detail description of what happened.
      */
-    public ClubFlowException(String issue, String description){
-        this.issue = issue;
-        this.description = description;
+    public ClubFlowException(String issue, String description) {
+        super(formatMessage(issue, description));
     }
 
     //TODO: Can change the aesthetic of error printing here.
-    @Override
-    public String getMessage() {
+    private static String formatMessage(String issue, String description) {
+        Objects.requireNonNull(issue, "Exception issue must not be null");
+        Objects.requireNonNull(description, "Exception description must not be null");
         return issue + ": " + description;
     }
 }

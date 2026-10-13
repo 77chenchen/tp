@@ -1,5 +1,6 @@
 package clubflow;
 
+import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -74,9 +75,9 @@ public class UserInterface {
             "\u001B[38;2;197;197;197m                  .....           ................          ..:::..\u001B[0" +
             "m\n" +
             "\u001B[38;2;197;197;197m                       ............              .....::::::..\u001B[0m\n";
-    private Scanner scanner;
-    private String printPrefix;
-    private String promptPrefix;
+    private final Scanner scanner;
+    private final String printPrefix;
+    private final String promptPrefix;
 
     /**
      * Creates an instance of User Interface.
@@ -84,16 +85,16 @@ public class UserInterface {
      *                    If printPrefix value is "A" and msg is "ABCDE", "AABCDE" would be printed.
      * @param promptPrefix String to be printed before reading user's input.
      */
-    public UserInterface(String printPrefix, String promptPrefix){
+    public UserInterface(String printPrefix, String promptPrefix) {
         scanner = new Scanner(System.in);
-        this.printPrefix = printPrefix;
-        this.promptPrefix = promptPrefix;
+        this.printPrefix = Objects.requireNonNull(printPrefix, "Print prefix must not be null");
+        this.promptPrefix = Objects.requireNonNull(promptPrefix, "Prompt prefix must not be null");
     }
 
     /**
      * Prints welcome message on screen.
      */
-    public void welcome(){
+    public void welcome() {
         System.out.println(WELCOME_BANNER);
         System.out.println("Welcome to ClubFlow!");
     }
@@ -102,7 +103,8 @@ public class UserInterface {
      * Prints a message on screen.
      * @param message Message to be printed.
      */
-    public void print(String message){
+    public void print(String message) {
+        Objects.requireNonNull(message, "Printed message must not be null");
         System.out.println(printPrefix + message);
     }
 
@@ -110,7 +112,7 @@ public class UserInterface {
      * Reads user's input on screen.
      * @return User's line input.
      */
-    public String prompt(){
+    public String prompt() {
         System.out.print(promptPrefix);
         return scanner.nextLine();
     }

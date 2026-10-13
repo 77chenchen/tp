@@ -2,6 +2,7 @@ package clubflow.member;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a member of the club.
@@ -22,10 +23,50 @@ public class Member {
      */
     public Member(String name, String telegramHandle, String email,
                   List<String> functions) {
-        this.name = name;
-        this.telegramHandle = telegramHandle;
-        this.email = email;
+        this.name = requireNonBlank(name, "Member name");
+        this.telegramHandle = Objects.requireNonNull(telegramHandle, "Telegram handle must not be null");
+        this.email = Objects.requireNonNull(email, "Email must not be null");
+        Objects.requireNonNull(functions, "Functions must not be null");
+
+        if (telegramHandle.isBlank() && email.isBlank()) {
+            throw new IllegalArgumentException("A member must have at least one contact");
+        }
+        if (telegramHandle.startsWith("@")) {
+            throw new IllegalArgumentException("Telegram handle must not start with @");
+        }
+        if (containsFieldSeparator(name) || containsFieldSeparator(telegramHandle)
+                || containsFieldSeparator(email)) {
+            throw new IllegalArgumentException("Member fields must not contain |");
+        }
+        if (functions.stream().anyMatch(Objects::isNull)
+                || functions.stream().anyMatch(String::isBlank)) {
+            throw new IllegalArgumentException("Functions must not contain null or blank values");
+        }
+        if (functions.stream().anyMatch(function -> function.contains(",") || containsFieldSeparator(function))) {
+            throw new IllegalArgumentException("Functions must not contain ',' or '|'");
+        }
+
         this.functions = new ArrayList<>(functions);
+        assert this.functions.size() == functions.size() : "All functions must be copied";
+    }
+
+    /**
+     * Rejects a null or blank required value.
+     *
+     * @param value value to check
+     * @param description field name used in the exception message
+     * @return the validated value
+     */
+    private static String requireNonBlank(String value, String description) {
+        Objects.requireNonNull(value, description + " must not be null");
+        if (value.isBlank()) {
+            throw new IllegalArgumentException(description + " must not be blank");
+        }
+        return value;
+    }
+
+    private static boolean containsFieldSeparator(String value) {
+        return value.contains("|");
     }
 
     public String getName() {
@@ -41,6 +82,6 @@ public class Member {
     }
 
     public List<String> getFunctions() {
-        return new ArrayList<>(functions);
+        return List.copyOf(functions);
     }
 }

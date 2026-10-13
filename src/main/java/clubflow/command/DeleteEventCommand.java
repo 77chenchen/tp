@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
@@ -21,7 +22,7 @@ public class DeleteEventCommand extends Command {
      */
     public DeleteEventCommand(UserInterface ui, ClubData clubData) {
         super(ui);
-        this.clubData = clubData;
+        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
     }
 
     @Override
@@ -43,6 +44,8 @@ public class DeleteEventCommand extends Command {
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        Objects.requireNonNull(args, "Arguments must not be null");
+        assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         String tag = args.get(EventArgumentIds.TAG);
 
         if (clubData.removeEventByTag(tag)) {
