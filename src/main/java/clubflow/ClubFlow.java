@@ -12,14 +12,22 @@ import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
 
+import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 /**
  * Represents the ClubFlow application.
  */
 public class ClubFlow {
+    /** Package logger retained for the lifetime of the app so its file handler stays active. */
+    private static final Logger PACKAGE_LOGGER = configureLogging();
+
+    /** Records lifecycle events and unexpected failures for this class. */
     private static final Logger LOGGER = Logger.getLogger(ClubFlow.class.getName());
 
     /** Terminal interface shared by the parser and commands. */
@@ -58,6 +66,27 @@ public class ClubFlow {
         assert ui != null && parser != null && clubData != null
                 : "Application components must be initialized";
         LOGGER.info("ClubFlow initialized");
+    }
+
+    /**
+     * Routes application logs to a file instead of Java's default console handler.
+     *
+     * @return the configured package logger
+     */
+    private static Logger configureLogging() {
+        Logger packageLogger = Logger.getLogger(ClubFlow.class.getPackageName());
+        packageLogger.setUseParentHandlers(false);
+
+        try {
+            Handler fileHandler = new FileHandler("clubflow.log", true);
+            fileHandler.setFormatter(new SimpleFormatter());
+            packageLogger.addHandler(fileHandler);
+        } catch (IOException | SecurityException e) {
+            // Logging must not interfere with the command-line interface or prevent startup.
+            packageLogger.setLevel(Level.OFF);
+        }
+
+        return packageLogger;
     }
 
     /**
