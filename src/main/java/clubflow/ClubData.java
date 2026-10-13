@@ -110,4 +110,21 @@ public class ClubData {
         }
         return events.remove(eventToRemove.get());
     }
+
+    /**
+     * Replaces this store's contents while keeping the same object shared by all commands.
+     * Takes snapshots before clearing so replacing a store with itself preserves its contents.
+     *
+     * @param loaded club data whose members and events should become current
+     */
+    public void replaceWith(ClubData loaded) {
+        List<Member> loadedMembers = loaded.getMembers();
+        List<Event> loadedEvents = loaded.getEvents();
+
+        members.clear();
+        events.clear();
+
+        members.addAll(loadedMembers);
+        events.addAll(loadedEvents);
+    }
 }
