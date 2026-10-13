@@ -8,7 +8,7 @@ import java.util.Scanner;
  */
 public class UserInterface {
 
-    private static String WELCOME_BANNER = "\u001B[38;2;197;197;197m                           ....................." +
+    private static final String WELCOME_BANNER = "\u001B[38;2;197;197;197m                           ....................." +
             "......\u001B[0m\n"
             +
             "\u001B[38;2;197;197;197m                    ......        ........................\u001B[0m\n"
