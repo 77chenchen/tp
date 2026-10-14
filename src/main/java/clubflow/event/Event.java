@@ -1,3 +1,4 @@
+//@@author camimaigrot
 package clubflow.event;
 
 import java.time.LocalDate;

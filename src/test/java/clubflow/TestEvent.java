@@ -1,3 +1,4 @@
+//@@author camimaigrot
 package clubflow;
 
 import clubflow.event.Event;

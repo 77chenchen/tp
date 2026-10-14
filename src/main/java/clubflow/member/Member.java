@@ -1,3 +1,4 @@
+//@@author camimaigrot
 package clubflow.member;
 
 import java.util.ArrayList;

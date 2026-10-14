@@ -1,3 +1,4 @@
+//@@author czfray
 package clubflow;
 
 import java.util.Objects;
@@ -8,7 +9,7 @@ import java.util.Scanner;
  * Manages the aesthetic and function of the printing and scanning of messages on the terminal screen.
  */
 public class UserInterface {
-
+    //@@author camimaigrot
     private static final String WELCOME_BANNER =
             "\u001B[38;2;197;197;197m                           ...........................\u001B[0m\n"
             +
@@ -75,6 +76,7 @@ public class UserInterface {
             "\u001B[38;2;197;197;197m                  .....           ................          ..:::..\u001B[0" +
             "m\n" +
             "\u001B[38;2;197;197;197m                       ............              .....::::::..\u001B[0m\n";
+    //@@author czfray
     private final Scanner scanner;
     private final String printPrefix;
     private final String promptPrefix;
