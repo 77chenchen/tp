@@ -3,9 +3,10 @@ package clubflow.command;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 
 import clubflow.UserInterface;
+import clubflow.completion.CompletionHandler;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 
 /**
@@ -14,7 +15,7 @@ import clubflow.exception.CommandParseException;
  */
 public class CompletionCommand extends Command {
     /** Maps type prefixes to handlers accepting an identifier and the desired completion state. */
-    private final Map<String, BiConsumer<String, Boolean>> completionHandlers;
+    private final Map<String, CompletionHandler> completionHandlers;
 
     /** True for mark and false for unmark; repeated requests set the same state rather than toggling it. */
     private final boolean completed;
@@ -28,7 +29,7 @@ public class CompletionCommand extends Command {
      * @param completed true for marking completed, false for marking not completed
      * @throws IllegalArgumentException if no item types are supplied
      */
-    public CompletionCommand(UserInterface ui, Map<String, BiConsumer<String, Boolean>> completionHandlers,
+    public CompletionCommand(UserInterface ui, Map<String, CompletionHandler> completionHandlers,
                              boolean completed) {
         super(ui);
         this.completionHandlers = Map.copyOf(Objects.requireNonNull(completionHandlers,
@@ -65,12 +66,12 @@ public class CompletionCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws ClubFlowException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.size() == 1 : "Validated arguments must select exactly one item type";
         Map.Entry<String, String> item = args.entrySet().iterator().next();
         assert completionHandlers.containsKey(item.getKey()) : "Validated arguments must select a supported item type";
-        completionHandlers.get(item.getKey()).accept(item.getValue(), completed);
+        completionHandlers.get(item.getKey()).setCompleted(item.getValue(), completed);
         return false;
     }
 }

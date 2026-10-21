@@ -1,11 +1,11 @@
 package clubflow.completion;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Handles event completion changes without changing event details or list positions.
@@ -34,14 +34,10 @@ public class EventCompletion {
      *
      * @param tag tag identifying the event
      * @param completed desired completion state
+     * @throws EventNotFoundException if the requested event does not exist
      */
-    public void setCompleted(String tag, boolean completed) {
-        Optional<Event> existingEvent = clubData.findEventByTag(tag);
-        if (existingEvent.isEmpty()) {
-            ui.print("Event not found: " + tag);
-            return;
-        }
-        Event event = existingEvent.get();
+    public void setCompleted(String tag, boolean completed) throws EventNotFoundException {
+        Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
         if (event.isCompleted() != completed) {
             boolean updated = clubData.updateEvent(event.withCompleted(completed));
             assert updated : "The selected event must still exist when marking occurs";

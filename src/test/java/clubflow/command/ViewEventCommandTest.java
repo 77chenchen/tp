@@ -2,6 +2,7 @@ package clubflow.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -18,7 +19,8 @@ import org.junit.jupiter.api.Test;
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
-import clubflow.exception.CommandParseException;
+import clubflow.exception.ClubFlowException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Checks the event details and messages displayed through the command parser.
@@ -48,7 +50,7 @@ class ViewEventCommandTest {
     }
 
     @Test
-    void viewEvent_matchingTag_printsOnlySelectedEventDetails() throws CommandParseException {
+    void viewEvent_matchingTag_printsOnlySelectedEventDetails() throws ClubFlowException {
         clubData.addEvent(christmasParty());
         clubData.addEvent(new Event("OTHER", "Other event", null, null, 0, "", ""));
 
@@ -66,7 +68,7 @@ class ViewEventCommandTest {
     }
 
     @Test
-    void viewEvent_missingDetails_printsPlaceholdersAndZeroBudget() throws CommandParseException {
+    void viewEvent_missingDetails_printsPlaceholdersAndZeroBudget() throws ClubFlowException {
         // Both empty strings and whitespace count as unspecified text.
         clubData.addEvent(new Event("DRAFT", "", null, null, 0, "   ", ""));
 
@@ -84,7 +86,7 @@ class ViewEventCommandTest {
     }
 
     @Test
-    void viewEvent_allEvents_printsEveryEventInInsertionOrder() throws CommandParseException {
+    void viewEvent_allEvents_printsEveryEventInInsertionOrder() throws ClubFlowException {
         clubData.addEvent(christmasParty().withCompleted(true));
         clubData.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
 
@@ -110,23 +112,27 @@ class ViewEventCommandTest {
     }
 
     @Test
-    void viewEvent_noEvents_printsEmptyMessage() throws CommandParseException {
+    void viewEvent_noEvents_printsEmptyMessage() throws ClubFlowException {
         assertFalse(parser.parse("viewEvent all"));
 
         assertEquals(List.of("[TEST] No events found."), printedLines());
     }
 
     @Test
-    void viewEvent_unknownTag_printsNotFoundMessage() throws CommandParseException {
-        clubData.addEvent(christmasParty());
+    void viewEvent_unknownTag_throwsWithoutChangingEventsOrPrintingErrors() {
+        Event existing = christmasParty();
+        clubData.addEvent(existing);
 
-        assertFalse(parser.parse("viewEvent e/UNKNOWN"));
+        EventNotFoundException error = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("viewEvent e/UNKNOWN"));
 
-        assertEquals(List.of("[TEST] Event not found."), printedLines());
+        assertEquals("Event not found: UNKNOWN", error.getMessage());
+        assertEquals(List.of(existing), clubData.getEvents());
+        assertEquals(List.of(), printedLines());
     }
 
     @Test
-    void viewEvent_nonEnglishLocale_keepsBudgetDecimalPoint() throws CommandParseException {
+    void viewEvent_nonEnglishLocale_keepsBudgetDecimalPoint() throws ClubFlowException {
         clubData.addEvent(new Event("MEETING", "Meeting", null, null, 12.5, "", ""));
         Locale originalLocale = Locale.getDefault(Locale.Category.FORMAT);
         try {

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.search.EventSearch;
 
@@ -53,7 +54,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_customSearchType_dispatchesTrimmedKeywordToSelectedHandler() throws CommandParseException {
+    void find_customSearchType_dispatchesTrimmedKeywordToSelectedHandler() throws ClubFlowException {
         List<String> firstKeywords = new ArrayList<>();
         List<String> secondKeywords = new ArrayList<>();
         UserInterface ui = new UserInterface("[TEST] ", "> ");
@@ -83,7 +84,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_changedHandlerMap_keepsRegisteredSearchTypes() throws CommandParseException {
+    void find_changedHandlerMap_keepsRegisteredSearchTypes() throws ClubFlowException {
         List<String> keywords = new ArrayList<>();
         Map<String, Consumer<String>> handlers = new HashMap<>();
         handlers.put("x", keywords::add);
@@ -98,7 +99,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_partialTag_ignoresCaseAndHandlesMissingName() throws CommandParseException {
+    void find_partialTag_ignoresCaseAndHandlesMissingName() throws ClubFlowException {
         clubData.addEvent(new Event("XMAS", "", null, null, 0, "", ""));
         clubData.addEvent(new Event("OTHER", "Other event", null, null, 0, "", ""));
 
@@ -108,7 +109,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_partialName_returnsEachMatchOnceInInsertionOrder() throws CommandParseException {
+    void find_partialName_returnsEachMatchOnceInInsertionOrder() throws ClubFlowException {
         clubData.addEvent(new Event("PARTY", "Christmas Party", null, null, 0, "", ""));
         clubData.addEvent(new Event("AGM", "Annual meeting", null, null, 0, "", ""));
         clubData.addEvent(new Event("NYE", "New Year Party", null, null, 0, "", ""));
@@ -125,7 +126,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_quotedPhrase_matchesContiguousTextAndTrimsOuterWhitespace() throws CommandParseException {
+    void find_quotedPhrase_matchesContiguousTextAndTrimsOuterWhitespace() throws ClubFlowException {
         clubData.addEvent(new Event("XMAS", "Christmas Party", null, null, 0, "", ""));
         clubData.addEvent(new Event("OTHER", "Christmas Dinner Party", null, null, 0, "", ""));
 
@@ -135,7 +136,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_noMatch_printsNotFoundMessage() throws CommandParseException {
+    void find_noMatch_printsNotFoundMessage() throws ClubFlowException {
         clubData.addEvent(new Event("AGM", "Meeting", null, null, 0, "Party Hall", "party supplies"));
 
         assertFalse(parser.parse("find e/party"));
@@ -144,14 +145,14 @@ class FindCommandTest {
     }
 
     @Test
-    void find_emptyStore_printsNotFoundMessage() throws CommandParseException {
+    void find_emptyStore_printsNotFoundMessage() throws ClubFlowException {
         assertFalse(parser.parse("find e/party"));
 
         assertEquals(List.of("[TEST] No matching events found."), printedLines());
     }
 
     @Test
-    void find_changedStore_usesCurrentEvents() throws CommandParseException {
+    void find_changedStore_usesCurrentEvents() throws ClubFlowException {
         clubData.addEvent(new Event("OLD", "Party", null, null, 0, "", ""));
         parser.parse("find e/party");
         output.reset();
@@ -164,7 +165,7 @@ class FindCommandTest {
     }
 
     @Test
-    void find_turkishLocale_matchesUsingLocaleIndependentCase() throws CommandParseException {
+    void find_turkishLocale_matchesUsingLocaleIndependentCase() throws ClubFlowException {
         clubData.addEvent(new Event("MEETING", "", null, null, 0, "", ""));
         Locale originalLocale = Locale.getDefault();
         try {

@@ -89,6 +89,30 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_missingEvents_reportsEachErrorOnceAndContinuesWithStoredData() {
+        String result = runSession("createEvent e/XMAS n/Party\n"
+                + "mark e/MISSING_MARK\nunmark e/MISSING_UNMARK\n"
+                + "editEvent e/MISSING_EDIT n/Changed\ndeleteEvent e/MISSING_DELETE\n"
+                + "viewEvent e/MISSING_VIEW\nviewEvent e/XMAS\nfind e/Party\nexit\n");
+
+        assertEquals(List.of(
+                "[CF] Event not found: MISSING_MARK",
+                "[CF] Event not found: MISSING_UNMARK",
+                "[CF] Event not found: MISSING_EDIT",
+                "[CF] Event not found: MISSING_DELETE",
+                "[CF] Event not found: MISSING_VIEW"
+        ), result.lines().filter(line -> line.contains("[CF] Event not found:"))
+                .map(line -> line.substring(line.indexOf("[CF]"))).toList());
+        assertAll(
+                () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] [XMAS] Party")).count()),
+                () -> assertTrue(result.contains("[CF]   Status:    Not completed")),
+                () -> assertTrue(result.contains("[CF] Found 1 matching event(s).")),
+                () -> assertTrue(result.contains("[CF] Goodbye!")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_eventCommands_shareDataAcrossTheSession() {
         String result = runSession("createEvent e/XMAS n/\"Christmas Party\"\n"
                 + "viewEvent e/xmas\ndeleteEvent e/XMAS\nviewEvent all\nexit\n");

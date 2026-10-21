@@ -13,14 +13,14 @@ import clubflow.command.LoadCommand;
 import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
-import clubflow.exception.CommandParseException;
+import clubflow.exception.ClubFlowException;
+import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
 import clubflow.search.EventSearch;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -63,7 +63,7 @@ public class ClubFlow {
         EventSearch eventSearch = new EventSearch(ui, clubData);
         parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
         EventCompletion eventCompletion = new EventCompletion(ui, clubData);
-        Map<String, BiConsumer<String, Boolean>> completionHandlers = Map.of("e", eventCompletion::setCompleted);
+        Map<String, CompletionHandler> completionHandlers = Map.of("e", eventCompletion::setCompleted);
         parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
         parser.register("unmark", new CompletionCommand(ui, completionHandlers, false));
 
@@ -117,8 +117,8 @@ public class ClubFlow {
                     LOGGER.info("ClubFlow exited normally");
                     break;
                 }
-            } catch (CommandParseException e) {
-                LOGGER.log(Level.FINE, "Rejected invalid command", e);
+            } catch (ClubFlowException e) {
+                LOGGER.log(Level.FINE, "Could not complete command", e);
                 ui.print(e.getMessage());
             } catch (NoSuchElementException e) {
                 // End-of-input is normal when input is redirected from a file or pipe.

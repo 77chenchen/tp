@@ -24,7 +24,9 @@ import clubflow.ClubData;
 import clubflow.SaveLoadManager;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Tests partial event updates, validation, and persistence through the command parser.
@@ -58,7 +60,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_oneField_preservesOmittedDetailsAndOriginalTag() throws CommandParseException {
+    void editEvent_oneField_preservesOmittedDetailsAndOriginalTag() throws ClubFlowException {
         assertFalse(parser.parse("EDITEVENT E/xmas v/\"New Hall\""));
 
         Event updated = clubData.findEventByTag("XMAS").orElseThrow();
@@ -73,7 +75,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_allDetails_updatesEverySuppliedField() throws CommandParseException {
+    void editEvent_allDetails_updatesEverySuppliedField() throws ClubFlowException {
         assertFalse(parser.parse("editEvent e/XMAS n/\"Winter Dinner\" d/2026-12-26 "
                 + "by/2026-12-21 b/625.50 v/Restaurant l/\"Book tables\""));
 
@@ -88,7 +90,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_draftEvent_preservesUnspecifiedDefaults() throws CommandParseException {
+    void editEvent_draftEvent_preservesUnspecifiedDefaults() throws ClubFlowException {
         clubData.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
 
         assertFalse(parser.parse("editEvent e/DRAFT n/Planning"));
@@ -103,7 +105,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_emptyTextAndZeroBudget_clearsSelectedDetails() throws CommandParseException {
+    void editEvent_emptyTextAndZeroBudget_clearsSelectedDetails() throws ClubFlowException {
         assertFalse(parser.parse("editEvent e/XMAS n/\"\" v/\"\" l/\"\" b/0"));
 
         Event updated = clubData.findEventByTag("XMAS").orElseThrow();
@@ -116,11 +118,13 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_unknownTag_reportsMissingEventWithoutAddingOne() throws CommandParseException {
-        assertFalse(parser.parse("editEvent e/UNKNOWN n/New"));
+    void editEvent_unknownTag_throwsWithoutAddingAnEventOrPrintingErrors() {
+        EventNotFoundException error = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("editEvent e/UNKNOWN n/New"));
 
+        assertEquals("Event not found: UNKNOWN", error.getMessage());
         assertEquals(List.of(originalEvent), clubData.getEvents());
-        assertEquals(List.of("[TEST] Event not found: UNKNOWN"), printedLines());
+        assertEquals(List.of(), printedLines());
     }
 
     @Test
@@ -151,7 +155,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_multipleEvents_preservesOrderAndOtherEvents() throws CommandParseException {
+    void editEvent_multipleEvents_preservesOrderAndOtherEvents() throws ClubFlowException {
         Event other = new Event("OTHER", "Other", null, null, 0, "", "");
         clubData.addEvent(other);
 
@@ -163,7 +167,7 @@ class EditEventCommandTest {
     }
 
     @Test
-    void editEvent_completedEvent_preservesCompletionState() throws CommandParseException {
+    void editEvent_completedEvent_preservesCompletionState() throws ClubFlowException {
         clubData.updateEvent(originalEvent.withCompleted(true));
 
         parser.parse("editEvent e/XMAS n/Dinner");
@@ -175,7 +179,7 @@ class EditEventCommandTest {
 
     @Test
     void editEvent_saveAndLoad_preservesUpdatedDetails(@TempDir Path directory)
-            throws CommandParseException, IOException {
+            throws ClubFlowException, IOException {
         parser.parse("editEvent e/XMAS n/Dinner v/Restaurant b/600");
         SaveLoadManager storage = new SaveLoadManager();
         Path saveFile = directory.resolve("edited.cf");

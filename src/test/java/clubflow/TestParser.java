@@ -2,6 +2,7 @@ package clubflow;
 
 import clubflow.command.TestCommand;
 import clubflow.command.ViewEventCommand;
+import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import org.junit.jupiter.api.Test;
 import clubflow.command.CommandParser;
@@ -75,6 +76,7 @@ public class TestParser {
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
         ClubData clubData = new ClubData();
+        clubData.addEvent(new Event("XMAS", "Party", null, null, 0, "", ""));
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
 
         assertAll(

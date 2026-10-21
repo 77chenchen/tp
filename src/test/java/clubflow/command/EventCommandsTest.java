@@ -19,7 +19,9 @@ import org.junit.jupiter.api.Test;
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Tests event creation, validation, and the create-view-delete workflow using shared club data.
@@ -43,7 +45,7 @@ class EventCommandsTest {
     }
 
     @Test
-    void eventCommands_sharedClubData_createViewAndDeleteEvent() throws CommandParseException {
+    void eventCommands_sharedClubData_createViewAndDeleteEvent() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 
@@ -69,8 +71,10 @@ class EventCommandsTest {
         assertEquals(0, clubData.getEvents().size());
 
         output.reset();
-        assertFalse(parser.parse("viewEvent e/XMAS"));
-        assertEquals(List.of("[TEST] Event not found."), printedLines());
+        EventNotFoundException error = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("viewEvent e/XMAS"));
+        assertEquals("Event not found: XMAS", error.getMessage());
+        assertEquals(List.of(), printedLines());
 
         output.reset();
         assertFalse(parser.parse("viewEvent all"));
@@ -78,7 +82,7 @@ class EventCommandsTest {
     }
 
     @Test
-    void deleteEvent_unknownTag_reportsMissingAndPreservesExistingEvents() throws CommandParseException {
+    void deleteEvent_unknownTag_throwsAndPreservesExistingEvents() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
         parser.parse("createEvent e/XMAS n/\"Christmas Party\"");
@@ -86,9 +90,11 @@ class EventCommandsTest {
         List<Event> existingEvents = clubData.getEvents();
         output.reset();
 
-        assertFalse(parser.parse("deleteEvent e/UNKNOWN"));
+        EventNotFoundException error = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("deleteEvent e/UNKNOWN"));
 
-        assertEquals(List.of("[TEST] Event not found: UNKNOWN"), printedLines());
+        assertEquals("Event not found: UNKNOWN", error.getMessage());
+        assertEquals(List.of(), printedLines());
         assertEquals(existingEvents, clubData.getEvents());
     }
 
@@ -115,7 +121,7 @@ class EventCommandsTest {
     }
 
     @Test
-    void createEvent_duplicateTag_keepsOriginalEvent() throws CommandParseException {
+    void createEvent_duplicateTag_keepsOriginalEvent() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 

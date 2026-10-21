@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,9 +21,12 @@ import org.junit.jupiter.api.Test;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
+import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
 import clubflow.event.Event;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Tests completion dispatch, event updates, idempotent requests, and invalid input through the parser.
@@ -49,7 +51,7 @@ class CompletionCommandTest {
                 LocalDate.of(2026, 12, 20), 500, "Main Hall", "Tables and chairs");
         clubData.addEvent(originalEvent);
         EventCompletion eventCompletion = new EventCompletion(ui, clubData);
-        Map<String, BiConsumer<String, Boolean>> handlers = Map.of("e", eventCompletion::setCompleted);
+        Map<String, CompletionHandler> handlers = Map.of("e", eventCompletion::setCompleted);
         parser = new CommandParser(ui);
         parser.register("mark", new CompletionCommand(ui, handlers, true));
         parser.register("unmark", new CompletionCommand(ui, handlers, false));
@@ -62,7 +64,7 @@ class CompletionCommandTest {
     }
 
     @Test
-    void mark_caseInsensitiveTag_preservesDetailsOrderAndSnapshots() throws CommandParseException {
+    void mark_caseInsensitiveTag_preservesDetailsOrderAndSnapshots() throws ClubFlowException {
         Event other = new Event("OTHER", "Other event", null, null, 0, "", "");
         clubData.addEvent(other);
         List<Event> snapshot = clubData.getEvents();
@@ -86,7 +88,7 @@ class CompletionCommandTest {
     }
 
     @Test
-    void unmark_completedEvent_setsNotCompleted() throws CommandParseException {
+    void unmark_completedEvent_setsNotCompleted() throws ClubFlowException {
         parser.parse("mark e/XMAS");
         output.reset();
 
@@ -100,7 +102,7 @@ class CompletionCommandTest {
     }
 
     @Test
-    void completion_repeatedCommands_keepRequestedState() throws CommandParseException {
+    void completion_repeatedCommands_keepRequestedState() throws ClubFlowException {
         parser.parse("mark e/XMAS");
         Event marked = clubData.findEventByTag("XMAS").orElseThrow();
 
@@ -118,12 +120,16 @@ class CompletionCommandTest {
     }
 
     @Test
-    void completion_unknownTag_reportsMissingWithoutChangingEvents() throws CommandParseException {
-        assertFalse(parser.parse("mark e/UNKNOWN"));
-        assertFalse(parser.parse("unmark e/UNKNOWN"));
+    void completion_unknownTag_throwsWithoutChangingEventsOrPrintingErrors() {
+        EventNotFoundException markError = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("mark e/UNKNOWN"));
+        EventNotFoundException unmarkError = assertThrows(EventNotFoundException.class,
+                () -> parser.parse("unmark e/UNKNOWN"));
 
+        assertEquals("Event not found: UNKNOWN", markError.getMessage());
+        assertEquals("Event not found: UNKNOWN", unmarkError.getMessage());
         assertEquals(List.of(originalEvent), clubData.getEvents());
-        assertEquals(List.of("[TEST] Event not found: UNKNOWN", "[TEST] Event not found: UNKNOWN"), printedLines());
+        assertEquals(List.of(), printedLines());
     }
 
     @Test
@@ -142,7 +148,7 @@ class CompletionCommandTest {
     }
 
     @Test
-    void completion_afterDataReplacement_usesCurrentEvents() throws CommandParseException {
+    void completion_afterDataReplacement_usesCurrentEvents() throws ClubFlowException {
         ClubData loaded = new ClubData();
         loaded.addEvent(new Event("NEW", "Loaded event", null, null, 0, "", ""));
         clubData.replaceWith(loaded);
@@ -154,10 +160,10 @@ class CompletionCommandTest {
     }
 
     @Test
-    void completion_customTypes_dispatchesIdentifierAndBothStates() throws CommandParseException {
+    void completion_customTypes_dispatchesIdentifierAndBothStates() throws ClubFlowException {
         List<Map.Entry<String, Boolean>> updates = new ArrayList<>();
         List<String> unusedUpdates = new ArrayList<>();
-        Map<String, BiConsumer<String, Boolean>> handlers = Map.of(
+        Map<String, CompletionHandler> handlers = Map.of(
                 "x", (identifier, completed) -> unusedUpdates.add(identifier),
                 "y", (identifier, completed) -> updates.add(Map.entry(identifier, completed)));
         CommandParser customParser = new CommandParser(ui);
@@ -174,7 +180,7 @@ class CompletionCommandTest {
     @Test
     void completion_multipleSupportedTypes_rejectsBeforeDispatch() {
         List<String> updates = new ArrayList<>();
-        Map<String, BiConsumer<String, Boolean>> handlers = Map.of(
+        Map<String, CompletionHandler> handlers = Map.of(
                 "x", (identifier, completed) -> updates.add(identifier),
                 "y", (identifier, completed) -> updates.add(identifier));
         CommandParser customParser = new CommandParser(ui);
@@ -186,9 +192,9 @@ class CompletionCommandTest {
     }
 
     @Test
-    void completion_changedHandlerMap_keepsRegisteredTypes() throws CommandParseException {
+    void completion_changedHandlerMap_keepsRegisteredTypes() throws ClubFlowException {
         List<String> updates = new ArrayList<>();
-        Map<String, BiConsumer<String, Boolean>> handlers = new HashMap<>();
+        Map<String, CompletionHandler> handlers = new HashMap<>();
         handlers.put("x", (identifier, completed) -> updates.add(identifier));
         CommandParser customParser = new CommandParser(ui);
         customParser.register("mark", new CompletionCommand(ui, handlers, true));
@@ -198,6 +204,21 @@ class CompletionCommandTest {
 
         assertEquals(List.of("item"), updates);
         assertThrows(IllegalArgumentException.class, () -> new CompletionCommand(ui, Map.of(), true));
+    }
+
+    @Test
+    void completion_handlerFailure_propagatesApplicationExceptionUnchanged() {
+        ClubFlowException failure = new EventNotFoundException("item");
+        CompletionHandler handler = (identifier, completed) -> {
+            throw failure;
+        };
+        CommandParser customParser = new CommandParser(ui);
+        customParser.register("mark", new CompletionCommand(ui, Map.of("x", handler), true));
+
+        ClubFlowException actual = assertThrows(ClubFlowException.class, () -> customParser.parse("mark x/item"));
+
+        assertSame(failure, actual);
+        assertEquals(List.of(), printedLines());
     }
 
     /**

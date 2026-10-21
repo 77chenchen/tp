@@ -52,6 +52,7 @@ Example: `editEvent e/XMAS v/"New Hall" b/600`
 
 Displays one event's full details or all events. Unspecified details appear as `Not set`.
 The `Status` line shows `Completed` or `Not completed`.
+An unknown tag displays `Event not found: TAG`.
 
 Format: `viewEvent e/TAG` or `viewEvent all`
 

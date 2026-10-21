@@ -3,12 +3,12 @@ package clubflow.command;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Optional;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Updates supplied details of an event selected by its tag, preserving omitted fields.
@@ -54,16 +54,11 @@ public class EditEventCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
-        Optional<Event> existingEvent = clubData.findEventByTag(args.get(EventArgumentIds.TAG));
-        if (existingEvent.isEmpty()) {
-            ui.print("Event not found: " + args.get(EventArgumentIds.TAG));
-            return false;
-        }
-
-        Event original = existingEvent.get();
+        String tag = args.get(EventArgumentIds.TAG);
+        Event original = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
         // Build the replacement first so every supplied field is applied together.
         Event updated = new Event(
                 original.getTag(),

@@ -8,6 +8,7 @@ import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Displays one event selected by tag or all events.
@@ -58,7 +59,7 @@ public class ViewEventCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.ALL) ^ args.containsKey(EventArgumentIds.TAG)
                 : "Validated arguments must select one view mode";
@@ -73,8 +74,9 @@ public class ViewEventCommand extends Command {
                 printEvent(event);
             }
         } else {
-            clubData.findEventByTag(args.get(EventArgumentIds.TAG))
-                    .ifPresentOrElse(this::printEvent, () -> ui.print("Event not found."));
+            String tag = args.get(EventArgumentIds.TAG);
+            Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+            printEvent(event);
         }
 
         return false;
