@@ -113,6 +113,26 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_duplicateEvent_reportsErrorOnceAndContinuesWithoutReplacingEvent() {
+        String result = runSession("createEvent e/XMAS n/Original b/500\nmark e/XMAS\n"
+                + "createEvent e/xmas n/Duplicate b/999\nviewEvent e/XMAS\n"
+                + "createEvent e/AGM n/Meeting\nviewEvent all\nexit\n");
+
+        assertAll(
+                () -> assertEquals(1, result.lines()
+                        .filter(line -> line.contains("[CF] Event already exists: xmas")).count()),
+                () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] Created event:")).count()),
+                () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] [XMAS] Original")).count()),
+                () -> assertTrue(result.contains("[CF]   Status:    Completed")),
+                () -> assertTrue(result.contains("[CF]   Budget:    $500.00")),
+                () -> assertTrue(result.contains("[CF] [AGM] Meeting")),
+                () -> assertTrue(result.contains("[CF] Goodbye!")),
+                () -> assertFalse(result.contains("Duplicate")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_eventCommands_shareDataAcrossTheSession() {
         String result = runSession("createEvent e/XMAS n/\"Christmas Party\"\n"
                 + "viewEvent e/xmas\ndeleteEvent e/XMAS\nviewEvent all\nexit\n");

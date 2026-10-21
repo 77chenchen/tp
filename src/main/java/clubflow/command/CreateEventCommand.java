@@ -8,6 +8,7 @@ import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.DuplicateEventException;
 
 /**
  * Creates an event and stores it in the shared club data.
@@ -56,7 +57,7 @@ public class CreateEventCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws DuplicateEventException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         // Optional dates use null when unspecified; an omitted budget defaults to zero.
@@ -83,11 +84,10 @@ public class CreateEventCommand extends Command {
         );
 
         // ClubData performs the case-insensitive duplicate-tag check.
-        if (clubData.addEvent(event)) {
-            ui.print("Created event: " + event.getTag());
-        } else {
-            ui.print("Event already exists: " + event.getTag());
+        if (!clubData.addEvent(event)) {
+            throw new DuplicateEventException(event.getTag());
         }
+        ui.print("Created event: " + event.getTag());
 
         return false;
     }

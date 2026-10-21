@@ -25,6 +25,7 @@ Adds an event with a unique tag and optional details.
 Format: `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
 
 * The tag cannot be blank and must be unique, ignoring case.
+  A duplicate tag displays `Event already exists: TAG` and leaves existing events unchanged.
 * Dates and deadlines use `YYYY-MM-DD` format.
 * The budget must be a finite, non-negative number and defaults to zero.
 * Event fields cannot contain `|`.

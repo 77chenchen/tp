@@ -21,6 +21,7 @@ import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.DuplicateEventException;
 import clubflow.exception.EventNotFoundException;
 
 /**
@@ -121,15 +122,36 @@ class EventCommandsTest {
     }
 
     @Test
-    void createEvent_duplicateTag_keepsOriginalEvent() throws ClubFlowException {
+    void createEvent_duplicateTags_throwsAndPreservesExistingEvents() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 
-        parser.parse("createEvent e/XMAS n/Original");
-        parser.parse("createEvent e/xmas n/Duplicate");
+        parser.parse("createEvent e/XMAS n/Original d/2026-12-25 "
+                + "by/2026-12-20 b/500 v/Hall l/Chairs");
+        clubData.updateEvent(clubData.getEvents().getFirst().withCompleted(true));
+        parser.parse("createEvent e/AGM n/Meeting");
+        List<Event> existingEvents = clubData.getEvents();
+        output.reset();
 
-        assertEquals(1, clubData.getEvents().size());
-        assertEquals("Original", clubData.getEvents().getFirst().getName());
+        for (String tag : List.of("XMAS", "xmas", "XmAs")) {
+            DuplicateEventException error = assertThrows(DuplicateEventException.class,
+                    () -> parser.parse("createEvent e/" + tag + " n/Duplicate b/999"));
+
+            assertEquals("Event already exists: " + tag, error.getMessage());
+            assertEquals(existingEvents, clubData.getEvents());
+        }
+        assertEquals(List.of(), printedLines());
+    }
+
+    @Test
+    void createEvent_sameNameWithDifferentTags_allowsBothEvents() throws ClubFlowException {
+        ClubData clubData = new ClubData();
+        CommandParser parser = createEventCommandParser(clubData);
+
+        parser.parse("createEvent e/XMAS n/Party");
+        parser.parse("createEvent e/NYE n/Party");
+
+        assertEquals(List.of("XMAS", "NYE"), clubData.getEvents().stream().map(Event::getTag).toList());
     }
 
     /**
