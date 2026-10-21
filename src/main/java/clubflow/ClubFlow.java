@@ -6,13 +6,16 @@ import clubflow.command.CreateMemberCommand;
 import clubflow.command.DeleteEventCommand;
 import clubflow.command.DeleteMemberCommand;
 import clubflow.command.ExitCommand;
+import clubflow.command.FindCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
+import clubflow.search.EventSearch;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -52,6 +55,8 @@ public class ClubFlow {
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        EventSearch eventSearch = new EventSearch(ui, clubData);
+        parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
 
         CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
         parser.register("createMember", createMemberCommand);

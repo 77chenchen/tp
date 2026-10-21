@@ -100,6 +100,21 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_findCommand_searchesCreatedEventsAndReflectsDeletion() {
+        String result = runSession("createEvent e/XMAS n/\"Christmas Party\"\n"
+                + "find e/party\ndeleteEvent e/XMAS\nfind e/party\nexit\n");
+
+        assertAll(
+                () -> assertTrue(result.contains("[CF] Found 1 matching event(s).")),
+                () -> assertTrue(result.contains("[CF] [XMAS] Christmas Party")),
+                () -> assertTrue(result.contains("[CF] No matching events found.")),
+                () -> assertTrue(result.indexOf("[XMAS] Christmas Party")
+                        < result.indexOf("Deleted event: XMAS")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_memberCommands_shareAliasesAndConfirmationInput() {
         String result = runSession("createMember n/Lucy t/lucy\naddMember n/Thomas e/thomas@example.com\n"
                 + "viewMember\ndeleteMember i/1\nno\ndeleteMember i/1\nyes\n"
