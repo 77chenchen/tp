@@ -78,6 +78,21 @@ class EventCommandsTest {
     }
 
     @Test
+    void deleteEvent_unknownTag_reportsMissingAndPreservesExistingEvents() throws CommandParseException {
+        ClubData clubData = new ClubData();
+        CommandParser parser = createEventCommandParser(clubData);
+        parser.parse("createEvent e/XMAS n/\"Christmas Party\"");
+        parser.parse("createEvent e/AGM n/Meeting");
+        List<Event> existingEvents = clubData.getEvents();
+        output.reset();
+
+        assertFalse(parser.parse("deleteEvent e/UNKNOWN"));
+
+        assertEquals(List.of("[TEST] Event not found: UNKNOWN"), printedLines());
+        assertEquals(existingEvents, clubData.getEvents());
+    }
+
+    @Test
     void createEvent_invalidValues_rejectsCommand() {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);

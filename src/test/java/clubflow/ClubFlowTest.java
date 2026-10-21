@@ -8,9 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -145,6 +149,46 @@ class ClubFlowTest {
                 () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] [XMAS] Dinner")).count()),
                 () -> assertFalse(result.contains("Command syntax error"))
         );
+    }
+
+    @Test
+    void run_completionSaveAndLoad_restoresStatusInANewSessionAndAllowsUnmarking() throws IOException {
+        // Keep the save path relative, as required by the commands, and separate from users' save files.
+        Path testDirectory = Files.createTempDirectory(Files.createDirectories(Path.of("build", "tmp")),
+                "completion-workflow-");
+        Path saveFile = testDirectory.resolve("completion workflow.cf");
+        String pathArgument = "p/\"" + saveFile + "\"";
+        try {
+            String savedSession = runSession("createEvent e/XMAS n/\"Christmas Party\" "
+                    + "d/2026-12-25 by/2026-12-20 b/500 v/\"Main Hall\" l/Chairs\n"
+                    + "mark e/XMAS\nsave " + pathArgument + "\nexit\n");
+
+            assertTrue(savedSession.contains("[CF] Marked event as completed: XMAS"));
+            assertTrue(savedSession.contains("[CF] Data saved successfully!"));
+            assertTrue(Files.isRegularFile(saveFile));
+
+            // A fresh app starts empty, so this can pass only if loading restores the saved event and status.
+            String loadedSession = runSession("load " + pathArgument + "\nviewEvent e/XMAS\n"
+                    + "unmark e/xmas\nviewEvent e/XMAS\nexit\n");
+
+            assertAll(
+                    () -> assertTrue(loadedSession.contains("[CF] Data loaded successfully!")),
+                    () -> assertEquals(List.of("[CF]   Status:    Completed", "[CF]   Status:    Not completed"),
+                            loadedSession.lines().filter(line -> line.contains("Status:")).toList()),
+                    () -> assertTrue(loadedSession.contains("[CF] Marked event as not completed: XMAS")),
+                    () -> assertEquals(2, loadedSession.lines()
+                            .filter(line -> line.contains("[CF] [XMAS] Christmas Party")).count()),
+                    () -> assertTrue(loadedSession.contains("[CF]   Date:      2026-12-25")),
+                    () -> assertTrue(loadedSession.contains("[CF]   Deadline:  2026-12-20")),
+                    () -> assertTrue(loadedSession.contains("[CF]   Budget:    $500.00")),
+                    () -> assertTrue(loadedSession.contains("[CF]   Venue:     Main Hall")),
+                    () -> assertTrue(loadedSession.contains("[CF]   Logistics: Chairs")),
+                    () -> assertTrue(loadedSession.contains("[CF] Goodbye!"))
+            );
+        } finally {
+            Files.deleteIfExists(saveFile);
+            Files.delete(testDirectory);
+        }
     }
 
     @Test
