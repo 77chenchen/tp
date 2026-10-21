@@ -84,6 +84,75 @@ public class TestClubData {
                 () -> clubData.getEvents().add(null));
     }
 
+    @Test
+    public void replaceWith_loadedData_replacesBothCollectionsAndRetainsSnapshots() {
+        ClubData clubData = new ClubData();
+        Member originalMember = new Member("Lucy", "lucy", "", List.of());
+        Event originalEvent = createEvent("OLD");
+        clubData.addMember(originalMember);
+        clubData.addEvent(originalEvent);
+        List<Member> memberSnapshot = clubData.getMembers();
+        List<Event> eventSnapshot = clubData.getEvents();
+        ClubData loaded = new ClubData();
+        Member loadedMember = new Member("Thomas", "", "thomas@example.com", List.of());
+        Event loadedEvent = createEvent("NEW");
+        loaded.addMember(loadedMember);
+        loaded.addEvent(loadedEvent);
+
+        clubData.replaceWith(loaded);
+        // Later edits to the source store must not affect the destination store.
+        loaded.removeMemberByIndex(1);
+        loaded.removeEventByTag("NEW");
+
+        assertEquals(List.of(loadedMember), clubData.getMembers());
+        assertEquals(List.of(loadedEvent), clubData.getEvents());
+        assertEquals(List.of(originalMember), memberSnapshot);
+        assertEquals(List.of(originalEvent), eventSnapshot);
+    }
+
+    @Test
+    public void replaceWith_sameStore_preservesMembersAndEvents() {
+        ClubData clubData = new ClubData();
+        Member member = new Member("Lucy", "lucy", "", List.of());
+        Event event = createEvent("XMAS");
+        clubData.addMember(member);
+        clubData.addEvent(event);
+
+        clubData.replaceWith(clubData);
+
+        assertEquals(List.of(member), clubData.getMembers());
+        assertEquals(List.of(event), clubData.getEvents());
+    }
+
+    @Test
+    public void findAndRemoveMember_invalidIndexes_leaveMembersUnchanged() {
+        ClubData clubData = new ClubData();
+        Member member = new Member("Lucy", "lucy", "", List.of());
+        clubData.addMember(member);
+
+        for (int index : new int[]{-1, 0, 2}) {
+            assertTrue(clubData.findMemberByIndex(index).isEmpty());
+            assertTrue(clubData.removeMemberByIndex(index).isEmpty());
+        }
+
+        assertEquals(List.of(member), clubData.getMembers());
+    }
+
+    @Test
+    public void removeMember_existingIndex_shiftsLaterMemberIndexes() {
+        ClubData clubData = new ClubData();
+        Member firstMember = new Member("Lucy", "lucy", "", List.of());
+        Member secondMember = new Member("Thomas", "", "thomas@example.com", List.of());
+        clubData.addMember(firstMember);
+        clubData.addMember(secondMember);
+
+        assertEquals(firstMember, clubData.removeMemberByIndex(1).orElseThrow());
+
+        assertEquals(secondMember, clubData.findMemberByIndex(1).orElseThrow());
+        assertTrue(clubData.findMemberByIndex(2).isEmpty());
+        assertEquals(List.of(secondMember), clubData.getMembers());
+    }
+
     /**
      * Creates a valid event fixture with the supplied tag.
      *
