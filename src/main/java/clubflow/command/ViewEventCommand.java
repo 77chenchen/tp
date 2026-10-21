@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Objects;
 
 import clubflow.ClubData;
@@ -62,18 +63,46 @@ public class ViewEventCommand extends Command {
         assert args.containsKey(EventArgumentIds.ALL) ^ args.containsKey(EventArgumentIds.TAG)
                 : "Validated arguments must select one view mode";
         if (args.containsKey(EventArgumentIds.ALL)) {
+            if (clubData.getEvents().isEmpty()) {
+                ui.print("No events found.");
+                return false;
+            }
+
             ui.print("Displaying all events.");
             for (Event event : clubData.getEvents()) {
-                ui.print(event.getTag() + ": " + event.getName());
+                printEvent(event);
             }
         } else {
             clubData.findEventByTag(args.get(EventArgumentIds.TAG))
-                    .ifPresentOrElse(
-                            event -> ui.print(event.getTag() + ": " + event.getName()),
-                            () -> ui.print("Event not found.")
-                );
+                    .ifPresentOrElse(this::printEvent, () -> ui.print("Event not found."));
         }
 
         return false;
+    }
+
+    /**
+     * Prints an event with labelled details and placeholders for missing values.
+     *
+     * @param event event to display
+     */
+    private void printEvent(Event event) {
+        ui.print("[" + event.getTag() + "] " + displayText(event.getName()));
+        ui.print("  Date:      "
+                + (event.getDate() == null ? "Not set" : event.getDate()));
+        ui.print("  Deadline:  "
+                + (event.getDeadline() == null ? "Not set" : event.getDeadline()));
+        ui.print(String.format(Locale.ROOT, "  Budget:    $%.2f", event.getBudget()));
+        ui.print("  Venue:     " + displayText(event.getVenue()));
+        ui.print("  Logistics: " + displayText(event.getLogistics()));
+    }
+
+    /**
+     * Replaces an unspecified text field with a readable placeholder.
+     *
+     * @param value non-null event field
+     * @return field value or a placeholder
+     */
+    private String displayText(String value) {
+        return value.isBlank() ? "Not set" : value;
     }
 }

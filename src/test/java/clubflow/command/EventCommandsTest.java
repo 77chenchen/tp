@@ -1,28 +1,49 @@
-package clubflow;
+package clubflow.command;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.command.CommandParser;
-import clubflow.command.CreateEventCommand;
-import clubflow.command.DeleteEventCommand;
-import clubflow.command.ViewEventCommand;
+import clubflow.ClubData;
+import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 
 /**
- * Tests event commands using one shared ClubData instance.
+ * Tests event creation, validation, and the create-view-delete workflow using shared club data.
  */
-public class TestEventCommands {
+class EventCommandsTest {
+    private final PrintStream originalOutput = System.out;
+    private ByteArrayOutputStream output;
+    private PrintStream capturedOutput;
+
+    @BeforeEach
+    void redirectOutput() {
+        output = new ByteArrayOutputStream();
+        capturedOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
+        System.setOut(capturedOutput);
+    }
+
+    @AfterEach
+    void restoreOutput() {
+        System.setOut(originalOutput);
+        capturedOutput.close();
+    }
 
     @Test
-    public void eventCommands_sharedClubData_createViewAndDeleteEvent() throws CommandParseException {
+    void eventCommands_sharedClubData_createViewAndDeleteEvent() throws CommandParseException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 
@@ -34,15 +55,30 @@ public class TestEventCommands {
         assertEquals(LocalDate.of(2026, 12, 25), event.getDate());
         assertEquals(LocalDate.of(2026, 12, 20), event.getDeadline());
         assertEquals(500.0, event.getBudget());
-        assertDoesNotThrow(() -> parser.parse("viewEvent e/XMAS"));
-        assertDoesNotThrow(() -> parser.parse("viewEvent all"));
+        // Isolate each command's output so an earlier response cannot satisfy a later assertion.
+        output.reset();
+        assertFalse(parser.parse("viewEvent e/XMAS"));
+        assertTrue(printedLines().contains("[TEST] [XMAS] Christmas Party"));
+
+        output.reset();
+        assertFalse(parser.parse("viewEvent all"));
+        assertTrue(printedLines().contains("[TEST] Displaying all events."));
+        assertTrue(printedLines().contains("[TEST] [XMAS] Christmas Party"));
 
         parser.parse("deleteEvent e/XMAS");
         assertEquals(0, clubData.getEvents().size());
+
+        output.reset();
+        assertFalse(parser.parse("viewEvent e/XMAS"));
+        assertEquals(List.of("[TEST] Event not found."), printedLines());
+
+        output.reset();
+        assertFalse(parser.parse("viewEvent all"));
+        assertEquals(List.of("[TEST] No events found."), printedLines());
     }
 
     @Test
-    public void createEvent_invalidValues_rejectsCommand() {
+    void createEvent_invalidValues_rejectsCommand() {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 
@@ -64,7 +100,7 @@ public class TestEventCommands {
     }
 
     @Test
-    public void createEvent_duplicateTag_keepsOriginalEvent() throws CommandParseException {
+    void createEvent_duplicateTag_keepsOriginalEvent() throws CommandParseException {
         ClubData clubData = new ClubData();
         CommandParser parser = createEventCommandParser(clubData);
 
@@ -88,5 +124,14 @@ public class TestEventCommands {
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
         return parser;
+    }
+
+    /**
+     * Returns captured output as lines independently of the platform's line endings.
+     *
+     * @return lines printed since the last output reset
+     */
+    private List<String> printedLines() {
+        return output.toString(StandardCharsets.UTF_8).lines().toList();
     }
 }
