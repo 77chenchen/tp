@@ -87,6 +87,7 @@ public class ViewEventCommand extends Command {
      */
     private void printEvent(Event event) {
         ui.print("[" + event.getTag() + "] " + displayText(event.getName()));
+        ui.print("  Status:    " + (event.isCompleted() ? "Completed" : "Not completed"));
         ui.print("  Date:      "
                 + (event.getDate() == null ? "Not set" : event.getDate()));
         ui.print("  Deadline:  "

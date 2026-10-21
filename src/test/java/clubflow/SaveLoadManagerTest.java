@@ -2,6 +2,7 @@ package clubflow;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +37,7 @@ class SaveLoadManagerTest {
                 List.of("president", "treasurer")));
         original.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
         original.addEvent(new Event("XMAS", "Christmas Party", LocalDate.of(2026, 12, 25),
-                LocalDate.of(2026, 12, 20), 500.25, "Main Hall", "Tables and chairs"));
+                LocalDate.of(2026, 12, 20), 500.25, "Main Hall", "Tables and chairs", true));
         original.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
         Path saveFile = tempDir.resolve("club.cf");
 
@@ -62,7 +63,8 @@ class SaveLoadManagerTest {
                 () -> assertEquals(LocalDate.of(2026, 12, 20), event.getDeadline()),
                 () -> assertEquals(500.25, event.getBudget()),
                 () -> assertEquals("Main Hall", event.getVenue()),
-                () -> assertEquals("Tables and chairs", event.getLogistics())
+                () -> assertEquals("Tables and chairs", event.getLogistics()),
+                () -> assertTrue(event.isCompleted())
         );
         Event draft = loaded.getEvents().get(1);
         assertAll(
@@ -71,7 +73,8 @@ class SaveLoadManagerTest {
                 () -> assertNull(draft.getDeadline()),
                 () -> assertEquals(0, draft.getBudget()),
                 () -> assertEquals("", draft.getVenue()),
-                () -> assertEquals("", draft.getLogistics())
+                () -> assertEquals("", draft.getLogistics()),
+                () -> assertFalse(draft.isCompleted())
         );
     }
 
@@ -97,7 +100,7 @@ class SaveLoadManagerTest {
 
         storage.save(replacement, saveFile);
 
-        assertEquals(List.of("EVENT|NEW||null|null|0.0||"),
+        assertEquals(List.of("EVENT|NEW||null|null|0.0|||false"),
                 Files.readAllLines(saveFile, StandardCharsets.UTF_8));
         assertEquals(1, storage.load(saveFile).getEvents().size());
     }
@@ -123,12 +126,33 @@ class SaveLoadManagerTest {
     }
 
     @Test
+    void load_legacyEventRecords_defaultToNotCompleted() throws IOException {
+        Path saveFile = tempDir.resolve("legacy.cf");
+        Files.writeString(saveFile, "EVENT|XMAS|Party|2026-12-25|2026-12-20|500.0|Hall|Chairs\n"
+                + "EVENT|DRAFT||null|null|0.0||\n", StandardCharsets.UTF_8);
+
+        ClubData loaded = storage.load(saveFile);
+
+        assertEquals(List.of("XMAS", "DRAFT"), loaded.getEvents().stream().map(Event::getTag).toList());
+        assertTrue(loaded.getEvents().stream().noneMatch(Event::isCompleted));
+        assertEquals("Chairs", loaded.getEvents().getFirst().getLogistics());
+    }
+
+    @Test
+    void load_invalidCompletionState_rejectsInsteadOfSilentlyDefaulting() {
+        for (String state : List.of("", "yes", "1", "TRUE", "false ")) {
+            assertAll(() -> assertInvalidFile("EVENT|XMAS||null|null|0.0|||" + state,
+                    "Invalid event record at line 1"));
+        }
+    }
+
+    @Test
     void load_wrongFieldCounts_rejectsMemberAndEventRecords() {
         assertAll(
                 () -> assertInvalidFile("MEMBER|Lucy|lucy|", "Invalid member record at line 1"),
                 () -> assertInvalidFile("MEMBER|Lucy|lucy|||extra", "Invalid member record at line 1"),
                 () -> assertInvalidFile("EVENT|XMAS||null|null|0.0|", "Invalid event record at line 1"),
-                () -> assertInvalidFile("EVENT|XMAS||null|null|0.0|||extra", "Invalid event record at line 1")
+                () -> assertInvalidFile("EVENT|XMAS||null|null|0.0|||false|extra", "Invalid event record at line 1")
         );
     }
 

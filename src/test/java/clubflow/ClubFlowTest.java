@@ -131,6 +131,23 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_markAndUnmark_updatesStatusAndPreservesEdits() {
+        String result = runSession("createEvent e/XMAS n/Party\nmark e/xmas\n"
+                + "editEvent e/XMAS n/Dinner\nviewEvent e/XMAS\n"
+                + "unmark e/XMAS\nviewEvent e/XMAS\nexit\n");
+
+        assertAll(
+                () -> assertTrue(result.contains("[CF] Marked event as completed: XMAS")),
+                () -> assertTrue(result.contains("[CF] Marked event as not completed: XMAS")),
+                () -> assertTrue(result.contains("[CF]   Status:    Completed")),
+                () -> assertTrue(result.contains("[CF]   Status:    Not completed")),
+                () -> assertTrue(result.indexOf("Status:    Completed") < result.indexOf("Status:    Not completed")),
+                () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] [XMAS] Dinner")).count()),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_memberCommands_shareAliasesAndConfirmationInput() {
         String result = runSession("createMember n/Lucy t/lucy\naddMember n/Thomas e/thomas@example.com\n"
                 + "viewMember\ndeleteMember i/1\nno\ndeleteMember i/1\nyes\n"

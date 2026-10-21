@@ -56,6 +56,7 @@ class ViewEventCommandTest {
 
         assertEquals(List.of(
                 "[TEST] [XMAS] Christmas Party",
+                "[TEST]   Status:    Not completed",
                 "[TEST]   Date:      2026-12-25",
                 "[TEST]   Deadline:  2026-12-20",
                 "[TEST]   Budget:    $500.00",
@@ -73,6 +74,7 @@ class ViewEventCommandTest {
 
         assertEquals(List.of(
                 "[TEST] [DRAFT] Not set",
+                "[TEST]   Status:    Not completed",
                 "[TEST]   Date:      Not set",
                 "[TEST]   Deadline:  Not set",
                 "[TEST]   Budget:    $0.00",
@@ -83,7 +85,7 @@ class ViewEventCommandTest {
 
     @Test
     void viewEvent_allEvents_printsEveryEventInInsertionOrder() throws CommandParseException {
-        clubData.addEvent(christmasParty());
+        clubData.addEvent(christmasParty().withCompleted(true));
         clubData.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
 
         assertFalse(parser.parse("viewEvent all"));
@@ -91,12 +93,14 @@ class ViewEventCommandTest {
         assertEquals(List.of(
                 "[TEST] Displaying all events.",
                 "[TEST] [XMAS] Christmas Party",
+                "[TEST]   Status:    Completed",
                 "[TEST]   Date:      2026-12-25",
                 "[TEST]   Deadline:  2026-12-20",
                 "[TEST]   Budget:    $500.00",
                 "[TEST]   Venue:     Main Hall",
                 "[TEST]   Logistics: Tables and chairs",
                 "[TEST] [DRAFT] Not set",
+                "[TEST]   Status:    Not completed",
                 "[TEST]   Date:      Not set",
                 "[TEST]   Deadline:  Not set",
                 "[TEST]   Budget:    $0.00",

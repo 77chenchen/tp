@@ -3,7 +3,7 @@
 ## Introduction
 
 ClubFlow is a command-line application for managing club events and members.
-You can create, edit, view, find, and delete events, manage member contacts, and save or load club data.
+You can create, edit, view, find, complete, and delete events, manage member contacts, and save or load club data.
 
 ## Quick Start
 
@@ -39,6 +39,7 @@ Format: `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l
 
 * Tag matching ignores case. The tag identifies the event and is not changed by editing.
 * Omitted fields keep their existing values. The event stays in the same list position.
+* Editing preserves the event's completion state.
 * Dates and deadlines use `YYYY-MM-DD`; the budget must be a finite, non-negative number.
 * Use an empty quoted value to clear a name, venue, or logistics field, such as `v/""`.
   Dates and deadlines require valid dates; they cannot be cleared with empty values.
@@ -50,10 +51,27 @@ Example: `editEvent e/XMAS v/"New Hall" b/600`
 ### Viewing events: `viewEvent`
 
 Displays one event's full details or all events. Unspecified details appear as `Not set`.
+The `Status` line shows `Completed` or `Not completed`.
 
 Format: `viewEvent e/TAG` or `viewEvent all`
 
 Example: `viewEvent e/XMAS`
+
+### Marking and unmarking completion: `mark` and `unmark`
+
+Marks an event as completed or not completed using its tag.
+
+Formats: `mark e/TAG` and `unmark e/TAG`
+
+* New events start as not completed. Tag matching ignores case.
+* `mark` sets the status to completed; `unmark` sets it to not completed.
+  Repeating either command keeps the same status.
+* Both commands preserve event details and list order. Use `viewEvent` to see the status.
+* Supply exactly one event tag. Unknown tags display `Event not found: TAG`.
+* Only events are currently supported. Member marking is not implemented.
+* Use `save` to keep completion changes after exiting.
+
+Examples: `mark e/XMAS` and `unmark e/XMAS`
 
 ### Deleting an event: `deleteEvent`
 
@@ -119,6 +137,8 @@ Formats: `save [p/PATH]` and `load p/PATH`
 * Paths must be relative to the folder from which ClubFlow was started.
 * `save` without a path uses `saves/clubs.cf`.
 * Data is not automatically saved or loaded. Save before exiting and load your file when starting a new session.
+* Saved events include their completion state. Older save files without this field load as not completed.
+  Files saved with completion states require this version of ClubFlow or later.
 
 Examples: `save p/saves/my-club.cf` and `load p/saves/my-club.cf`
 
@@ -138,6 +158,8 @@ Load the copied file using a relative path, for example `load p/saves/clubs.cf`.
 * Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
 * Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
 * View event `viewEvent e/TAG` or view all events `viewEvent all`
+* Mark event completed `mark e/TAG`
+* Mark event not completed `unmark e/TAG`
 * Delete event `deleteEvent e/TAG`
 * Find data `find TYPE/KEYWORD` (currently supports `e` for events)
 * Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (also `addMember`)

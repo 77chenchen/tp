@@ -1,6 +1,7 @@
 package clubflow;
 
 import clubflow.command.CommandParser;
+import clubflow.command.CompletionCommand;
 import clubflow.command.CreateEventCommand;
 import clubflow.command.CreateMemberCommand;
 import clubflow.command.DeleteEventCommand;
@@ -13,11 +14,13 @@ import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.CommandParseException;
+import clubflow.completion.EventCompletion;
 import clubflow.search.EventSearch;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.BiConsumer;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -59,6 +62,10 @@ public class ClubFlow {
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
         EventSearch eventSearch = new EventSearch(ui, clubData);
         parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
+        EventCompletion eventCompletion = new EventCompletion(ui, clubData);
+        Map<String, BiConsumer<String, Boolean>> completionHandlers = Map.of("e", eventCompletion::setCompleted);
+        parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
+        parser.register("unmark", new CompletionCommand(ui, completionHandlers, false));
 
         CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
         parser.register("createMember", createMemberCommand);

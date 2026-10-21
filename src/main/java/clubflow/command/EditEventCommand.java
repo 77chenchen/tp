@@ -75,7 +75,8 @@ public class EditEventCommand extends Command {
                 args.containsKey(EventArgumentIds.BUDGET)
                         ? Double.parseDouble(args.get(EventArgumentIds.BUDGET)) : original.getBudget(),
                 args.getOrDefault(EventArgumentIds.VENUE, original.getVenue()),
-                args.getOrDefault(EventArgumentIds.LOGISTICS, original.getLogistics())
+                args.getOrDefault(EventArgumentIds.LOGISTICS, original.getLogistics()),
+                original.isCompleted()
         );
         boolean updatedSuccessfully = clubData.updateEvent(updated);
         assert updatedSuccessfully : "The selected event must still exist when editing occurs";

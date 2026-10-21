@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -159,6 +160,17 @@ class EditEventCommandTest {
         assertEquals("XMAS", clubData.getEvents().getFirst().getTag());
         assertEquals("Changed", clubData.getEvents().getFirst().getName());
         assertSame(other, clubData.getEvents().get(1));
+    }
+
+    @Test
+    void editEvent_completedEvent_preservesCompletionState() throws CommandParseException {
+        clubData.updateEvent(originalEvent.withCompleted(true));
+
+        parser.parse("editEvent e/XMAS n/Dinner");
+
+        Event updated = clubData.findEventByTag("XMAS").orElseThrow();
+        assertTrue(updated.isCompleted());
+        assertEquals("Dinner", updated.getName());
     }
 
     @Test
