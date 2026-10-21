@@ -115,6 +115,22 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_editEvent_updatesDetailsSeenByViewAndFind() {
+        String result = runSession("createEvent e/XMAS n/Party v/\"Main Hall\"\n"
+                + "editEvent e/xmas n/Dinner b/600\nviewEvent e/XMAS\n"
+                + "find e/Dinner\nfind e/Party\nexit\n");
+
+        assertAll(
+                () -> assertTrue(result.contains("[CF] Updated event: XMAS")),
+                () -> assertEquals(2, result.lines().filter(line -> line.contains("[CF] [XMAS] Dinner")).count()),
+                () -> assertTrue(result.contains("[CF]   Venue:     Main Hall")),
+                () -> assertTrue(result.contains("[CF]   Budget:    $600.00")),
+                () -> assertTrue(result.contains("[CF] No matching events found.")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_memberCommands_shareAliasesAndConfirmationInput() {
         String result = runSession("createMember n/Lucy t/lucy\naddMember n/Thomas e/thomas@example.com\n"
                 + "viewMember\ndeleteMember i/1\nno\ndeleteMember i/1\nyes\n"

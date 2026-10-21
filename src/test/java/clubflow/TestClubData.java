@@ -75,6 +75,36 @@ public class TestClubData {
     }
 
     @Test
+    public void updateEvent_existingTag_preservesOrderAndOldSnapshots() {
+        ClubData clubData = new ClubData();
+        Event original = createEvent("XMAS");
+        Event other = createEvent("OTHER");
+        clubData.addEvent(original);
+        clubData.addEvent(other);
+        List<Event> snapshot = clubData.getEvents();
+        Event updated = new Event("xmas", "Dinner", null, null, 600, "Restaurant", "");
+
+        assertTrue(clubData.updateEvent(updated));
+
+        assertEquals(List.of(updated, other), clubData.getEvents());
+        assertEquals(List.of(original, other), snapshot);
+        assertEquals("Christmas Party", original.getName());
+        assertEquals(updated, clubData.findEventByTag("XMAS").orElseThrow());
+    }
+
+    @Test
+    public void updateEvent_missingOrNullEvent_keepsStoreUnchanged() {
+        ClubData clubData = new ClubData();
+        Event original = createEvent("XMAS");
+        clubData.addEvent(original);
+
+        assertFalse(clubData.updateEvent(createEvent("UNKNOWN")));
+        assertThrows(NullPointerException.class, () -> clubData.updateEvent(null));
+
+        assertEquals(List.of(original), clubData.getEvents());
+    }
+
+    @Test
     public void getters_returnedCollections_cannotBeModified() {
         ClubData clubData = new ClubData();
 

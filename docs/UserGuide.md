@@ -3,7 +3,7 @@
 ## Introduction
 
 ClubFlow is a command-line application for managing club events and members.
-You can create, view, find, and delete events, manage member contacts, and save or load club data.
+You can create, edit, view, find, and delete events, manage member contacts, and save or load club data.
 
 ## Quick Start
 
@@ -30,6 +30,22 @@ Format: `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] 
 * Event fields cannot contain `|`.
 
 Example: `createEvent e/XMAS n/"Christmas Party" d/2026-12-25 b/500 v/"Main Hall"`
+
+### Editing an event: `editEvent`
+
+Updates an existing event selected by its tag. Supply at least one detail to change.
+
+Format: `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
+
+* Tag matching ignores case. The tag identifies the event and is not changed by editing.
+* Omitted fields keep their existing values. The event stays in the same list position.
+* Dates and deadlines use `YYYY-MM-DD`; the budget must be a finite, non-negative number.
+* Use an empty quoted value to clear a name, venue, or logistics field, such as `v/""`.
+  Dates and deadlines require valid dates; they cannot be cleared with empty values.
+* Invalid input leaves the event unchanged. An unknown tag displays `Event not found: TAG`.
+* Use `save` to keep edited details after exiting.
+
+Example: `editEvent e/XMAS v/"New Hall" b/600`
 
 ### Viewing events: `viewEvent`
 
@@ -120,6 +136,7 @@ Load the copied file using a relative path, for example `load p/saves/clubs.cf`.
 ## Command Summary
 
 * Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
+* Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
 * View event `viewEvent e/TAG` or view all events `viewEvent all`
 * Delete event `deleteEvent e/TAG`
 * Find data `find TYPE/KEYWORD` (currently supports `e` for events)
