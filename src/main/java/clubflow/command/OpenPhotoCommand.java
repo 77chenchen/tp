@@ -35,7 +35,8 @@ public class OpenPhotoCommand extends Command{
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
-            throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG) + "\" does not exist.");
+            throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
+                    + "\" does not exist.");
         }
     }
 
@@ -58,9 +59,11 @@ public class OpenPhotoCommand extends Command{
         try {
             if (!e.openPhoto(name)){
                 ui.print("No photo has name \"" + name + "\" in event \"" + tag + "\".");
+                return false;
             }
         } catch (PhotoOpenException ex) {
             ui.print(ex.getMessage());
+            return false;
         }
         ui.print("Opened photo \"" + name + "\" in event \"" + tag + "\".");
         return false;

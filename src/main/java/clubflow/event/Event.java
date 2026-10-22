@@ -1,12 +1,12 @@
 //@@author camimaigrot
 package clubflow.event;
 
+import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
 import clubflow.exception.PhotoOpenException;
-import clubflow.photos.Photo;
+import clubflow.photo.Photo;
 
-import java.awt.*;
-import java.io.File;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +19,10 @@ import java.util.Objects;
  * Represents a club event.
  */
 public class Event {
+
+    public static final String PHOTO_SAVE_ROOT = "cache/";
+    public static final String PHOTO_RELATIVE_PATH = "photos/";
+
     private final String tag;
     private final String name;
     private final LocalDate date;
@@ -26,7 +30,7 @@ public class Event {
     private final double budget;
     private final String venue;
     private final String logistics;
-    private final HashMap<String, Photo> photos;
+    private HashMap<String, Photo> photos;
 
     /**
      * Creates an event after validating values required by the domain and save format.
@@ -114,12 +118,56 @@ public class Event {
     }
 
     //@@author czfray
+    /**
+     * Adds a photo to the event by copying and converting it to PNG format.
+     * Stores the photo in the event's directory and registers it by name.
+     *
+     * @param photoPath path to the original image file
+     * @param name name of the photo, excluding the file extension
+     * @return the newly created Photo object
+     * @throws PhotoLoadException if the photo cannot be loaded or saved
+     */
     public Photo addPhoto(String photoPath, String name) throws PhotoLoadException {
-        Photo p = new Photo(photoPath, "photos/" + tag, name);
+        Photo p = new Photo(photoPath, PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag, name);
         photos.put(name, p);
         return p;
     }
 
+    public Photo loadPhoto(String name){
+        Photo p = new Photo(PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag + "/" + name + Photo.PHOTO_FORMAT);
+        photos.put(name, p);
+        return p;
+    }
+
+    public boolean deletePhoto(String name) throws PhotoDeleteException {
+        if (!photos.containsKey(name)){
+            return false;
+        }
+        photos.get(name).delete();
+        return true;
+    }
+
+    public int deleteAllPhotos(){
+        int errors = 0;
+        for (String name: new ArrayList<>(photos.keySet())){
+            try {
+                photos.get(name).delete();
+            } catch (PhotoDeleteException e) {
+                errors++;
+            }
+        }
+        photos = new HashMap<>();
+        return errors;
+    }
+
+    //@@author czfray
+    /**
+     * Opens a photo with the specified name using the default image viewer.
+     *
+     * @param name name of the photo to open
+     * @return true if the photo exists and is opened, false if it is not found
+     * @throws PhotoOpenException if the photo exists but cannot be opened
+     */
     public boolean openPhoto(String name) throws PhotoOpenException {
         if (!photos.containsKey(name)){
             return false;
@@ -128,9 +176,16 @@ public class Event {
         return true;
     }
 
+    //@@author czfray
+    /**
+     * Opens the event's photo directory using the default file explorer.
+     * Creates the directory if it does not already exist.
+     *
+     * @return true if the directory is opened successfully, false if an I/O error occurs
+     */
     public boolean openPhotoDir(){
         try{
-            Path p = Path.of("photos/" + tag);
+            Path p = Path.of(PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag);
             Files.createDirectories(p);
             Desktop.getDesktop().open(p.toFile());
         } catch (IOException e) {
@@ -138,5 +193,4 @@ public class Event {
         }
         return true;
     }
-
 }

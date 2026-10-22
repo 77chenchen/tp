@@ -16,7 +16,7 @@ bin/
 # Temp files
 _temp/
 /clubflow.log*
-/photos
+/cache
 /saves
 
 /text-ui-test/ACTUAL.TXT

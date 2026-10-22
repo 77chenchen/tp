@@ -1,4 +1,4 @@
-package clubflow.photos;
+package clubflow.photo;
 
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
@@ -18,7 +18,7 @@ import java.nio.file.Path;
  */
 public class Photo {
 
-    private static final String FORMAT = ".png";
+    public static final String PHOTO_FORMAT = ".png";
 
     private String relativePath;
 
@@ -36,7 +36,7 @@ public class Photo {
         BufferedImage image;
         Path source = Path.of(sourcePath);
         Path destFolderPath = Path.of(destPath);
-        Path destFilePath = destFolderPath.resolve(name + FORMAT);
+        Path destFilePath = destFolderPath.resolve(name + PHOTO_FORMAT);
 
         if (Files.exists(destFilePath)) {
             throw new PhotoLoadException("Photo with name \"" + name + "\" already exists.");
@@ -47,7 +47,7 @@ public class Photo {
         }
 
         if (!Files.isRegularFile(source)) {
-            throw new PhotoLoadException("File in path \"" + sourcePath +"\" does not exist or is not regular.");
+            throw new PhotoLoadException("File in path \"" + sourcePath + "\" does not exist or is not regular.");
         }
 
         try{
@@ -61,8 +61,7 @@ public class Photo {
 
         try {
             Files.createDirectories(destFolderPath);
-        }
-        catch(IOException e){
+        } catch(IOException e){
             throw new PhotoLoadException("Failed to create destination folders.");
         }
 
@@ -71,10 +70,18 @@ public class Photo {
                 throw new IOException();
             }
             this.relativePath = destFilePath.toString();
-        }
-        catch(IOException e){
+        } catch(IOException e){
             throw new PhotoLoadException("Failed to copy image into destination folders.");
         }
+    }
+
+    /**
+     * Load an image that is already created a saved in the saved folder.
+     *
+     * @param savedPhotoPath (Relative) Path of the saved photo.
+    **/
+    public Photo(String savedPhotoPath){
+        this. relativePath = savedPhotoPath;
     }
 
     /**

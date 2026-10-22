@@ -1,6 +1,20 @@
 package clubflow;
 
-import clubflow.command.*;
+
+import clubflow.command.CommandParser;
+import clubflow.command.CreateEventCommand;
+import clubflow.command.DeleteEventCommand;
+import clubflow.command.ViewEventCommand;
+import clubflow.command.CreateMemberCommand;
+import clubflow.command.ViewMemberCommand;
+import clubflow.command.DeleteMemberCommand;
+import clubflow.command.AddPhotoCommand;
+import clubflow.command.OpenPhotoCommand;
+import clubflow.command.DeletePhotoCommand;
+import clubflow.command.SaveCommand;
+import clubflow.command.LoadCommand;
+import clubflow.command.ExitCommand;
+
 import clubflow.exception.CommandParseException;
 
 import java.io.IOException;
@@ -38,7 +52,7 @@ public class ClubFlow {
         parser = new CommandParser(ui);
         clubData = new ClubData();
 
-        //parser.register("test", new TestCommand(ui)); //TODO: REMOVE!!! FOR TESTING ONLY
+        //parser.register("test", new TestCommand(ui));
 
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
@@ -52,6 +66,7 @@ public class ClubFlow {
 
         parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
         parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
+        parser.register("deletePhoto", new DeletePhotoCommand(ui, clubData));
 
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));
