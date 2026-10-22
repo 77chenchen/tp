@@ -29,7 +29,12 @@ public class DeletePhotoCommand extends Command{
 
     @Override
     public String[] optionalArgIds() {
-        return new String[] {EventArgumentIds.NAME, EventArgumentIds.ALL};
+        return new String[] {EventArgumentIds.NAME};
+    }
+
+    @Override
+    public String[] flagArgIds() {
+        return new String[]{EventArgumentIds.ALL};
     }
 
     @Override

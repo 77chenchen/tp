@@ -11,6 +11,7 @@ import clubflow.command.DeleteMemberCommand;
 import clubflow.command.AddPhotoCommand;
 import clubflow.command.OpenPhotoCommand;
 import clubflow.command.DeletePhotoCommand;
+import clubflow.command.ListPhotoCommand;
 import clubflow.command.SaveCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.ExitCommand;
@@ -67,6 +68,7 @@ public class ClubFlow {
         parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
         parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
         parser.register("deletePhoto", new DeletePhotoCommand(ui, clubData));
+        parser.register("listPhoto", new ListPhotoCommand(ui, clubData));
 
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));

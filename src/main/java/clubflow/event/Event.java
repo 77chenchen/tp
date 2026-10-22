@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -118,6 +119,10 @@ public class Event {
     }
 
     //@@author czfray
+    public List<String> getPhotoNames(){
+        return new ArrayList<>(photos.keySet());
+    }
+
     /**
      * Adds a photo to the event by copying and converting it to PNG format.
      * Stores the photo in the event's directory and registers it by name.
@@ -133,12 +138,26 @@ public class Event {
         return p;
     }
 
+    /**
+     * Loads an existing photo from the event's local photo directory
+     * and registers it in the event's photo collection.
+     *
+     * @param name name of the photo, excluding the file extension
+     * @return the loaded Photo object
+     */
     public Photo loadPhoto(String name){
         Photo p = new Photo(PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag + "/" + name + Photo.PHOTO_FORMAT);
         photos.put(name, p);
         return p;
     }
 
+    /**
+     * Deletes a photo with the specified name from the file system.
+     *
+     * @param name name of the photo to delete
+     * @return true if the photo is found and deleted, false if not found
+     * @throws PhotoDeleteException if the photo cannot be deleted
+     */
     public boolean deletePhoto(String name) throws PhotoDeleteException {
         if (!photos.containsKey(name)){
             return false;
@@ -147,11 +166,17 @@ public class Event {
         return true;
     }
 
+    /**
+     * Attempts to delete all photos belonging to the event.
+     *
+     * @return the number of photos that failed to be deleted
+     */
     public int deleteAllPhotos(){
         int errors = 0;
         for (String name: new ArrayList<>(photos.keySet())){
             try {
                 photos.get(name).delete();
+                photos.remove(name);
             } catch (PhotoDeleteException e) {
                 errors++;
             }
