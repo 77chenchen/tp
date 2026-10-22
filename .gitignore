@@ -16,6 +16,7 @@ bin/
 # Temp files
 _temp/
 /clubflow.log*
+/photos
 
 /text-ui-test/ACTUAL.TXT
 text-ui-test/EXPECTED-UNIX.TXT
