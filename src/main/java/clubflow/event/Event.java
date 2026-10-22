@@ -1,7 +1,11 @@
 //@@author camimaigrot
 package clubflow.event;
 
+import clubflow.exception.PhotoLoadException;
+import clubflow.photos.Photo;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Objects;
 
 /**
@@ -15,6 +19,7 @@ public class Event {
     private final double budget;
     private final String venue;
     private final String logistics;
+    private final ArrayList<Photo> photos;
 
     /**
      * Creates an event after validating values required by the domain and save format.
@@ -40,6 +45,7 @@ public class Event {
         this.budget = budget;
         this.venue = requireText(venue, "Venue");
         this.logistics = requireText(logistics, "Logistics");
+        this.photos = new ArrayList<>();
     }
 
     /**
@@ -98,5 +104,10 @@ public class Event {
 
     public String getLogistics() {
         return logistics;
+    }
+
+    //@@author czfray
+    public void addPhoto(String photoPath, String name) throws PhotoLoadException {
+        photos.add(new Photo(photoPath, "photos/" + tag, name));
     }
 }

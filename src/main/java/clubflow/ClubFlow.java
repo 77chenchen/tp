@@ -1,15 +1,6 @@
 package clubflow;
 
-import clubflow.command.CommandParser;
-import clubflow.command.CreateEventCommand;
-import clubflow.command.CreateMemberCommand;
-import clubflow.command.DeleteEventCommand;
-import clubflow.command.DeleteMemberCommand;
-import clubflow.command.ExitCommand;
-import clubflow.command.LoadCommand;
-import clubflow.command.SaveCommand;
-import clubflow.command.ViewEventCommand;
-import clubflow.command.ViewMemberCommand;
+import clubflow.command.*;
 import clubflow.exception.CommandParseException;
 
 import java.io.IOException;
@@ -58,6 +49,8 @@ public class ClubFlow {
         parser.register("addMember", createMemberCommand);
         parser.register("viewMember", new ViewMemberCommand(ui, clubData));
         parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
+
+        parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
 
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));
@@ -123,7 +116,7 @@ public class ClubFlow {
      * Main method.
      */
     public static void main(String[] args) {
-        assert false : "dummy assertion set to fail.";
+        //assert false : "dummy assertion set to fail.";
         new ClubFlow().run();
     }
 }
