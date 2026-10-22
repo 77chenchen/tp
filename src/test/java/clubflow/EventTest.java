@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests event details and immutable completion-state changes.
  */
-public class TestEvent {
+public class EventTest {
     @Test
     public void constructor_validInputs_storesValuesCorrectly() {
         Event event = new Event(

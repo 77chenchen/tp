@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Tests generic command parsing and bare flag handling.
  */
-public class TestParser {
+public class ParserTest {
     @Test
     void testCommandParser() {
         UserInterface ui = new UserInterface("[TEST] ", "> ");

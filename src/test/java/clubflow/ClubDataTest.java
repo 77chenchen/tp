@@ -16,7 +16,7 @@ import clubflow.member.Member;
 /**
  * Tests the in-memory club data store.
  */
-public class TestClubData {
+public class ClubDataTest {
 
     @Test
     public void constructor_noData_hasEmptyCollections() {

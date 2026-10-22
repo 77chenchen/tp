@@ -14,6 +14,9 @@ import clubflow.exception.EventNotFoundException;
  * Displays one event selected by tag or all events.
  */
 public class ViewEventCommand extends Command {
+    /** A ten-character label column followed by a space aligns event detail values. */
+    private static final String EVENT_DETAIL_FORMAT = "%-10s %s";
+
     /** Shared store queried by this command. */
     private final ClubData clubData;
 
@@ -89,14 +92,22 @@ public class ViewEventCommand extends Command {
      */
     private void printEvent(Event event) {
         ui.print("[" + event.getTag() + "] " + displayText(event.getName()));
-        ui.print("  Status:    " + (event.isCompleted() ? "Completed" : "Not completed"));
-        ui.print("  Date:      "
-                + (event.getDate() == null ? "Not set" : event.getDate()));
-        ui.print("  Deadline:  "
-                + (event.getDeadline() == null ? "Not set" : event.getDeadline()));
-        ui.print(String.format(Locale.ROOT, "  Budget:    $%.2f", event.getBudget()));
-        ui.print("  Venue:     " + displayText(event.getVenue()));
-        ui.print("  Logistics: " + displayText(event.getLogistics()));
+        printEventDetail("Status", event.isCompleted() ? "Completed" : "Not completed");
+        printEventDetail("Date", event.getDate() == null ? "Not set" : event.getDate());
+        printEventDetail("Deadline", event.getDeadline() == null ? "Not set" : event.getDeadline());
+        printEventDetail("Budget", String.format(Locale.ROOT, "$%.2f", event.getBudget()));
+        printEventDetail("Venue", displayText(event.getVenue()));
+        printEventDetail("Logistics", displayText(event.getLogistics()));
+    }
+
+    /**
+     * Prints a detail with consistent indentation and a left-aligned label column.
+     *
+     * @param label field name without its colon
+     * @param value field value to display
+     */
+    private void printEventDetail(String label, Object value) {
+        ui.print(String.format(Locale.ROOT, EVENT_DETAIL_FORMAT, label + ":", value), 1);
     }
 
     /**
