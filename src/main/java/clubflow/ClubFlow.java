@@ -51,6 +51,7 @@ public class ClubFlow {
         parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
 
         parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
+        parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
 
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));

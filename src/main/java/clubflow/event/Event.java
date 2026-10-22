@@ -2,10 +2,17 @@
 package clubflow.event;
 
 import clubflow.exception.PhotoLoadException;
+import clubflow.exception.PhotoOpenException;
 import clubflow.photos.Photo;
 
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 
 /**
@@ -19,7 +26,7 @@ public class Event {
     private final double budget;
     private final String venue;
     private final String logistics;
-    private final ArrayList<Photo> photos;
+    private final HashMap<String, Photo> photos;
 
     /**
      * Creates an event after validating values required by the domain and save format.
@@ -45,7 +52,7 @@ public class Event {
         this.budget = budget;
         this.venue = requireText(venue, "Venue");
         this.logistics = requireText(logistics, "Logistics");
-        this.photos = new ArrayList<>();
+        this.photos = new HashMap<>();
     }
 
     /**
@@ -107,7 +114,29 @@ public class Event {
     }
 
     //@@author czfray
-    public void addPhoto(String photoPath, String name) throws PhotoLoadException {
-        photos.add(new Photo(photoPath, "photos/" + tag, name));
+    public Photo addPhoto(String photoPath, String name) throws PhotoLoadException {
+        Photo p = new Photo(photoPath, "photos/" + tag, name);
+        photos.put(name, p);
+        return p;
     }
+
+    public boolean openPhoto(String name) throws PhotoOpenException {
+        if (!photos.containsKey(name)){
+            return false;
+        }
+        photos.get(name).open();
+        return true;
+    }
+
+    public boolean openPhotoDir(){
+        try{
+            Path p = Path.of("photos/" + tag);
+            Files.createDirectories(p);
+            Desktop.getDesktop().open(p.toFile());
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
+    }
+
 }

@@ -5,6 +5,7 @@ import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.photos.Photo;
 
 import java.util.HashMap;
 
@@ -34,7 +35,7 @@ public class AddPhotoCommand extends Command{
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
-            throw new CommandParseException("Event with tag \"" + "\" does not exist.");
+            throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG) + "\" does not exist.");
         }
 
         if (args.get(EventArgumentIds.PATH).isBlank()){
@@ -48,12 +49,19 @@ public class AddPhotoCommand extends Command{
 
     @Override
     public boolean execute(HashMap<String, String> args) {
+        String tag = args.get(EventArgumentIds.TAG);
+        String name = args.get(EventArgumentIds.NAME);
+        String path = args.get(EventArgumentIds.PATH);
+
+        Photo p = null;
         try {
-            Event e = clubData.getEvent(args.get(EventArgumentIds.TAG));
-            e.addPhoto(args.get(EventArgumentIds.PATH), args.get(EventArgumentIds.NAME));
+            Event e = clubData.getEvent(tag);
+            p = e.addPhoto(path, name);
         } catch (ClubFlowException e) {
             ui.print(e.getMessage());
         }
+
+        ui.print("Photo \"" + name + "\" has been added to event \"" + tag + "\". (" + path + " -> " + p.getPath() + ")");
         return false;
     }
 }
