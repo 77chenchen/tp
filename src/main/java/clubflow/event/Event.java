@@ -163,6 +163,7 @@ public class Event {
             return false;
         }
         photos.get(name).delete();
+        photos.remove(name);
         return true;
     }
 

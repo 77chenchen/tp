@@ -32,7 +32,9 @@ public class ListPhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (!args.containsKey(EventArgumentIds.TAG)) return;
+        if (!args.containsKey(EventArgumentIds.TAG)) {
+            return;
+        }
         if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
