@@ -16,6 +16,9 @@ public class Event {
     private final String venue;
     private final String logistics;
 
+    /** Whether this event has been marked as completed. */
+    private final boolean completed;
+
     /**
      * Creates an event after validating values required by the domain and save format.
      * Dates may be null because they are optional.
@@ -30,6 +33,23 @@ public class Event {
      */
     public Event(String tag, String name, LocalDate date, LocalDate deadline,
                  double budget, String venue, String logistics) {
+        this(tag, name, date, deadline, budget, venue, logistics, false);
+    }
+
+    /**
+     * Creates an event with an explicit completion state, including when loading saved data.
+     *
+     * @param tag unique non-blank event tag
+     * @param name event name, or an empty string
+     * @param date optional event date
+     * @param deadline optional planning deadline
+     * @param budget finite non-negative event budget
+     * @param venue event venue, or an empty string
+     * @param logistics logistics notes, or an empty string
+     * @param completed whether the event is completed
+     */
+    public Event(String tag, String name, LocalDate date, LocalDate deadline,
+                 double budget, String venue, String logistics, boolean completed) {
         this.tag = requireNonBlank(tag, "Event tag");
         this.name = requireText(name, "Event name");
         this.date = date;
@@ -40,6 +60,7 @@ public class Event {
         this.budget = budget;
         this.venue = requireText(venue, "Venue");
         this.logistics = requireText(logistics, "Logistics");
+        this.completed = completed;
     }
 
     /**
@@ -98,5 +119,19 @@ public class Event {
 
     public String getLogistics() {
         return logistics;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    /**
+     * Returns a copy with the requested completion state, leaving this event unchanged.
+     *
+     * @param completed desired completion state
+     * @return event with the same details and the supplied completion state
+     */
+    public Event withCompleted(boolean completed) {
+        return new Event(tag, name, date, deadline, budget, venue, logistics, completed);
     }
 }

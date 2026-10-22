@@ -6,6 +6,7 @@ import java.util.Objects;
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Deletes an event selected by its tag.
@@ -43,16 +44,15 @@ public class DeleteEventCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         String tag = args.get(EventArgumentIds.TAG);
 
-        if (clubData.removeEventByTag(tag)) {
-            ui.print("Deleted event: " + tag);
-        } else {
-            ui.print("Event not found: " + tag);
+        if (!clubData.removeEventByTag(tag)) {
+            throw new EventNotFoundException(tag);
         }
+        ui.print("Deleted event: " + tag);
 
         return false;
     }
