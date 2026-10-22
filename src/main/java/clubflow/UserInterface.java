@@ -9,6 +9,9 @@ import java.util.Scanner;
  * Manages the aesthetic and function of the printing and scanning of messages on the terminal screen.
  */
 public class UserInterface {
+    /** Spaces added for each indentation level after the print prefix. */
+    private static final String INDENT = " ".repeat(2);
+
     //@@author camimaigrot
     private static final String WELCOME_BANNER =
             "\u001B[38;2;197;197;197m                           ...........................\u001B[0m\n"
@@ -106,8 +109,22 @@ public class UserInterface {
      * @param message Message to be printed.
      */
     public void print(String message) {
+        print(message, 0);
+    }
+
+    /**
+     * Prints a message with two spaces per indentation level after the print prefix.
+     *
+     * @param message message to be printed
+     * @param indentLevel non-negative indentation level; zero adds no indentation
+     * @throws IllegalArgumentException if the indentation level is negative
+     */
+    public void print(String message, int indentLevel) {
         Objects.requireNonNull(message, "Printed message must not be null");
-        System.out.println(printPrefix + message);
+        if (indentLevel < 0) {
+            throw new IllegalArgumentException("Indentation level must not be negative");
+        }
+        System.out.println(printPrefix + INDENT.repeat(indentLevel) + message);
     }
 
     /**

@@ -33,6 +33,10 @@ public class Event {
     private final String logistics;
     private HashMap<String, Photo> photos;
 
+    /** Whether this event has been marked as completed. */
+    private final boolean completed;
+
+    //@@author camimaigrot
     /**
      * Creates an event after validating values required by the domain and save format.
      * Dates may be null because they are optional.
@@ -47,6 +51,23 @@ public class Event {
      */
     public Event(String tag, String name, LocalDate date, LocalDate deadline,
                  double budget, String venue, String logistics) {
+        this(tag, name, date, deadline, budget, venue, logistics, false);
+    }
+
+    /**
+     * Creates an event with an explicit completion state, including when loading saved data.
+     *
+     * @param tag unique non-blank event tag
+     * @param name event name, or an empty string
+     * @param date optional event date
+     * @param deadline optional planning deadline
+     * @param budget finite non-negative event budget
+     * @param venue event venue, or an empty string
+     * @param logistics logistics notes, or an empty string
+     * @param completed whether the event is completed
+     */
+    public Event(String tag, String name, LocalDate date, LocalDate deadline,
+                 double budget, String venue, String logistics, boolean completed) {
         this.tag = requireNonBlank(tag, "Event tag");
         this.name = requireText(name, "Event name");
         this.date = date;
@@ -58,6 +79,7 @@ public class Event {
         this.venue = requireText(venue, "Venue");
         this.logistics = requireText(logistics, "Logistics");
         this.photos = new HashMap<>();
+        this.completed = completed;
     }
 
     /**
@@ -116,6 +138,22 @@ public class Event {
 
     public String getLogistics() {
         return logistics;
+    }
+
+    //@@author Eugene3129
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    //@@author Eugene3129
+    /**
+     * Returns a copy with the requested completion state, leaving this event unchanged.
+     *
+     * @param completed desired completion state
+     * @return event with the same details and the supplied completion state
+     */
+    public Event withCompleted(boolean completed) {
+        return new Event(tag, name, date, deadline, budget, venue, logistics, completed);
     }
 
     //@@author czfray
@@ -209,8 +247,8 @@ public class Event {
      *
      * @return true if the directory is opened successfully, false if an I/O error occurs
      */
-    public boolean openPhotoDir(){
-        try{
+    public boolean openPhotoDir() {
+        try {
             Path p = Path.of(PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag);
             Files.createDirectories(p);
             Desktop.getDesktop().open(p.toFile());
@@ -219,4 +257,5 @@ public class Event {
         }
         return true;
     }
+
 }

@@ -1,17 +1,22 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.EventNotFoundException;
 
 /**
  * Displays one event selected by tag or all events.
  */
 public class ViewEventCommand extends Command {
+    /** A ten-character label column followed by a space aligns event detail values. */
+    private static final String EVENT_DETAIL_FORMAT = "%-10s %s";
+
     /** Shared store queried by this command. */
     private final ClubData clubData;
 
@@ -57,23 +62,61 @@ public class ViewEventCommand extends Command {
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.ALL) ^ args.containsKey(EventArgumentIds.TAG)
                 : "Validated arguments must select one view mode";
         if (args.containsKey(EventArgumentIds.ALL)) {
+            if (clubData.getEvents().isEmpty()) {
+                ui.print("No events found.");
+                return false;
+            }
+
             ui.print("Displaying all events.");
             for (Event event : clubData.getEvents()) {
-                ui.print(event.getTag() + ": " + event.getName());
+                printEvent(event);
             }
         } else {
-            clubData.findEventByTag(args.get(EventArgumentIds.TAG))
-                    .ifPresentOrElse(
-                            event -> ui.print(event.getTag() + ": " + event.getName()),
-                            () -> ui.print("Event not found.")
-                );
+            String tag = args.get(EventArgumentIds.TAG);
+            Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+            printEvent(event);
         }
 
         return false;
+    }
+
+    /**
+     * Prints an event with labelled details and placeholders for missing values.
+     *
+     * @param event event to display
+     */
+    private void printEvent(Event event) {
+        ui.print("[" + event.getTag() + "] " + displayText(event.getName()));
+        printEventDetail("Status", event.isCompleted() ? "Completed" : "Not completed");
+        printEventDetail("Date", event.getDate() == null ? "Not set" : event.getDate());
+        printEventDetail("Deadline", event.getDeadline() == null ? "Not set" : event.getDeadline());
+        printEventDetail("Budget", String.format(Locale.ROOT, "$%.2f", event.getBudget()));
+        printEventDetail("Venue", displayText(event.getVenue()));
+        printEventDetail("Logistics", displayText(event.getLogistics()));
+    }
+
+    /**
+     * Prints a detail with consistent indentation and a left-aligned label column.
+     *
+     * @param label field name without its colon
+     * @param value field value to display
+     */
+    private void printEventDetail(String label, Object value) {
+        ui.print(String.format(Locale.ROOT, EVENT_DETAIL_FORMAT, label + ":", value), 1);
+    }
+
+    /**
+     * Replaces an unspecified text field with a readable placeholder.
+     *
+     * @param value non-null event field
+     * @return field value or a placeholder
+     */
+    private String displayText(String value) {
+        return value.isBlank() ? "Not set" : value;
     }
 }

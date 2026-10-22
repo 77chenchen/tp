@@ -21,7 +21,7 @@ import clubflow.member.Member;
 /**
  * Tests defensive checks at the application's public boundaries.
  */
-public class TestDefensiveProgramming {
+public class DefensiveProgrammingTest {
 
     @Test
     public void parser_invalidConfigurationOrInput_throwsHelpfulExceptions() {

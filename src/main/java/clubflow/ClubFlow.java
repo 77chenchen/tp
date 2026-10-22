@@ -1,24 +1,29 @@
 package clubflow;
 
-
 import clubflow.command.CommandParser;
+import clubflow.command.CompletionCommand;
 import clubflow.command.CreateEventCommand;
 import clubflow.command.DeleteEventCommand;
+import clubflow.command.DeleteMemberCommand;
+import clubflow.command.EditEventCommand;
+import clubflow.command.ExitCommand;
+import clubflow.command.FindCommand;
+import clubflow.command.LoadCommand;
+import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.CreateMemberCommand;
 import clubflow.command.ViewMemberCommand;
-import clubflow.command.DeleteMemberCommand;
 import clubflow.command.AddPhotoCommand;
 import clubflow.command.OpenPhotoCommand;
 import clubflow.command.DeletePhotoCommand;
 import clubflow.command.ListPhotoCommand;
-import clubflow.command.SaveCommand;
-import clubflow.command.LoadCommand;
-import clubflow.command.ExitCommand;
-
-import clubflow.exception.CommandParseException;
+import clubflow.exception.ClubFlowException;
+import clubflow.completion.CompletionHandler;
+import clubflow.completion.EventCompletion;
+import clubflow.search.EventSearch;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -56,8 +61,15 @@ public class ClubFlow {
         //parser.register("test", new TestCommand(ui));
 
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
+        parser.register("editEvent", new EditEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        EventSearch eventSearch = new EventSearch(ui, clubData);
+        parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
+        EventCompletion eventCompletion = new EventCompletion(ui, clubData);
+        Map<String, CompletionHandler> completionHandlers = Map.of("e", eventCompletion::setCompleted);
+        parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
+        parser.register("unmark", new CompletionCommand(ui, completionHandlers, false));
 
         CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
         parser.register("createMember", createMemberCommand);
@@ -114,8 +126,8 @@ public class ClubFlow {
                     LOGGER.info("ClubFlow exited normally");
                     break;
                 }
-            } catch (CommandParseException e) {
-                LOGGER.log(Level.FINE, "Rejected invalid command", e);
+            } catch (ClubFlowException e) {
+                LOGGER.log(Level.FINE, "Could not complete command", e);
                 ui.print(e.getMessage());
             } catch (NoSuchElementException e) {
                 // End-of-input is normal when input is redirected from a file or pipe.
@@ -134,7 +146,6 @@ public class ClubFlow {
      * Main method.
      */
     public static void main(String[] args) {
-        //assert false : "dummy assertion set to fail.";
         new ClubFlow().run();
     }
 }

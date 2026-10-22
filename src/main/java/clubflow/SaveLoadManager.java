@@ -54,11 +54,12 @@ public class SaveLoadManager {
         }
         for (Event event : data.getEvents()) {
             // formatted event line
-            // Event | Tag | Name | Date | Deadline | Budget | Venue | Logistics
+            // Event | Tag | Name | Date | Deadline | Budget | Venue | Logistics | Completed
             String eventLine = String.join("|",
                     "EVENT", event.getTag(), event.getName(),
                     String.valueOf(event.getDate()), String.valueOf(event.getDeadline()),
-                    String.valueOf(event.getBudget()), event.getVenue(), event.getLogistics());
+                    String.valueOf(event.getBudget()), event.getVenue(), event.getLogistics(),
+                    String.valueOf(event.isCompleted()));
             lines.add(eventLine);
         }
 
@@ -109,7 +110,8 @@ public class SaveLoadManager {
                     throw invalidRecord("member", lineNumber, e);
                 }
             } else if (fields[0].equals("EVENT")) {
-                if (fields.length != 8) {
+                // Older files have eight fields and implicitly describe events that are not completed.
+                if (fields.length != 8 && fields.length != 9) {
                     throw invalidRecord("event", lineNumber, null);
                 }
                 if (fields[1].isBlank()) {
@@ -124,7 +126,15 @@ public class SaveLoadManager {
                         throw invalidRecord("event", lineNumber, null);
                     }
 
-                    Event event = new Event(fields[1], fields[2], date, deadline, budget, fields[6], fields[7]);
+                    boolean completed = false;
+                    if (fields.length == 9) {
+                        if (!fields[8].equals("true") && !fields[8].equals("false")) {
+                            throw invalidRecord("event", lineNumber, null);
+                        }
+                        completed = Boolean.parseBoolean(fields[8]);
+                    }
+                    Event event = new Event(fields[1], fields[2], date, deadline, budget,
+                            fields[6], fields[7], completed);
                     if (!loaded.addEvent(event)) {
                         throw new IOException("Duplicate event tag at line " + lineNumber);
                     }

@@ -131,6 +131,27 @@ public class ClubData {
     }
 
     /**
+     * Replaces an existing event with updated details, preserving its position in the list.
+     * The replacement must use the existing tag, compared case-insensitively.
+     * Previously returned snapshots keep the original immutable event.
+     *
+     * @param updatedEvent replacement event containing the tag and updated details
+     * @return true if an event with that tag was updated, or false if none exists
+     */
+    public boolean updateEvent(Event updatedEvent) {
+        Objects.requireNonNull(updatedEvent, "Updated event must not be null");
+        Optional<Event> existingEvent = findEventByTag(updatedEvent.getTag());
+        if (existingEvent.isEmpty()) {
+            return false;
+        }
+        int previousSize = events.size();
+        events.set(events.indexOf(existingEvent.get()), updatedEvent);
+        assert events.size() == previousSize : "Updating an event must preserve the event count";
+        LOGGER.fine(() -> "Updated event: " + updatedEvent.getTag());
+        return true;
+    }
+
+    /**
      * Removes the event with the given tag.
      *
      * @param tag tag of the event to remove
