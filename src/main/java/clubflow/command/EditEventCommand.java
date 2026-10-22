@@ -59,20 +59,21 @@ public class EditEventCommand extends Command {
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         String tag = args.get(EventArgumentIds.TAG);
         Event original = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+
+        // Use supplied values where present, keeping the original values for omitted fields.
+        String name = args.getOrDefault(EventArgumentIds.NAME, original.getName());
+        LocalDate date = args.containsKey(EventArgumentIds.DATE)
+                ? LocalDate.parse(args.get(EventArgumentIds.DATE)) : original.getDate();
+        LocalDate deadline = args.containsKey(EventArgumentIds.DEADLINE)
+                ? LocalDate.parse(args.get(EventArgumentIds.DEADLINE)) : original.getDeadline();
+        double budget = args.containsKey(EventArgumentIds.BUDGET)
+                ? Double.parseDouble(args.get(EventArgumentIds.BUDGET)) : original.getBudget();
+        String venue = args.getOrDefault(EventArgumentIds.VENUE, original.getVenue());
+        String logistics = args.getOrDefault(EventArgumentIds.LOGISTICS, original.getLogistics());
+
         // Build the replacement first so every supplied field is applied together.
-        Event updated = new Event(
-                original.getTag(),
-                args.getOrDefault(EventArgumentIds.NAME, original.getName()),
-                args.containsKey(EventArgumentIds.DATE)
-                        ? LocalDate.parse(args.get(EventArgumentIds.DATE)) : original.getDate(),
-                args.containsKey(EventArgumentIds.DEADLINE)
-                        ? LocalDate.parse(args.get(EventArgumentIds.DEADLINE)) : original.getDeadline(),
-                args.containsKey(EventArgumentIds.BUDGET)
-                        ? Double.parseDouble(args.get(EventArgumentIds.BUDGET)) : original.getBudget(),
-                args.getOrDefault(EventArgumentIds.VENUE, original.getVenue()),
-                args.getOrDefault(EventArgumentIds.LOGISTICS, original.getLogistics()),
-                original.isCompleted()
-        );
+        Event updated = new Event(original.getTag(), name, date, deadline,
+                budget, venue, logistics, original.isCompleted());
         boolean updatedSuccessfully = clubData.updateEvent(updated);
         assert updatedSuccessfully : "The selected event must still exist when editing occurs";
         ui.print("Updated event: " + updated.getTag());
