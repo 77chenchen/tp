@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import clubflow.UserInterface;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 
 import java.util.Arrays;
@@ -117,6 +118,7 @@ public abstract class Command {
      *                  [(n, Tan Jun Jie),
      *                  (p, 12345678)]
      * @return True if the program terminates after the command executes.
+     * @throws ClubFlowException if the command cannot complete the user's request
      */
-    public abstract boolean execute(HashMap<String, String> args);
+    public abstract boolean execute(HashMap<String, String> args) throws ClubFlowException;
 }

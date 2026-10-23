@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
+import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
 
@@ -43,7 +44,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void createMember_validDetails_storesMemberAndRepeatedFunctions() throws CommandParseException {
+    void createMember_validDetails_storesMemberAndRepeatedFunctions() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createMemberParser(clubData, "");
 
@@ -61,7 +62,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void addMember_emailOnlyAlias_storesMemberWithoutFunctions() throws CommandParseException {
+    void addMember_emailOnlyAlias_storesMemberWithoutFunctions() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createMemberParser(clubData, "");
 
@@ -94,7 +95,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void viewMember_noMembers_printsEmptyMessage() throws CommandParseException {
+    void viewMember_noMembers_printsEmptyMessage() throws ClubFlowException {
         ClubData clubData = new ClubData();
         CommandParser parser = createMemberParser(clubData, "");
 
@@ -104,7 +105,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void viewMember_membersExist_printsIndexesAndDetails() throws CommandParseException {
+    void viewMember_membersExist_printsIndexesAndDetails() throws ClubFlowException {
         ClubData clubData = new ClubData();
         clubData.addMember(new Member("Lucy", "lucy", "", List.of("president")));
         clubData.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
@@ -124,7 +125,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void deleteMember_forceFlag_removesMemberWithoutConfirmation() throws CommandParseException {
+    void deleteMember_forceFlag_removesMemberWithoutConfirmation() throws ClubFlowException {
         ClubData clubData = dataWithTwoMembers();
         CommandParser parser = createMemberParser(clubData, "");
 
@@ -138,7 +139,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void deleteMember_withoutForce_respectsConfirmation() throws CommandParseException {
+    void deleteMember_withoutForce_respectsConfirmation() throws ClubFlowException {
         ClubData clubData = dataWithTwoMembers();
         CommandParser parser = createMemberParser(clubData, "no\n");
 
@@ -151,7 +152,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void deleteMember_confirmed_removesSelectedMember() throws CommandParseException {
+    void deleteMember_confirmed_removesSelectedMember() throws ClubFlowException {
         ClubData clubData = dataWithTwoMembers();
         CommandParser parser = createMemberParser(clubData, "yes\n");
 
@@ -165,7 +166,7 @@ class MemberCommandsTest {
     }
 
     @Test
-    void deleteMember_invalidIndex_rejectsOrReportsMissingMember() throws CommandParseException {
+    void deleteMember_invalidIndex_rejectsOrReportsMissingMember() throws ClubFlowException {
         ClubData clubData = dataWithTwoMembers();
         CommandParser parser = createMemberParser(clubData, "");
 

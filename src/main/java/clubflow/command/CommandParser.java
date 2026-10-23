@@ -1,6 +1,7 @@
 package clubflow.command;
 
 import clubflow.exception.CommandParseException;
+import clubflow.exception.ClubFlowException;
 import clubflow.UserInterface;
 
 import java.util.ArrayList;
@@ -63,9 +64,9 @@ public class CommandParser {
      * Parses a user text input into a command object and command arguments, and executing it.
      * @param input User's text input to parse.
      * @return True if the command would terminate the app, False if not.
-     * @throws CommandParseException If text input cannot be parsed into a command object.
+     * @throws ClubFlowException if input is invalid or the selected command cannot complete the request
      */
-    public boolean parse(String input) throws CommandParseException {
+    public boolean parse(String input) throws ClubFlowException {
         if (input == null) {
             throw new CommandParseException("Command must not be null.");
         }
