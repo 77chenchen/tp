@@ -12,6 +12,7 @@ final class EventArgumentIds {
     static final String VENUE = "v";
     static final String LOGISTICS = "l";
     static final String ALL = "all";
+    static final String PATH = "p";
 
     private EventArgumentIds() {
         // Prevent instantiation because this class only contains constants.
