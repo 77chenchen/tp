@@ -20,6 +20,7 @@ public class AddPhotoCommand extends Command{
     public AddPhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
+        addSyntax("e/Tag n/Name p/Path");
     }
 
     @Override

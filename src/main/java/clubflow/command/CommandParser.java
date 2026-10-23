@@ -4,13 +4,7 @@ import clubflow.exception.CommandParseException;
 import clubflow.exception.ClubFlowException;
 import clubflow.UserInterface;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -26,6 +20,7 @@ public class CommandParser {
 
     private final UserInterface ui;
     private final HashMap<String, Command> commands;
+    private final List<String> aliases;
 
     /**
      * Creates a command parser.
@@ -34,6 +29,7 @@ public class CommandParser {
     public CommandParser(UserInterface ui) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
         commands = new HashMap<>();
+        aliases = new ArrayList<>();
     }
 
     /**
@@ -60,12 +56,20 @@ public class CommandParser {
         LOGGER.fine(() -> "Registered command: " + normalizedKeyword);
     }
 
-    public void registerAlias(String fullKeyword, String shortened){
+    /**
+     * Registers an alias for an existing command.
+     *
+     * @param fullKeyword The keyword of the registered command.
+     * @param alias The alias to register for the command.
+     * @throws IllegalArgumentException if the command keyword is not registered.
+     */
+    public void registerAlias(String fullKeyword, String alias){
         if (!commands.containsKey(fullKeyword.toLowerCase())) {
             throw new IllegalArgumentException("Command keyword is not registered in parser.");
         }
-        register(shortened.toLowerCase(), commands.get(fullKeyword.toLowerCase()));
-        LOGGER.fine(() -> "Registered alias on command " + fullKeyword + ": " + shortened);
+        register(alias.toLowerCase(), commands.get(fullKeyword.toLowerCase()));
+        aliases.add(alias.toLowerCase());
+        LOGGER.fine(() -> "Registered alias on command " + fullKeyword + ": " + alias);
     }
 
     /**
@@ -91,8 +95,17 @@ public class CommandParser {
         }
 
         LOGGER.fine(() -> "Executing command: " + commandKeyword);
-        HashMap<String, String> args = parseArgs(sepList, command);
-        return command.execute(args);
+
+        boolean terminate;
+        try{
+            HashMap<String, String> args = parseArgs(sepList, command);
+            terminate = command.execute(args);
+        } catch (CommandParseException e){
+            printCommandSyntax(commandKeyword);
+            throw e;
+        }
+
+        return terminate;
     }
 
     /**
@@ -297,5 +310,36 @@ public class CommandParser {
             }
         }
         return new String[] {argId, argVal.replace(String.valueOf(QUOTE_CHAR), "")};
+    }
+
+    /**
+     * Prints all supported syntaxes of a specified command.
+     *
+     * @param keyword The keyword of the command to display.
+     */
+    public void printCommandSyntax(String keyword){
+        ui.print("Syntax of command \"" + keyword + "\":");
+        Command cmd = commands.get(keyword);
+
+        for (String syntax : cmd.getSyntaxes()){
+            ui.print("> " + keyword + " " + syntax);
+        }
+    }
+
+    /**
+     * Prints the supported syntaxes of all registered commands,
+     * excluding command aliases to avoid duplicate entries.
+     */
+    public void printAllCommandSyntax(){
+        for (String keyword: commands.keySet()){
+            if (!aliases.contains(keyword)){
+                ui.print("");
+                printCommandSyntax(keyword);
+            }
+        }
+    }
+
+    public boolean commandExist(String keyword){
+        return commands.containsKey(keyword.toLowerCase());
     }
 }

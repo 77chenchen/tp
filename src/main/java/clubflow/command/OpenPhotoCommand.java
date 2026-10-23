@@ -20,6 +20,8 @@ public class OpenPhotoCommand extends Command{
     public OpenPhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
+        addSyntax("e/Tag");
+        addSyntax("e/Tag n/Name");
     }
 
     @Override

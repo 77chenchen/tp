@@ -26,6 +26,7 @@ public class CreateEventCommand extends Command {
     public CreateEventCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        addSyntax("e/Tag [n/Name] [d/YYYY-MM-DD] [by/YYYY-MM-DD] [b/Budget] [v/Venue] [l/Logistics]");
     }
 
     @Override

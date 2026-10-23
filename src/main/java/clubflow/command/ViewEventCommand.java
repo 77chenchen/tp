@@ -29,6 +29,8 @@ public class ViewEventCommand extends Command {
     public ViewEventCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        addSyntax("e/Tag");
+        addSyntax("all");
     }
 
     @Override

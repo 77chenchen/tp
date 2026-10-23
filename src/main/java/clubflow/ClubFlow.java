@@ -1,22 +1,6 @@
 package clubflow;
 
-import clubflow.command.CommandParser;
-import clubflow.command.CompletionCommand;
-import clubflow.command.CreateEventCommand;
-import clubflow.command.DeleteEventCommand;
-import clubflow.command.DeleteMemberCommand;
-import clubflow.command.EditEventCommand;
-import clubflow.command.ExitCommand;
-import clubflow.command.FindCommand;
-import clubflow.command.LoadCommand;
-import clubflow.command.SaveCommand;
-import clubflow.command.ViewEventCommand;
-import clubflow.command.CreateMemberCommand;
-import clubflow.command.ViewMemberCommand;
-import clubflow.command.AddPhotoCommand;
-import clubflow.command.OpenPhotoCommand;
-import clubflow.command.DeletePhotoCommand;
-import clubflow.command.ListPhotoCommand;
+import clubflow.command.*;
 import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
@@ -57,6 +41,8 @@ public class ClubFlow {
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
         clubData = new ClubData();
+
+        parser.register("help", new HelpCommand(ui, parser));
 
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.registerAlias("createEvent", "ce");

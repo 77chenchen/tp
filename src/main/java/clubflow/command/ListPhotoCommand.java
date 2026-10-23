@@ -18,6 +18,8 @@ public class ListPhotoCommand extends Command{
     public ListPhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
+        addSyntax("");
+        addSyntax("e/Tag");
     }
 
     @Override

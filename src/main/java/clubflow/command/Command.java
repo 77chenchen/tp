@@ -4,10 +4,7 @@ import clubflow.UserInterface;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Represents a command that can be executed.
@@ -16,6 +13,7 @@ public abstract class Command {
 
     /** Separates repeated values stored by the parser under one argument ID. */
     static final String REPEATED_ARGUMENT_SEPARATOR = "\u001F";
+    private List<String> syntaxes;
 
     /**
      * User Interface to print command messages in.
@@ -28,6 +26,7 @@ public abstract class Command {
      */
     public Command(UserInterface ui) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
+        this.syntaxes = new ArrayList<>();
     }
 
     /**
@@ -121,4 +120,22 @@ public abstract class Command {
      * @throws ClubFlowException if the command cannot complete the user's request
      */
     public abstract boolean execute(HashMap<String, String> args) throws ClubFlowException;
+
+    /**
+     * Adds a command syntax to the list of supported syntaxes.
+     *
+     * @param syntax The command syntax to add.
+     */
+    protected void addSyntax(String syntax){
+        syntaxes.add(syntax);
+    }
+
+    /**
+     * Returns a copy of the list of supported command syntaxes.
+     *
+     * @return An ArrayList containing the command syntaxes.
+     */
+    public ArrayList<String> getSyntaxes(){
+        return new ArrayList<>(syntaxes);
+    }
 }

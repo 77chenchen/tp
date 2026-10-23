@@ -24,6 +24,7 @@ public class CreateMemberCommand extends Command {
     public CreateMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        addSyntax("n/Name [t/TeleHandle] [e/Email] [f/Function]...");
     }
 
     @Override
