@@ -1,9 +1,27 @@
 package clubflow;
 
-import clubflow.command.*;
+import clubflow.command.AddPhotoCommand;
+import clubflow.command.CommandParser;
+import clubflow.command.CompletionCommand;
+import clubflow.command.CreateEventCommand;
+import clubflow.command.CreateMemberCommand;
+import clubflow.command.DeleteEventCommand;
+import clubflow.command.DeleteMemberCommand;
+import clubflow.command.DeletePhotoCommand;
+import clubflow.command.EditEventCommand;
+import clubflow.command.ExitCommand;
+import clubflow.command.FindCommand;
+import clubflow.command.HelpCommand;
+import clubflow.command.ListPhotoCommand;
+import clubflow.command.LoadCommand;
+import clubflow.command.OpenPhotoCommand;
+import clubflow.command.SaveCommand;
+import clubflow.command.ViewEventCommand;
+import clubflow.command.ViewMemberCommand;
 import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
+import clubflow.exception.CommandParseException;
 import clubflow.search.EventSearch;
 
 import java.io.IOException;
@@ -132,6 +150,12 @@ public class ClubFlow {
             } catch (ClubFlowException e) {
                 LOGGER.log(Level.FINE, "Could not complete command", e);
                 ui.print(e.getMessage());
+                if (e instanceof CommandParseException){
+                    CommandParseException cpe = (CommandParseException) e;
+                    if (cpe.willPrintSyntax()){
+                        cpe.printCorrectSyntax(parser);
+                    }
+                }
             } catch (NoSuchElementException e) {
                 // End-of-input is normal when input is redirected from a file or pipe.
                 LOGGER.info("Input stream closed; ClubFlow is stopping");

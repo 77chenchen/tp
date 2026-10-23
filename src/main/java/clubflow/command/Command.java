@@ -4,7 +4,11 @@ import clubflow.UserInterface;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a command that can be executed.
@@ -13,12 +17,13 @@ public abstract class Command {
 
     /** Separates repeated values stored by the parser under one argument ID. */
     static final String REPEATED_ARGUMENT_SEPARATOR = "\u001F";
-    private List<String> syntaxes;
 
     /**
      * User Interface to print command messages in.
      */
     protected final UserInterface ui;
+
+    private List<String> syntaxes;
 
     /**
      * Creates a command.
