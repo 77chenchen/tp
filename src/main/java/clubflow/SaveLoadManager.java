@@ -240,6 +240,10 @@ public class SaveLoadManager {
         Path source = Path.of(sourcePath);
         Path destination = Path.of(destPath).resolve(source.getFileName());
 
+        if (!Files.isDirectory(source)) {
+            return;
+        }
+
         try (var paths = Files.walk(source)) {
             for (Path path : paths.toList()) {
                 Path target = destination.resolve(source.relativize(path));
