@@ -150,6 +150,7 @@ public class ClubFlow {
             } catch (ClubFlowException e) {
                 LOGGER.log(Level.FINE, "Could not complete command", e);
                 ui.print(e.getMessage());
+
                 if (e instanceof CommandParseException){
                     CommandParseException cpe = (CommandParseException) e;
                     if (cpe.willPrintSyntax()){
