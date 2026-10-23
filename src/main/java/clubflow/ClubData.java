@@ -103,6 +103,21 @@ public class ClubData {
     }
 
     /**
+     * Retrieves an event with the specified tag.
+     *
+     * @param tag tag of the event to retrieve
+     * @return the matching event, or null if no event is found
+     */
+    public Event getEvent(String tag){
+        for(Event e : getEvents()){
+            if (e.getTag().equals(tag)){
+                return e;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Finds an event using its case-insensitive tag.
      *
      * @param tag event tag to find
