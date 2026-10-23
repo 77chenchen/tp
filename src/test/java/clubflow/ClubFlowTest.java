@@ -19,11 +19,15 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Exercises application startup and command dispatch using complete terminal sessions.
  */
 class ClubFlowTest {
+    @TempDir
+    Path testDirectory;
+
     private final InputStream originalInput = System.in;
     private final PrintStream originalOutput = System.out;
     private ByteArrayOutputStream output;
@@ -86,6 +90,14 @@ class ClubFlowTest {
                 () -> assertFalse(result.contains("Created event:")),
                 () -> assertTrue(result.contains("[CF] Goodbye!"))
         );
+    }
+
+    @Test
+    void run_saveCommand_reportsUnknownCommand() {
+        String result = runSession("save\nexit\n");
+
+        assertTrue(result.contains("[CF] Command syntax error: Command \"save\" does not exist."));
+        assertTrue(result.contains("[CF] Goodbye!"));
     }
 
     @Test
@@ -196,43 +208,33 @@ class ClubFlowTest {
     }
 
     @Test
-    void run_completionSaveAndLoad_restoresStatusInANewSessionAndAllowsUnmarking() throws IOException {
-        // Keep the save path relative, as required by the commands, and separate from users' save files.
-        Path testDirectory = Files.createTempDirectory(Files.createDirectories(Path.of("build", "tmp")),
-                "completion-workflow-");
-        Path saveFile = testDirectory.resolve("completion workflow.cf");
-        String pathArgument = "p/\"" + saveFile + "\"";
-        try {
-            String savedSession = runSession("createEvent e/XMAS n/\"Christmas Party\" "
-                    + "d/2026-12-25 by/2026-12-20 b/500 v/\"Main Hall\" l/Chairs\n"
-                    + "mark e/XMAS\nsave " + pathArgument + "\nexit\n");
+    void run_completionAutosave_restoresStatusInANewSessionAndAllowsUnmarking() throws IOException {
+        String savedSession = runSession("createEvent e/XMAS n/\"Christmas Party\" "
+                + "d/2026-12-25 by/2026-12-20 b/500 v/\"Main Hall\" l/Chairs\n"
+                + "mark e/XMAS\nexit\n");
 
-            assertTrue(savedSession.contains("[CF] Marked event as completed: XMAS"));
-            assertTrue(savedSession.contains("[CF] Data saved successfully!"));
-            assertTrue(Files.isRegularFile(saveFile));
+        assertTrue(savedSession.contains("[CF] Marked event as completed: XMAS"));
+        Path saveFile = testDirectory.resolve("clubs.cf");
+        assertTrue(Files.isRegularFile(saveFile));
+        assertTrue(new SaveLoadManager().load(saveFile).findEventByTag("XMAS").orElseThrow().isCompleted());
 
-            // A fresh app starts empty, so this can pass only if loading restores the saved event and status.
-            String loadedSession = runSession("load " + pathArgument + "\nviewEvent e/XMAS\n"
-                    + "unmark e/xmas\nviewEvent e/XMAS\nexit\n");
+        String loadedSession = runSession("viewEvent e/XMAS\nunmark e/xmas\nviewEvent e/XMAS\nexit\n");
 
-            assertAll(
-                    () -> assertTrue(loadedSession.contains("[CF] Data loaded successfully!")),
-                    () -> assertEquals(List.of("[CF]   Status:    Completed", "[CF]   Status:    Not completed"),
-                            loadedSession.lines().filter(line -> line.contains("Status:")).toList()),
-                    () -> assertTrue(loadedSession.contains("[CF] Marked event as not completed: XMAS")),
-                    () -> assertEquals(2, loadedSession.lines()
-                            .filter(line -> line.contains("[CF] [XMAS] Christmas Party")).count()),
-                    () -> assertTrue(loadedSession.contains("[CF]   Date:      2026-12-25")),
-                    () -> assertTrue(loadedSession.contains("[CF]   Deadline:  2026-12-20")),
-                    () -> assertTrue(loadedSession.contains("[CF]   Budget:    $500.00")),
-                    () -> assertTrue(loadedSession.contains("[CF]   Venue:     Main Hall")),
-                    () -> assertTrue(loadedSession.contains("[CF]   Logistics: Chairs")),
-                    () -> assertTrue(loadedSession.contains("[CF] Goodbye!"))
-            );
-        } finally {
-            Files.deleteIfExists(saveFile);
-            Files.delete(testDirectory);
-        }
+        assertAll(
+                () -> assertTrue(loadedSession.contains("[CF] Saved data loaded.")),
+                () -> assertEquals(List.of("[CF]   Status:    Completed", "[CF]   Status:    Not completed"),
+                        loadedSession.lines().filter(line -> line.contains("Status:")).toList()),
+                () -> assertTrue(loadedSession.contains("[CF] Marked event as not completed: XMAS")),
+                () -> assertEquals(2, loadedSession.lines()
+                        .filter(line -> line.contains("[CF] [XMAS] Christmas Party")).count()),
+                () -> assertTrue(loadedSession.contains("[CF]   Date:      2026-12-25")),
+                () -> assertTrue(loadedSession.contains("[CF]   Deadline:  2026-12-20")),
+                () -> assertTrue(loadedSession.contains("[CF]   Budget:    $500.00")),
+                () -> assertTrue(loadedSession.contains("[CF]   Venue:     Main Hall")),
+                () -> assertTrue(loadedSession.contains("[CF]   Logistics: Chairs")),
+                () -> assertTrue(loadedSession.contains("[CF] Goodbye!"))
+        );
+        assertFalse(new SaveLoadManager().load(saveFile).findEventByTag("XMAS").orElseThrow().isCompleted());
     }
 
     @Test
@@ -256,15 +258,14 @@ class ClubFlowTest {
     }
 
     @Test
-    void run_separateInstances_doNotShareClubData() {
+    void run_separateInstances_restoreAutomaticallySavedData() {
         runSession("createEvent e/PRIVATE\ncreateMember n/Lucy t/lucy\nexit\n");
 
         String secondSession = runSession("viewEvent all\nviewMember\nexit\n");
 
-        assertTrue(secondSession.contains("[CF] No events found."));
-        assertTrue(secondSession.contains("[CF] No members found."));
-        assertFalse(secondSession.contains("PRIVATE"));
-        assertFalse(secondSession.contains("Lucy"));
+        assertTrue(secondSession.contains("[CF] Saved data loaded."));
+        assertTrue(secondSession.contains("PRIVATE"));
+        assertTrue(secondSession.contains("Lucy"));
     }
 
     @Test
@@ -287,7 +288,7 @@ class ClubFlowTest {
     private String runSession(String input) {
         output.reset();
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
-        new ClubFlow().run();
+        new ClubFlow(testDirectory.resolve("clubs.cf")).run();
         return output.toString(StandardCharsets.UTF_8);
     }
 }

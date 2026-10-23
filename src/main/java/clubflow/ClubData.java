@@ -19,6 +19,20 @@ public class ClubData {
     private final List<Member> members = new ArrayList<>();
     private final List<Event> events = new ArrayList<>();
 
+    /** Tracks whether there are any unsaved changes */
+    private boolean unsavedChanges = false;
+
+    /** Returns whether there are unsaved changes or not */
+    public boolean hasUnsavedChanges() {
+        return unsavedChanges;
+    }
+
+    /** Marks the current club data as saved */
+    public void markSaved() {
+        unsavedChanges = false;
+        return;
+    }
+
     /**
      * Adds a member to the club.
      *
@@ -30,6 +44,7 @@ public class ClubData {
         members.add(member);
         assert members.size() == previousSize + 1 : "Adding a member must increase the member count";
         LOGGER.fine(() -> "Added member; member count is now " + members.size());
+        unsavedChanges = true;
     }
 
     /**
@@ -49,6 +64,7 @@ public class ClubData {
         events.add(event);
         assert events.size() == previousSize + 1 : "Adding an event must increase the event count";
         LOGGER.fine(() -> "Added event; event count is now " + events.size());
+        unsavedChanges = true;
         return true;
     }
 
@@ -89,6 +105,7 @@ public class ClubData {
         Member removedMember = members.remove(index - 1);
         assert members.size() == previousSize - 1 : "Removing a member must decrease the member count";
         LOGGER.fine(() -> "Removed member; member count is now " + members.size());
+        unsavedChanges = true;
         return Optional.of(removedMember);
     }
 
@@ -133,6 +150,7 @@ public class ClubData {
         events.set(events.indexOf(existingEvent.get()), updatedEvent);
         assert events.size() == previousSize : "Updating an event must preserve the event count";
         LOGGER.fine(() -> "Updated event: " + updatedEvent.getTag());
+        unsavedChanges = true;
         return true;
     }
 
@@ -153,6 +171,7 @@ public class ClubData {
         assert removed && events.size() == previousSize - 1
                 : "A found event must be removed exactly once";
         LOGGER.fine(() -> "Removed event; event count is now " + events.size());
+        unsavedChanges = true;
         return removed;
     }
 
@@ -177,5 +196,6 @@ public class ClubData {
         assert events.size() == loadedEvents.size() : "All loaded events must be copied";
         LOGGER.info(() -> "Replaced club data with " + members.size() + " members and "
                 + events.size() + " events");
+        unsavedChanges = true;
     }
 }
