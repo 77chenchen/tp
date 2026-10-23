@@ -20,7 +20,9 @@ public class CommandParser {
 
     private final UserInterface ui;
     private final HashMap<String, Command> commands;
-    private final List<String> aliases;
+
+    private final HashMap<String, String> aliases;
+    private final HashMap<String, List<String>> aliasMap;
 
     /**
      * Creates a command parser.
@@ -29,7 +31,9 @@ public class CommandParser {
     public CommandParser(UserInterface ui) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
         commands = new HashMap<>();
-        aliases = new ArrayList<>();
+
+        aliases = new HashMap<>();
+        aliasMap = new HashMap<>();
     }
 
     /**
@@ -67,8 +71,14 @@ public class CommandParser {
         if (!commands.containsKey(fullKeyword.toLowerCase())) {
             throw new IllegalArgumentException("Command keyword is not registered in parser.");
         }
+
+        if (!aliasMap.containsKey(fullKeyword.toLowerCase())){
+            aliasMap.put(fullKeyword.toLowerCase(), new ArrayList<>());
+        }
+
         register(alias.toLowerCase(), commands.get(fullKeyword.toLowerCase()));
-        aliases.add(alias.toLowerCase());
+        aliases.put(alias.toLowerCase(), fullKeyword.toLowerCase());
+        aliasMap.get(fullKeyword.toLowerCase()).add(alias.toLowerCase());
         LOGGER.fine(() -> "Registered alias on command " + fullKeyword + ": " + alias);
     }
 
@@ -318,11 +328,23 @@ public class CommandParser {
      * @param keyword The keyword of the command to display.
      */
     public void printCommandSyntax(String keyword){
-        ui.print("Syntax of command \"" + keyword + "\":");
-        Command cmd = commands.get(keyword);
+        Command cmd = commands.get(keyword.toLowerCase());
+
+        String nonAliasKeyword = keyword.toLowerCase();
+
+        if (aliases.containsKey(keyword.toLowerCase())){
+            nonAliasKeyword = aliases.get(keyword.toLowerCase());
+        }
+
+        ui.print("Syntax of command \"" + nonAliasKeyword + "\":");
 
         for (String syntax : cmd.getSyntaxes()){
-            ui.print("> " + keyword + " " + syntax);
+            ui.print("> " + nonAliasKeyword + " " + syntax);
+        }
+
+        List<String> keywordAliases = aliasMap.getOrDefault(nonAliasKeyword, new ArrayList<>());
+        if (!keywordAliases.isEmpty()){
+            ui.print("Aliases: " + keywordAliases);
         }
     }
 
@@ -332,13 +354,20 @@ public class CommandParser {
      */
     public void printAllCommandSyntax(){
         for (String keyword: commands.keySet()){
-            if (!aliases.contains(keyword)){
+            if (!aliases.containsKey(keyword)){
                 ui.print("");
                 printCommandSyntax(keyword);
             }
         }
     }
 
+    /**
+     * Checks whether a command keyword is registered in the parser.
+     * The keyword is case-insensitive.
+     *
+     * @param keyword The command keyword to check.
+     * @return True if the command exists, false otherwise.
+     */
     public boolean commandExist(String keyword){
         return commands.containsKey(keyword.toLowerCase());
     }
