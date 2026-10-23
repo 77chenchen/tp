@@ -60,6 +60,14 @@ public class CommandParser {
         LOGGER.fine(() -> "Registered command: " + normalizedKeyword);
     }
 
+    public void registerAlias(String fullKeyword, String shortened){
+        if (!commands.containsKey(fullKeyword.toLowerCase())) {
+            throw new IllegalArgumentException("Command keyword is not registered in parser.");
+        }
+        register(shortened.toLowerCase(), commands.get(fullKeyword.toLowerCase()));
+        LOGGER.fine(() -> "Registered alias on command " + fullKeyword + ": " + shortened);
+    }
+
     /**
      * Parses a user text input into a command object and command arguments, and executing it.
      * @param input User's text input to parse.

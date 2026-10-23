@@ -59,9 +59,17 @@ public class ClubFlow {
         clubData = new ClubData();
 
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
+        parser.registerAlias("createEvent", "ce");
+
         parser.register("editEvent", new EditEventCommand(ui, clubData));
+        parser.registerAlias("editEvent", "e");
+
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
+        parser.registerAlias("deleteEvent", "de");
+
         parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        parser.registerAlias("viewEvent", "ve");
+
         EventSearch eventSearch = new EventSearch(ui, clubData);
         parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
         EventCompletion eventCompletion = new EventCompletion(ui, clubData);
@@ -69,16 +77,27 @@ public class ClubFlow {
         parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
         parser.register("unmark", new CompletionCommand(ui, completionHandlers, false));
 
-        CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
-        parser.register("createMember", createMemberCommand);
-        parser.register("addMember", createMemberCommand);
+        parser.register("createMember", new CreateMemberCommand(ui, clubData));
+        parser.registerAlias("createMember", "cm");
+        parser.registerAlias("createMember", "addMember");
+
         parser.register("viewMember", new ViewMemberCommand(ui, clubData));
+        parser.registerAlias("viewMember", "vm");
+
         parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
+        parser.registerAlias("deleteMember", "dm");
 
         parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
+        parser.registerAlias("addPhoto", "ap");
+
         parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
+        parser.registerAlias("openPhoto", "op");
+
         parser.register("deletePhoto", new DeletePhotoCommand(ui, clubData));
+        parser.registerAlias("deletePhoto", "dp");
+
         parser.register("listPhoto", new ListPhotoCommand(ui, clubData));
+        parser.registerAlias("listPhoto", "lp");
 
         parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));
