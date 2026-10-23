@@ -58,8 +58,6 @@ public class ClubFlow {
         parser = new CommandParser(ui);
         clubData = new ClubData();
 
-        //parser.register("test", new TestCommand(ui));
-
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("editEvent", new EditEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));

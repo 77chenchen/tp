@@ -13,7 +13,7 @@ public class AddPhotoCommand extends Command{
     private ClubData clubData;
 
     /**
-     * Creates a command.
+     * Creates an add photo command.
      *
      * @param ui User Interface to print command messages in.
      */

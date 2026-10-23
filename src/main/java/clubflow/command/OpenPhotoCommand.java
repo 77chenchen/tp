@@ -47,7 +47,7 @@ public class OpenPhotoCommand extends Command{
 
         if (!args.containsKey(EventArgumentIds.NAME)){
             if (!e.openPhotoDir()){
-                ui.print("IO directory creation failed.");
+                ui.print("Cannot open the photo directory now. Please try again.");
                 return false;
             }
             ui.print("Opened directory of photos in event \"" + tag + "\".");

@@ -145,7 +145,6 @@ public class Event {
         return completed;
     }
 
-    //@@author Eugene3129
     /**
      * Returns a copy with the requested completion state, leaving this event unchanged.
      *
@@ -224,7 +223,6 @@ public class Event {
         return errors;
     }
 
-    //@@author czfray
     /**
      * Opens a photo with the specified name using the default image viewer.
      *
@@ -240,7 +238,6 @@ public class Event {
         return true;
     }
 
-    //@@author czfray
     /**
      * Opens the event's photo directory using the default file explorer.
      * Creates the directory if it does not already exist.
