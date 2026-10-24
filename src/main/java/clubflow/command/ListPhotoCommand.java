@@ -63,7 +63,7 @@ public class ListPhotoCommand extends Command{
         int index = 0;
         for (String name : e.getPhotoNames()){
             index++;
-            ui.print("  " + index + ". " + name);
+            ui.print(index + ". " + name, 1);
         }
     }
 
