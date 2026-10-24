@@ -108,7 +108,8 @@ public class CommandParser {
 
         Command command = commands.get(commandKeyword);
         if (command == null){
-            throw new CommandParseException("Command \"" + commandKeyword + "\" does not exist.");
+            throw new CommandParseException("Command \"" + commandKeyword + "\" does not exist. " +
+                    "Type \"help\" to see all commands available.");
         }
 
         LOGGER.fine(() -> "Executing command: " + commandKeyword);

@@ -102,6 +102,7 @@ public class UserInterface {
     public void welcome() {
         System.out.println(WELCOME_BANNER);
         System.out.println("Welcome to ClubFlow!");
+        System.out.println("To get started, type \"help\" to explore the available commands.");
     }
 
     /**
