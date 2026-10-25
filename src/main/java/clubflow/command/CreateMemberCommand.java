@@ -9,6 +9,8 @@ import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
 
+//@@author 77chenchen
+
 /**
  * Creates a club member and stores the member in the shared club data.
  */
@@ -100,3 +102,5 @@ public class CreateMemberCommand extends Command {
         return false;
     }
 }
+
+//@@author

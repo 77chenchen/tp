@@ -1,12 +1,14 @@
 package clubflow.command;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.event.EventAssignment;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
 
@@ -82,6 +84,9 @@ public class ViewEventCommand extends Command {
             String tag = args.get(EventArgumentIds.TAG);
             Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
             printEvent(event);
+            //@@author 77chenchen
+            printAssignments(event);
+            //@@author
         }
 
         return false;
@@ -121,4 +126,19 @@ public class ViewEventCommand extends Command {
     private String displayText(String value) {
         return value.isBlank() ? "Not set" : value;
     }
+
+    //@@author 77chenchen
+    /** Shows the current roster when members have been assigned. */
+    private void printAssignments(Event event) {
+        List<EventAssignment> assignments = clubData.getAssignmentsForEvent(event.getTag());
+        if (assignments.isEmpty()) {
+            return;
+        }
+        ui.print("Assigned members:");
+        for (EventAssignment assignment : assignments) {
+            String role = assignment.getRole().isBlank() ? "" : " (" + assignment.getRole() + ")";
+            ui.print("- " + assignment.getMember().getName() + role);
+        }
+    }
+    //@@author
 }
