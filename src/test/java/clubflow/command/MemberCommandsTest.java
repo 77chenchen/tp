@@ -23,6 +23,8 @@ import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
 
+//@@author 77chenchen
+
 /**
  * Tests creation, viewing, and deletion of members through the command parser.
  */
@@ -212,3 +214,5 @@ class MemberCommandsTest {
         return output.toString(StandardCharsets.UTF_8);
     }
 }
+
+//@@author

@@ -1,5 +1,7 @@
 package clubflow.command;
 
+//@@author 77chenchen
+
 /**
  * Defines argument IDs shared by member commands.
  */
@@ -15,3 +17,5 @@ public final class MemberArgumentIds {
         // This utility class should not be instantiated.
     }
 }
+
+//@@author

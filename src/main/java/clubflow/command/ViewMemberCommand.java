@@ -8,6 +8,8 @@ import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.member.Member;
 
+//@@author 77chenchen
+
 /**
  * Displays all members currently stored in the club.
  */
@@ -71,3 +73,5 @@ public class ViewMemberCommand extends Command {
         ui.print("   Functions: " + functions);
     }
 }
+
+//@@author

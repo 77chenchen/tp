@@ -2,30 +2,36 @@ package clubflow;
 
 import java.io.File;
 import java.io.IOException;
-
-import clubflow.exception.PhotoLoadException;
-import clubflow.member.Member;
-import clubflow.event.Event;
-
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import clubflow.event.Event;
+import clubflow.event.EventAssignment;
+import clubflow.exception.PhotoLoadException;
+import clubflow.member.Member;
+
 /**
- * Saves and loads club data as one member or event record per line in a UTF-8 text file.
+ * Saves and loads club data as member, event, and assignment records in a UTF-8 text file.
  * Fields are separated by {@code |}, and a member's functions are separated by commas.
  */
 public class SaveLoadManager {
     private static final Logger LOGGER = Logger.getLogger(SaveLoadManager.class.getName());
+
+    //@@author 77chenchen
+    /** Holds an assignment record until all members and events have been read. */
+    private record PendingAssignment(String[] fields, int lineNumber) {
+    }
+    //@@author
 
     /** Creates a storage handler. */
     public SaveLoadManager() {
@@ -63,6 +69,20 @@ public class SaveLoadManager {
             lines.add(eventLine);
         }
 
+        //@@author 77chenchen
+        List<Member> members = data.getMembers();
+        List<Event> events = data.getEvents();
+        for (EventAssignment assignment : data.getAssignments()) {
+            int memberIndex = indexOfMember(members, assignment.getMember());
+            boolean eventExists = events.stream().anyMatch(event -> event == assignment.getEvent());
+            if (memberIndex < 0 || !eventExists) {
+                throw new IOException("Cannot save an assignment with a missing member or event");
+            }
+            lines.add(String.join("|", "ASSIGNMENT", assignment.getEvent().getTag(),
+                    String.valueOf(memberIndex + 1), assignment.getRole()));
+        }
+        //@@author
+
         Path parent = path.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
@@ -85,6 +105,9 @@ public class SaveLoadManager {
         Objects.requireNonNull(path, "Load path must not be null");
         ClubData loaded = new ClubData();
         List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
+        //@@author 77chenchen
+        List<PendingAssignment> pendingAssignments = new ArrayList<>();
+        //@@author
 
         for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
             String line = lines.get(lineIndex);
@@ -141,18 +164,54 @@ public class SaveLoadManager {
                 } catch (DateTimeParseException | IllegalArgumentException e) {
                     throw invalidRecord("event", lineNumber, e);
                 }
+            //@@author 77chenchen
+            } else if (fields[0].equals("ASSIGNMENT")) {
+                if (fields.length != 4) {
+                    throw invalidRecord("assignment", lineNumber, null);
+                }
+                pendingAssignments.add(new PendingAssignment(fields, lineNumber));
+            //@@author
             } else {
                 throw new IOException("Unknown record type at line " + lineNumber);
             }
         }
 
-        assert loaded.getMembers().size() + loaded.getEvents().size() == lines.size()
+        //@@author 77chenchen
+        for (PendingAssignment pending : pendingAssignments) {
+            String[] fields = pending.fields();
+            try {
+                int memberIndex = Integer.parseInt(fields[2]);
+                Member member = loaded.findMemberByIndex(memberIndex)
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown member index"));
+                if (!loaded.assignMemberToEvent(fields[1], member, fields[3])) {
+                    throw invalidRecord("assignment", pending.lineNumber(), null);
+                }
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw invalidRecord("assignment", pending.lineNumber(), e);
+            }
+        }
+
+        assert loaded.getMembers().size() + loaded.getEvents().size()
+                + loaded.getAssignments().size() == lines.size()
                 : "Every persisted line must produce one record";
+        //@@author
         LOGGER.info(() -> "Loaded " + lines.size() + " records from " + path);
 
         loadPhotos(path.toString(), loaded);
         return loaded;
     }
+
+    //@@author 77chenchen
+    /** Finds a member's zero-based list index by object identity for save serialization. */
+    private int indexOfMember(List<Member> members, Member target) {
+        for (int index = 0; index < members.size(); index++) {
+            if (members.get(index) == target) {
+                return index;
+            }
+        }
+        return -1;
+    }
+    //@@author
 
     /**
      * Creates a consistent, line-numbered exception without exposing record contents.

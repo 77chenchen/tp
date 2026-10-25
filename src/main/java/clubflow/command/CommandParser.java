@@ -232,18 +232,22 @@ public class CommandParser {
         Set<String> validArgIds = Set.of(command.validArgIds());
         Set<String> requiredArgIds = Set.of(command.requiredArgIds());
         Set<String> flagArgIds = Set.of(command.flagArgIds());
+        //@@author 77chenchen
         Set<String> repeatableArgIds = Set.of(command.repeatableArgIds());
+        //@@author
 
         for (String strArg : strArgs) {
             String[] arg = parseArg(strArg, flagArgIds);
             String argId = arg[0];
             if (argIds.contains(argId)) {
+                //@@author 77chenchen
                 if (repeatableArgIds.contains(argId)) {
                     String previousValues = args.get(argId);
                     args.put(argId, previousValues + Command.REPEATED_ARGUMENT_SEPARATOR + arg[1]);
                     continue;
                 }
                 throw new CommandParseException("Multiple arguments start with \"" + argId + "/\".");
+                //@@author
             }
             args.put(argId, arg[1]);
             argIds.add(argId);
@@ -281,6 +285,7 @@ public class CommandParser {
      */
     private String[] parseArg(String strArg, Set<String> flagArgIds) throws CommandParseException {
         String lowercaseArg = strArg.toLowerCase(Locale.ROOT);
+        //@@author 77chenchen
         if (strArg.startsWith(String.valueOf(SLASH_CHAR))) {
             String flagId = lowercaseArg.substring(1);
             if (!flagId.isBlank() && flagId.indexOf(SLASH_CHAR) == -1 && flagArgIds.contains(flagId)) {
@@ -288,6 +293,7 @@ public class CommandParser {
             }
             throw new CommandParseException("Argument \"" + strArg + "\" is not a valid flag.");
         }
+        //@@author
 
         if (strArg.indexOf(SLASH_CHAR) == -1) {
             if (flagArgIds.contains(lowercaseArg)) {
