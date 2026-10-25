@@ -1,16 +1,23 @@
 package clubflow;
 
+import java.io.File;
 import java.io.IOException;
+
+import clubflow.exception.PhotoLoadException;
 import clubflow.member.Member;
 import clubflow.event.Event;
+
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -62,6 +69,8 @@ public class SaveLoadManager {
         }
         Files.write(path, lines, StandardCharsets.UTF_8);
         LOGGER.info(() -> "Saved " + lines.size() + " records to " + path);
+
+        savePhotos(path.toString());
     }
 
     /**
@@ -140,6 +149,8 @@ public class SaveLoadManager {
         assert loaded.getMembers().size() + loaded.getEvents().size() == lines.size()
                 : "Every persisted line must produce one record";
         LOGGER.info(() -> "Loaded " + lines.size() + " records from " + path);
+
+        loadPhotos(path.toString(), loaded);
         return loaded;
     }
 
@@ -154,5 +165,95 @@ public class SaveLoadManager {
     private IOException invalidRecord(String recordType, int lineNumber, Exception cause) {
         String message = "Invalid " + recordType + " record at line " + lineNumber;
         return cause == null ? new IOException(message) : new IOException(message, cause);
+    }
+
+    //@@author czfray
+    private void loadPhotos(String saveFilePath, ClubData clubData) {
+
+        Path clubsPath = Path.of(saveFilePath).toAbsolutePath().normalize();
+        Path photosPath = clubsPath.getParent().resolve(Event.PHOTO_RELATIVE_PATH);
+
+        Path cachePhotosPath = Path.of(Event.PHOTO_SAVE_ROOT)
+                .resolve(Event.PHOTO_RELATIVE_PATH)
+                .toAbsolutePath()
+                .normalize();
+
+        if (!Files.isDirectory(photosPath)) {
+            return;
+        }
+
+        boolean savingFromSaveRoot = photosPath.equals(cachePhotosPath);
+
+        try {
+            if (!savingFromSaveRoot) {
+                deleteDirectory(cachePhotosPath.toString());
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to clear photo cache: " + cachePhotosPath, e);
+            return;
+        }
+
+        for (Event e : clubData.getEvents()){
+            File folder = photosPath.resolve(e.getTag()).toFile();
+            File[] files = folder.listFiles();
+
+            if (files == null) {
+                LOGGER.log(Level.INFO, "Cannot access event photo directory: " + folder.getAbsolutePath());
+                continue;
+            }
+
+            for (File file : files) {
+                if (file.isFile() && file.getName().toLowerCase().endsWith(".png")) {
+                    String name = file.getName();
+                    name = name.substring(0, name.length() - 4);
+                    try {
+                        if (savingFromSaveRoot) {
+                            e.loadPhoto(name);
+                        } else {
+                            e.addPhoto(file.getPath(), name);
+                        }
+                    } catch (PhotoLoadException ex) {
+                        LOGGER.log(Level.WARNING, "Failed to load photo: " + file.getPath(), ex);
+                    }
+                }
+            }
+        }
+    }
+
+    private void savePhotos(String saveFilePath) throws IOException {
+        String photoCopyPath = Path.of(saveFilePath).toAbsolutePath().normalize().getParent().toString();
+        copyDirectory(photoCopyPath, Event.PHOTO_SAVE_ROOT + Event.PHOTO_RELATIVE_PATH);
+    }
+
+    private static void deleteDirectory(String path) throws IOException {
+        Path pathObj = Path.of(path);
+        if (Files.isDirectory(pathObj)) {
+            try (var files = Files.walk(pathObj)) {
+                for (Path p : files.sorted(Comparator.reverseOrder()).toList()) {
+                    Files.delete(p);
+                }
+            }
+        }
+    }
+
+    private static void copyDirectory(String destPath, String sourcePath) throws IOException {
+        Path source = Path.of(sourcePath);
+        Path destination = Path.of(destPath).resolve(source.getFileName());
+
+        if (!Files.isDirectory(source)) {
+            return;
+        }
+
+        try (var paths = Files.walk(source)) {
+            for (Path path : paths.toList()) {
+                Path target = destination.resolve(source.relativize(path));
+
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(target);
+                } else {
+                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
     }
 }

@@ -3,7 +3,6 @@ package clubflow;
 import clubflow.command.CommandParser;
 import clubflow.command.CompletionCommand;
 import clubflow.command.CreateEventCommand;
-import clubflow.command.CreateMemberCommand;
 import clubflow.command.DeleteEventCommand;
 import clubflow.command.DeleteMemberCommand;
 import clubflow.command.EditEventCommand;
@@ -11,7 +10,12 @@ import clubflow.command.ExitCommand;
 import clubflow.command.FindCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.ViewEventCommand;
+import clubflow.command.CreateMemberCommand;
 import clubflow.command.ViewMemberCommand;
+import clubflow.command.AddPhotoCommand;
+import clubflow.command.OpenPhotoCommand;
+import clubflow.command.DeletePhotoCommand;
+import clubflow.command.ListPhotoCommand;
 import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
@@ -72,8 +76,6 @@ public class ClubFlow {
         parser = new CommandParser(ui);
         clubData = new ClubData();
 
-        //parser.register("test", new TestCommand(ui)); //TODO: REMOVE!!! FOR TESTING ONLY
-
         parser.register("createEvent", new CreateEventCommand(ui, clubData));
         parser.register("editEvent", new EditEventCommand(ui, clubData));
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
@@ -90,6 +92,11 @@ public class ClubFlow {
         parser.register("addMember", createMemberCommand);
         parser.register("viewMember", new ViewMemberCommand(ui, clubData));
         parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
+
+        parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
+        parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
+        parser.register("deletePhoto", new DeletePhotoCommand(ui, clubData));
+        parser.register("listPhoto", new ListPhotoCommand(ui, clubData));
 
         parser.register("load", new LoadCommand(ui, clubData));
         parser.register("exit", new ExitCommand(ui));
