@@ -3,7 +3,7 @@
 ## Introduction
 
 ClubFlow is a command-line application for managing club events and members.
-You can create, edit, view, find, complete, and delete events, manage member contacts, and save or load club data.
+You can create, edit, view, find, complete, and delete events, manage member contacts, and load club data. Changes are saved automatically.
 
 ## Quick Start
 
@@ -11,7 +11,7 @@ You can create, edit, view, find, complete, and delete events, manage member con
 1. Place `clubflow.jar` in a folder of your choice and open a terminal in that folder.
 1. Run `java -jar clubflow.jar`.
 1. Enter commands at the `>` prompt. For example, enter `createEvent e/XMAS n/"Christmas Party"`.
-1. Enter `save` to save your data before using `exit` to close the application.
+1. Enter `exit` to close the application. Changes are saved automatically.
 
 ## Features
 
@@ -45,7 +45,7 @@ Format: `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l
 * Use an empty quoted value to clear a name, venue, or logistics field, such as `v/""`.
   Dates and deadlines require valid dates; they cannot be cleared with empty values.
 * Invalid input leaves the event unchanged. An unknown tag displays `Event not found: TAG`.
-* Use `save` to keep edited details after exiting.
+* Edited details are saved automatically.
 
 Example: `editEvent e/XMAS v/"New Hall" b/600`
 
@@ -71,7 +71,7 @@ Formats: `mark e/TAG` and `unmark e/TAG`
 * Both commands preserve event details and list order. Use `viewEvent` to see the status.
 * Supply exactly one event tag. Unknown tags display `Event not found: TAG`.
 * Only events are currently supported. Member marking is not implemented.
-* Use `save` to keep completion changes after exiting.
+* Completion changes are saved automatically.
 
 Examples: `mark e/XMAS` and `unmark e/XMAS`
 
@@ -129,31 +129,34 @@ Format: `deleteMember i/INDEX [/f]`
 
 Example: `deleteMember i/1`
 
-### Saving and loading data: `save` and `load`
+### Automatic saving and loading data
 
-Saving writes the current events and members to a file, replacing any existing contents at that path.
-Loading replaces the current events and members with the data from a saved file.
+Changes to events and members are automatically saved to `saves/clubs.cf`.
+ClubFlow loads this file at startup. If it does not exist, the app starts with empty data.
+If an existing file cannot be loaded, the app displays an error and stops.
 
-Formats: `save [p/PATH]` and `load p/PATH`
+To import another saved file, use `load p/PATH`.
+Loading replaces the current events and members, then automatically saves them to `saves/clubs.cf`.
 
-* Paths must be relative to the folder from which ClubFlow was started.
-* `save` without a path uses `saves/clubs.cf`.
-* Data is not automatically saved or loaded. Save before exiting and load your file when starting a new session.
+* Paths are relative to the folder from which ClubFlow was started.
+* If autosaving fails, ClubFlow displays a warning and keeps the changes in memory.
+  It retries after the next successfully processed command, including `exit`.
+  If saving still fails during `exit`, the app closes and those changes may be lost.
 * Saved events include their completion state. Older save files without this field load as not completed.
   Files saved with completion states require this version of ClubFlow or later.
 
-Examples: `save p/saves/my-club.cf` and `load p/saves/my-club.cf`
+Example: `load p/saves/my-club.cf`
 
 ### Exiting: `exit`
 
-Closes ClubFlow. Use `save` first to keep your current data.
+Closes ClubFlow after attempting to save any outstanding changes.
 
 ## FAQ
 
 **Q**: How do I transfer my data to another computer? 
 
-**A**: Use `save`, copy the resulting file to the other computer, and start ClubFlow there.
-Load the copied file using a relative path, for example `load p/saves/clubs.cf`.
+**A**: Close ClubFlow after checking for any save errors, then copy `saves/clubs.cf` to the same relative location
+on the other computer. ClubFlow loads it automatically at startup.
 
 ## Command Summary
 
@@ -167,6 +170,5 @@ Load the copied file using a relative path, for example `load p/saves/clubs.cf`.
 * Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (also `addMember`)
 * View members `viewMember`
 * Delete member `deleteMember i/INDEX [/f]`
-* Save data `save [p/PATH]`
 * Load data `load p/PATH`
 * Exit `exit`

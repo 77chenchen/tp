@@ -15,7 +15,6 @@ import clubflow.command.HelpCommand;
 import clubflow.command.ListPhotoCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.OpenPhotoCommand;
-import clubflow.command.SaveCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.exception.ClubFlowException;
@@ -27,11 +26,14 @@ import clubflow.search.EventSearch;
 import java.io.IOException;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Represents the ClubFlow application.
@@ -43,6 +45,9 @@ public class ClubFlow {
     /** Records lifecycle events and unexpected failures for this class. */
     private static final Logger LOGGER = Logger.getLogger(ClubFlow.class.getName());
 
+    /** File used for automatic loading and saving. */
+    private static final Path DEFAULT_SAVE_PATH = Path.of("saves", "clubs.cf");
+
     /** Terminal interface shared by the parser and commands. */
     private final UserInterface ui;
 
@@ -52,10 +57,23 @@ public class ClubFlow {
     /** In-memory store shared by all commands that manage club data. */
     private final ClubData clubData;
 
+    /** Save file for this app instance; tests use temporary files. */
+    private final Path savePath;
+
     /**
      * Initializes the ClubFlow app.
      */
     public ClubFlow() {
+        this(DEFAULT_SAVE_PATH);
+    }
+
+    /**
+     * Initializes the app with a chosen persistence file.
+     *
+     * @param savePath file used for automatic loading and saving
+     */
+    ClubFlow(Path savePath) {
+        this.savePath = Objects.requireNonNull(savePath, "Save path must not be null");
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
         clubData = new ClubData();
@@ -103,7 +121,6 @@ public class ClubFlow {
         parser.register("listPhoto", new ListPhotoCommand(ui, clubData));
         parser.registerAlias("listPhoto", "lp");
 
-        parser.register("save", new SaveCommand(ui, clubData));
         parser.register("load", new LoadCommand(ui, clubData));
         parser.register("exit", new ExitCommand(ui));
 
@@ -138,11 +155,34 @@ public class ClubFlow {
      */
     public void run() {
         ui.welcome();
+
+        if (Files.exists(savePath)) {
+            try {
+                ClubData loaded = new SaveLoadManager().load(savePath);
+                clubData.replaceWith(loaded);
+                clubData.markSaved();
+                ui.print("Saved data loaded.");
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Could not load data file", e);
+                ui.print("Could not load saved data: " + e.getMessage());
+                return;
+            }
+        }
+
         LOGGER.info("ClubFlow started");
         while (true) {
             try {
                 String input = ui.prompt();
                 boolean terminate = parser.parse(input);
+                if (clubData.hasUnsavedChanges()) {
+                    try {
+                        new SaveLoadManager().save(clubData, savePath);
+                        clubData.markSaved();
+                    } catch (IOException e) {
+                        LOGGER.log(Level.WARNING, "Autosave failed", e);
+                        ui.print("Changes could not be saved: " + e.getMessage());
+                    }
+                }
                 if (terminate) {
                     LOGGER.info("ClubFlow exited normally");
                     break;
