@@ -29,6 +29,7 @@ public class FindCommand extends Command {
         if (this.searchHandlers.isEmpty()) {
             throw new IllegalArgumentException("At least one search type must be supplied");
         }
+        addSyntax("e/Keyword");
     }
 
     @Override

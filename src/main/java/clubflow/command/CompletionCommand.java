@@ -38,6 +38,7 @@ public class CompletionCommand extends Command {
             throw new IllegalArgumentException("At least one item type must be supplied");
         }
         this.completed = completed;
+        addSyntax("e/Identifier");
     }
 
     @Override

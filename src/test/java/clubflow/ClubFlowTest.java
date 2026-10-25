@@ -101,6 +101,21 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_aliasAndHelpCommands_preserveAutosaveAcrossSessions() {
+        String firstSession = runSession("ce e/MEETING n/Planning\nhelp c/ce\nexit\n");
+
+        assertTrue(firstSession.contains("[CF] Created event: MEETING"));
+        assertTrue(firstSession.contains("Syntax of command \"createevent\":"));
+        assertFalse(firstSession.contains("Command syntax error"));
+
+        String secondSession = runSession("ve e/MEETING\nexit\n");
+
+        assertTrue(secondSession.contains("[CF] Saved data loaded."));
+        assertTrue(secondSession.contains("[CF] [MEETING] Planning"));
+        assertFalse(secondSession.contains("Command syntax error"));
+    }
+
+    @Test
     void run_missingEvents_reportsEachErrorOnceAndContinuesWithStoredData() {
         String result = runSession("createEvent e/XMAS n/Party\n"
                 + "mark e/MISSING_MARK\nunmark e/MISSING_UNMARK\n"

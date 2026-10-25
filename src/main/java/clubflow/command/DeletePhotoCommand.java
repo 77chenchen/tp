@@ -20,6 +20,8 @@ public class DeletePhotoCommand extends Command{
     public DeletePhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
+        addSyntax("e/Tag all");
+        addSyntax("e/Tag n/Name");
     }
 
     @Override

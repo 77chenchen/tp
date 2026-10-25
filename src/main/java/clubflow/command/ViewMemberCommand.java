@@ -23,6 +23,7 @@ public class ViewMemberCommand extends Command {
     public ViewMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        addSyntax("");
     }
 
     @Override

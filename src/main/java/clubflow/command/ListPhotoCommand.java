@@ -18,6 +18,8 @@ public class ListPhotoCommand extends Command{
     public ListPhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
+        addSyntax("");
+        addSyntax("e/Tag");
     }
 
     @Override
@@ -61,7 +63,7 @@ public class ListPhotoCommand extends Command{
         int index = 0;
         for (String name : e.getPhotoNames()){
             index++;
-            ui.print("  " + index + ". " + name);
+            ui.print(index + ". " + name, 1);
         }
     }
 
