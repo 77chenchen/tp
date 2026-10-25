@@ -31,6 +31,7 @@ public class SaveCommand extends Command {
     public SaveCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        addSyntax("[p/Path]");
     }
 
     @Override 

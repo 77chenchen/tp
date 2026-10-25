@@ -14,6 +14,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -230,8 +231,11 @@ class ClubFlowTest {
                     () -> assertTrue(loadedSession.contains("[CF] Goodbye!"))
             );
         } finally {
-            Files.deleteIfExists(saveFile);
-            Files.delete(testDirectory);
+            try (var paths = Files.walk(testDirectory)) {
+                for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                    Files.deleteIfExists(path);
+                }
+            }
         }
     }
 
