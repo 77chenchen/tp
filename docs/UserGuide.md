@@ -206,6 +206,29 @@ Format: `addPhoto e/TAG n/NAME p/PATH`
 
 Example: `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"`
 
+### Adding All Photos to an Event: `addAllPhoto`
+
+Imports all photos from a specified directory into an event.
+
+**Format:**
+`addAllPhoto e/TAG p/PATH`
+
+**Parameters:**
+- `e/TAG`: Tag of the event to add photos to.
+- `p/PATH`: Path to the directory containing the photos.
+
+**Example:**
+`addAllPhoto e/CAMP p/"C:\Users\Ray\Pictures\Camp"`
+
+**Notes:**
+* For convenience, each imported photo is automatically named after its original filename, excluding file extension.
+* All supported images in the specified directory are imported and converted to PNG format.
+* Each photo retains its original filename without the file extension.
+* Subdirectories are ignored.
+* If a photo fails to import, the remaining photos will still be processed.
+* The number of successful and failed imports will be displayed.
+* Imported photos are automatically saved.
+
 ### Listing photos: `listPhoto`
 
 Lists photos belonging to a specific event or all events.
@@ -314,6 +337,7 @@ ClubFlow loads the data and photos automatically at startup.
 * Unassign member `unassignMember e/TAG i/INDEX` (alias `um`)
 * Delete member `deleteMember i/INDEX [/f]` (alias `dm`)
 * Add photo `addPhoto e/TAG n/NAME p/PATH` (alias `ap`)
+* Add photo directory `addAllPhoto e/TAG p/PATH` (alias `aap`, `addPhotos`, `addAllPhotos`)
 * List photos `listPhoto` or `listPhoto e/TAG` (alias `lp`)
 * Open photos `openPhoto e/TAG` or `openPhoto e/TAG n/NAME` (alias `op`)
 * Delete photos `deletePhoto e/TAG n/NAME` or `deletePhoto e/TAG all` (alias `dp`)
