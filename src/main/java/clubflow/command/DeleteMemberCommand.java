@@ -26,7 +26,7 @@ public class DeleteMemberCommand extends Command {
     public DeleteMemberCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
-        addSyntax("i/Index [f]");
+        addSyntax("i/Index [/f]");
     }
 
     @Override
