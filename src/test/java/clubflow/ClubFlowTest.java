@@ -120,7 +120,7 @@ class ClubFlowTest {
         String result = runSession("createEvent e/XMAS n/Party\n"
                 + "mark e/MISSING_MARK\nunmark e/MISSING_UNMARK\n"
                 + "editEvent e/MISSING_EDIT n/Changed\ndeleteEvent e/MISSING_DELETE\n"
-                + "viewEvent e/MISSING_VIEW\nviewEvent e/XMAS\nfind e/Party\nexit\n");
+                + "viewEvent e/MISSING_VIEW\nviewEvent e/XMAS\nfe e/Party\nexit\n");
 
         assertEquals(List.of(
                 "[CF] Event not found: MISSING_MARK",
@@ -175,9 +175,9 @@ class ClubFlowTest {
     }
 
     @Test
-    void run_findCommand_searchesCreatedEventsAndReflectsDeletion() {
+    void run_findEventCommand_searchesCreatedEventsAndReflectsDeletion() {
         String result = runSession("createEvent e/XMAS n/\"Christmas Party\"\n"
-                + "find e/party\ndeleteEvent e/XMAS\nfind e/party\nexit\n");
+                + "findEvent e/party\ndeleteEvent e/XMAS\nfindEvent e/party\nexit\n");
 
         assertAll(
                 () -> assertTrue(result.contains("[CF] Found 1 matching event(s).")),
@@ -190,10 +190,31 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_findAliases_searchDifferentTypesAndShowCanonicalHelp() {
+        String result = runSession("createEvent e/XMAS n/Party v/\"Main Hall\"\ncm n/Alice t/alice\n"
+                + "findEvent e/party\nfe v/hall\nfindMember q/Alice\nfm q/Alice\n"
+                + "help c/findEvent\nhelp c/fe\nhelp c/fm\nexit\n");
+
+        assertAll(
+                () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] [XMAS] Party")).count()),
+                () -> assertEquals(2, result.lines()
+                        .filter(line -> line.contains("[CF] Syntax of command \"findevent\":")).count()),
+                () -> assertEquals(2, result.lines()
+                        .filter(line -> line.equals("[CF] > findevent [e/Keyword] [q/Keyword] [n/Name]"
+                                + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]")).count()),
+                () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] 1. Alice")).count()),
+                () -> assertTrue(result.contains("[CF] Aliases: [fe]")),
+                () -> assertTrue(result.contains("[CF] Syntax of command \"findmember\":")),
+                () -> assertTrue(result.contains("[CF] Aliases: [fm]")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
     void run_editEvent_updatesDetailsSeenByViewAndFind() {
         String result = runSession("createEvent e/XMAS n/Party v/\"Main Hall\"\n"
                 + "editEvent e/xmas n/Dinner b/600\nviewEvent e/XMAS\n"
-                + "find e/Dinner\nfind e/Party\nexit\n");
+                + "fe e/Dinner\nfe e/Party\nexit\n");
 
         assertAll(
                 () -> assertTrue(result.contains("[CF] Updated event: XMAS")),

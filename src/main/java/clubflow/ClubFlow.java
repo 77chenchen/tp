@@ -13,7 +13,7 @@ import clubflow.command.DeletePhotoCommand;
 import clubflow.command.EditEventCommand;
 import clubflow.command.EditMemberCommand;
 import clubflow.command.ExitCommand;
-import clubflow.command.FindCommand;
+import clubflow.command.FindEventCommand;
 import clubflow.command.FindMemberCommand;
 import clubflow.command.HelpCommand;
 import clubflow.command.InviteCommand;
@@ -31,7 +31,6 @@ import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
 import clubflow.exception.CommandParseException;
-import clubflow.search.EventSearch;
 
 import java.io.IOException;
 import java.util.Map;
@@ -113,8 +112,8 @@ public class ClubFlow {
         parser.register("viewEvent", new ViewEventCommand(ui, club));
         parser.registerAlias("viewEvent", "ve");
 
-        EventSearch eventSearch = new EventSearch(ui, club);
-        parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
+        parser.register("findEvent", new FindEventCommand(ui, club));
+        parser.registerAlias("findEvent", "fe");
         EventCompletion eventCompletion = new EventCompletion(ui, club);
         Map<String, CompletionHandler> completionHandlers = Map.of("e", eventCompletion::setCompleted);
         parser.register("mark", new CompletionCommand(ui, completionHandlers, true));

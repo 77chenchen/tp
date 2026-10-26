@@ -1,15 +1,18 @@
 package clubflow.search;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 
 /**
- * Searches current event tags and names and displays matching event summaries.
+ * Filters current events by text and dates and displays matching event summaries.
  */
 public class EventSearch {
     /** Interface used to display search results. */
@@ -30,16 +33,22 @@ public class EventSearch {
     }
 
     /**
-     * Finds case-insensitive substring matches in event tags or names, preserving store order.
+     * Finds events satisfying every supplied filter, preserving store order.
+     * Text filters use case-insensitive substrings; date filters use exact dates.
      *
-     * @param keyword non-blank search text validated and trimmed by the find command
+     * @param filters non-empty filters validated by the event search command; keys and values must not be null
      */
-    public void search(String keyword) {
-        String normalizedKeyword = Objects.requireNonNull(keyword, "Search keyword must not be null")
-                .toLowerCase(Locale.ROOT);
+    public void search(Map<String, String> filters) {
+        Map<String, String> checkedFilters = Map.copyOf(Objects.requireNonNull(filters, "Filters must not be null"));
+        if (checkedFilters.isEmpty()) {
+            throw new IllegalArgumentException("At least one search filter is required");
+        }
+        // Compile filters once, including parsing dates, rather than once per event.
+        List<Predicate<Event>> predicates = checkedFilters.entrySet().stream()
+                .map(filter -> createFilter(filter.getKey(), filter.getValue()))
+                .toList();
         List<Event> matches = club.getEvents().stream()
-                .filter(event -> event.getTag().toLowerCase(Locale.ROOT).contains(normalizedKeyword)
-                        || event.getName().toLowerCase(Locale.ROOT).contains(normalizedKeyword))
+                .filter(event -> predicates.stream().allMatch(predicate -> predicate.test(event)))
                 .toList();
 
         if (matches.isEmpty()) {
@@ -52,5 +61,35 @@ public class EventSearch {
             String name = event.getName().isBlank() ? "Not set" : event.getName();
             ui.print("[" + event.getTag() + "] " + name);
         }
+    }
+
+    /** Creates a matcher for one filter; e/ retains its existing tag-or-name behavior. */
+    private Predicate<Event> createFilter(String id, String value) {
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Search values must not be blank");
+        }
+        String keyword = value.strip().toLowerCase(Locale.ROOT);
+        return switch (id) {
+        case "e" -> event -> contains(event.getTag(), keyword) || contains(event.getName(), keyword);
+        case "q" -> event -> contains(event.getTag(), keyword) || contains(event.getName(), keyword)
+                || contains(event.getVenue(), keyword) || contains(event.getLogistics(), keyword);
+        case "n" -> event -> contains(event.getName(), keyword);
+        case "v" -> event -> contains(event.getVenue(), keyword);
+        case "l" -> event -> contains(event.getLogistics(), keyword);
+        case "d" -> {
+            LocalDate date = LocalDate.parse(keyword);
+            yield event -> date.equals(event.getDate());
+        }
+        case "by" -> {
+            LocalDate deadline = LocalDate.parse(keyword);
+            yield event -> deadline.equals(event.getDeadline());
+        }
+        default -> throw new IllegalArgumentException("Unsupported search filter: " + id);
+        };
+    }
+
+    /** Matches a text field against an already normalized keyword independently of the default locale. */
+    private boolean contains(String field, String keyword) {
+        return field.toLowerCase(Locale.ROOT).contains(keyword);
     }
 }

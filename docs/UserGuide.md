@@ -86,22 +86,26 @@ Format: `deleteEvent e/TAG`
 
 Example: `deleteEvent e/XMAS`
 
-### Finding data: `find`
+### Finding events: `findEvent`
 
-Searches club data using a type prefix and a keyword or phrase.
-The currently supported type is `e`, which searches event tags and names.
+Searches events using one or more optional field filters. At least one filter is required; `e/` is optional.
 
-Format: `find TYPE/KEYWORD`
+Format: `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE]`
 
-Example: `find e/party`
+Examples: `findEvent e/party`, `fe v/"Main Hall"`, `fe n/Party v/Hall`, `fe d/2026-12-25`
 
-* Matching ignores case and accepts partial text. For example, `find e/mas` matches the tag `XMAS`.
-* Enclose phrases in double quotes: `find e/"Christmas Party"`.
-* The keyword cannot be blank. Spaces at the start and end of the keyword are ignored.
-* Specify exactly one supported search type per command.
+Alias: `fe`
+
+* Text matching ignores case and accepts partial text. `e/` searches tags or names, preserving existing behavior.
+* `q/` searches across tags, names, venues, and logistics notes. For example, `fe q/chairs` can match logistics notes.
+* `n/`, `v/`, and `l/` search only the name, venue, and logistics respectively.
+* `d/` and `by/` match the exact event date and planning deadline in `YYYY-MM-DD` format.
+  Events with an unset date or deadline do not match the corresponding date filter.
+* When multiple filters are supplied, an event must match all of them. Supply each prefix at most once.
+* Enclose phrases in double quotes: `fe v/"Main Hall"`.
+* Every supplied filter must have a non-blank value. Spaces at the start and end of each value are ignored.
 * Results show each matching event's tag and name in creation order. Use `viewEvent e/EVENT_TAG` for full details.
 * If there are no matches, ClubFlow displays `No matching events found.`
-* Only event searching is currently supported by `find`.
 
 ### Creating a member: `createMember` or `addMember`
 
@@ -329,7 +333,8 @@ ClubFlow loads the data and photos automatically at startup.
 * Mark event completed `mark e/TAG`
 * Mark event not completed `unmark e/TAG`
 * Delete event `deleteEvent e/TAG` (alias `de`)
-* Find data `find TYPE/KEYWORD` (currently supports `e` for events)
+* Find events `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE]`
+  (alias `fe`; at least one filter is required)
 * Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (aliases `cm`, `addMember`)
 * View members `viewMember` (alias `vm`)
 * Edit member `editMember i/INDEX [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (alias `em`)
