@@ -32,7 +32,7 @@ class SaveLoadManagerTest {
 
     @Test
     void saveAndLoad_mixedData_preservesEveryFieldAndRecordOrder() throws IOException {
-        ClubData original = new ClubData();
+        Club original = new Club();
         original.addMember(new Member("Chloé Tan", "chloe", "chloe@example.com",
                 List.of("president", "treasurer")));
         original.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
@@ -42,7 +42,7 @@ class SaveLoadManagerTest {
         Path saveFile = tempDir.resolve("club.cf");
 
         storage.save(original, saveFile);
-        ClubData loaded = storage.load(saveFile);
+        Club loaded = storage.load(saveFile);
 
         assertEquals(List.of("Chloé Tan", "Thomas"),
                 loaded.getMembers().stream().map(Member::getName).toList());
@@ -82,8 +82,8 @@ class SaveLoadManagerTest {
     void save_emptyData_createsParentDirectoriesAndLoadsEmptyFile() throws IOException {
         Path saveFile = tempDir.resolve("nested/saves/empty.cf");
 
-        storage.save(new ClubData(), saveFile);
-        ClubData loaded = storage.load(saveFile);
+        storage.save(new Club(), saveFile);
+        Club loaded = storage.load(saveFile);
 
         assertTrue(Files.isRegularFile(saveFile));
         assertEquals(0, Files.size(saveFile));
@@ -95,7 +95,7 @@ class SaveLoadManagerTest {
     void save_existingFile_replacesPreviousRecords() throws IOException {
         Path saveFile = tempDir.resolve("club.cf");
         Files.writeString(saveFile, "old contents that must be removed", StandardCharsets.UTF_8);
-        ClubData replacement = new ClubData();
+        Club replacement = new Club();
         replacement.addEvent(new Event("NEW", "", null, null, 0, "", ""));
 
         storage.save(replacement, saveFile);
@@ -110,7 +110,7 @@ class SaveLoadManagerTest {
         Path parentFile = tempDir.resolve("parent.cf");
         Files.writeString(parentFile, "existing data");
 
-        assertThrows(IOException.class, () -> storage.save(new ClubData(), parentFile.resolve("club.cf")));
+        assertThrows(IOException.class, () -> storage.save(new Club(), parentFile.resolve("club.cf")));
         assertEquals("existing data", Files.readString(parentFile));
     }
 
@@ -131,7 +131,7 @@ class SaveLoadManagerTest {
         Files.writeString(saveFile, "EVENT|XMAS|Party|2026-12-25|2026-12-20|500.0|Hall|Chairs\n"
                 + "EVENT|DRAFT||null|null|0.0||\n", StandardCharsets.UTF_8);
 
-        ClubData loaded = storage.load(saveFile);
+        Club loaded = storage.load(saveFile);
 
         assertEquals(List.of("XMAS", "DRAFT"), loaded.getEvents().stream().map(Event::getTag).toList());
         assertTrue(loaded.getEvents().stream().noneMatch(Event::isCompleted));

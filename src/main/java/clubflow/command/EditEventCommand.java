@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
@@ -15,17 +15,17 @@ import clubflow.exception.EventNotFoundException;
  */
 public class EditEventCommand extends Command {
     /** Shared store containing the events that can be edited. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command for editing existing events.
      *
      * @param ui user interface used to display the result
-     * @param clubData shared club data containing the events to edit
+     * @param club shared club data containing the events to edit
      */
-    public EditEventCommand(UserInterface ui, ClubData clubData) {
+    public EditEventCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag [n/Name] [d/YYYY-MM-DD] [by/YYYY-MM-DD] [b/Budget] [v/Venue] [l/Logistics]");
     }
 
@@ -59,7 +59,7 @@ public class EditEventCommand extends Command {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         String tag = args.get(EventArgumentIds.TAG);
-        Event original = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+        Event original = club.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
 
         // Use supplied values where present, keeping the original values for omitted fields.
         String name = args.getOrDefault(EventArgumentIds.NAME, original.getName());
@@ -75,7 +75,7 @@ public class EditEventCommand extends Command {
         // Build the replacement first so every supplied field is applied together.
         Event updated = new Event(original.getTag(), name, date, deadline,
                 budget, venue, logistics, original.isCompleted());
-        boolean updatedSuccessfully = clubData.updateEvent(updated);
+        boolean updatedSuccessfully = club.updateEvent(updated);
         assert updatedSuccessfully : "The selected event must still exist when editing occurs";
         ui.print("Updated event: " + updated.getTag());
         return false;

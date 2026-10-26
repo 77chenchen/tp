@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -15,12 +15,12 @@ import clubflow.member.Member;
  * Replaces one member with a validated copy containing the requested changes.
  */
 public class EditMemberCommand extends Command {
-    private final ClubData clubData;
+    private final Club club;
 
     /** Creates a member editing command that uses the shared club data. */
-    public EditMemberCommand(UserInterface ui, ClubData clubData) {
+    public EditMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("i/Index [n/Name] [t/TeleHandle] [e/Email] [f/Function]...");
     }
 
@@ -65,7 +65,7 @@ public class EditMemberCommand extends Command {
         }
 
         // A missing member is reported by execute; only an existing one can be fully validated here.
-        Member previous = clubData.findMemberByIndex(index).orElse(null);
+        Member previous = club.findMemberByIndex(index).orElse(null);
         if (previous != null) {
             try {
                 buildReplacement(previous, args);
@@ -80,14 +80,14 @@ public class EditMemberCommand extends Command {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(MemberArgumentIds.INDEX) : "Validated arguments must include a member index";
         int index = Integer.parseInt(args.get(MemberArgumentIds.INDEX));
-        Member previous = clubData.findMemberByIndex(index).orElse(null);
+        Member previous = club.findMemberByIndex(index).orElse(null);
         if (previous == null) {
             ui.print("Member not found at index " + index + ".");
             return false;
         }
 
         Member replacement = buildReplacement(previous, args);
-        boolean replaced = clubData.replaceMemberByIndex(index, replacement).isPresent();
+        boolean replaced = club.replaceMemberByIndex(index, replacement).isPresent();
         assert replaced : "An existing member must be replaceable";
         ui.print("Updated member at index " + index + ": " + replacement.getName());
         return false;

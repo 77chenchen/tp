@@ -2,7 +2,7 @@ package clubflow.completion;
 
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.EventNotFoundException;
@@ -15,17 +15,17 @@ public class EventCompletion {
     private final UserInterface ui;
 
     /** Shared store queried on each request so handlers work after edits and loads. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates the event handler shared by mark and unmark commands.
      *
      * @param ui user interface used to display the result
-     * @param clubData shared club data containing the events to update
+     * @param club shared club data containing the events to update
      */
-    public EventCompletion(UserInterface ui, ClubData clubData) {
+    public EventCompletion(UserInterface ui, Club club) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
     }
 
     /**
@@ -37,9 +37,9 @@ public class EventCompletion {
      * @throws EventNotFoundException if the requested event does not exist
      */
     public void setCompleted(String tag, boolean completed) throws EventNotFoundException {
-        Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+        Event event = club.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
         if (event.isCompleted() != completed) {
-            boolean updated = clubData.updateEvent(event.withCompleted(completed));
+            boolean updated = club.updateEvent(event.withCompleted(completed));
             assert updated : "The selected event must still exist when marking occurs";
         }
         ui.print("Marked event as " + (completed ? "completed: " : "not completed: ") + event.getTag());

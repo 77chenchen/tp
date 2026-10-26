@@ -3,7 +3,7 @@ package clubflow.command;
 import java.util.HashMap;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -15,12 +15,12 @@ import clubflow.member.Member;
  */
 public class UnassignMemberCommand extends Command {
     private static final String EVENT_TAG = "e";
-    private final ClubData clubData;
+    private final Club club;
 
     /** Creates an unassignment command using the shared club data. */
-    public UnassignMemberCommand(UserInterface ui, ClubData clubData) {
+    public UnassignMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag i/Index");
     }
 
@@ -54,18 +54,18 @@ public class UnassignMemberCommand extends Command {
         assert args.containsKey(EVENT_TAG) && args.containsKey(MemberArgumentIds.INDEX)
                 : "Validated arguments must identify an event and a member";
         String eventTag = args.get(EVENT_TAG);
-        if (clubData.findEventByTag(eventTag).isEmpty()) {
+        if (club.findEventByTag(eventTag).isEmpty()) {
             ui.print("Event not found: " + eventTag);
             return false;
         }
         int memberIndex = Integer.parseInt(args.get(MemberArgumentIds.INDEX));
-        Member member = clubData.findMemberByIndex(memberIndex).orElse(null);
+        Member member = club.findMemberByIndex(memberIndex).orElse(null);
         if (member == null) {
             ui.print("Member not found at index " + memberIndex + ".");
             return false;
         }
 
-        if (clubData.unassignMemberFromEvent(eventTag, member)) {
+        if (club.unassignMemberFromEvent(eventTag, member)) {
             ui.print("Unassigned member " + member.getName() + " from event " + eventTag + ".");
         } else {
             ui.print("Member is not assigned to event " + eventTag + ".");

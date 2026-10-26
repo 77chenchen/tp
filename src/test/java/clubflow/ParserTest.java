@@ -75,9 +75,9 @@ public class ParserTest {
     void parse_flagArgument_validatesFlagAndArgumentCombination() {
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
-        ClubData clubData = new ClubData();
-        clubData.addEvent(new Event("XMAS", "Party", null, null, 0, "", ""));
-        parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        Club club = new Club();
+        club.addEvent(new Event("XMAS", "Party", null, null, 0, "", ""));
+        parser.register("viewEvent", new ViewEventCommand(ui, club));
 
         assertAll(
                 () -> assertDoesNotThrow(() -> parser.parse("viewEvent e/XMAS")),

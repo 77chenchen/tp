@@ -292,7 +292,7 @@ class ClubFlowTest {
 
         assertTrue(firstSession.contains("Assigned member Alice to event PARTY."));
         assertTrue(firstSession.contains("Syntax of command \"findmember\":"));
-        ClubData saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
+        Club saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
         assertEquals("Alicia", saved.getAssignmentsForEvent("PARTY").getFirst().getMember().getName());
         assertEquals("Dinner", saved.getAssignmentsForEvent("PARTY").getFirst().getEvent().getName());
 

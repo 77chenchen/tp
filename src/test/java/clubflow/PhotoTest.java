@@ -35,15 +35,15 @@ public class PhotoTest {
 
     @Test
     public void addPhoto_validImage_addsPhoto() throws Exception {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
         Path source = createTestImage("source.png");
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertAll(
                 () -> assertEquals(1, event.getPhotoNames().size()),
@@ -55,8 +55,8 @@ public class PhotoTest {
 
     @Test
     public void addPhoto_multipleImages_addsAllPhotos() throws Exception {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -66,7 +66,7 @@ public class PhotoTest {
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source1 + "\"");
         parser.parse("addPhoto e/TEST n/photo2 p/\"" + source2 + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertAll(
                 () -> assertEquals(2, event.getPhotoNames().size()),
@@ -79,8 +79,8 @@ public class PhotoTest {
 
     @Test
     public void addPhoto_invalidArguments_rejectsCommand() throws Exception {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -112,8 +112,8 @@ public class PhotoTest {
     public void addPhoto_nonexistentSource_doesNotAddPhoto()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -121,7 +121,7 @@ public class PhotoTest {
 
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + missing + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertEquals(0, event.getPhotoNames().size());
     }
@@ -130,8 +130,8 @@ public class PhotoTest {
     public void addPhoto_unsupportedFile_doesNotAddPhoto()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -140,7 +140,7 @@ public class PhotoTest {
 
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + invalid + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertEquals(0, event.getPhotoNames().size());
     }
@@ -149,8 +149,8 @@ public class PhotoTest {
     public void addPhoto_duplicateName_keepsOriginal()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -160,7 +160,7 @@ public class PhotoTest {
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source1 + "\"");
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source2 + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertAll(
                 () -> assertEquals(1, event.getPhotoNames().size()),
@@ -174,15 +174,15 @@ public class PhotoTest {
     public void deletePhoto_existingPhoto_removesPhoto()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
         Path source = createTestImage("source.png");
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertEquals(1, event.getPhotoNames().size());
 
@@ -195,15 +195,15 @@ public class PhotoTest {
     public void deletePhoto_nonexistentPhoto_doesNotChangeEvent()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
         assertDoesNotThrow(
                 () -> parser.parse("deletePhoto e/TEST n/MISSING"));
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertEquals(0, event.getPhotoNames().size());
     }
@@ -212,8 +212,8 @@ public class PhotoTest {
     public void deletePhoto_invalidArguments_rejectsCommand()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -238,8 +238,8 @@ public class PhotoTest {
     public void deletePhoto_allPhotos_removesAll()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -249,7 +249,7 @@ public class PhotoTest {
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source1 + "\"");
         parser.parse("addPhoto e/TEST n/photo2 p/\"" + source2 + "\"");
 
-        Event event = clubData.findEventByTag("TEST").orElseThrow();
+        Event event = club.findEventByTag("TEST").orElseThrow();
 
         assertEquals(2, event.getPhotoNames().size());
 
@@ -262,8 +262,8 @@ public class PhotoTest {
     public void listPhoto_existingEvent_doesNotThrow()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -280,8 +280,8 @@ public class PhotoTest {
     public void listPhoto_nonexistentEvent_rejectsCommand()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         assertThrows(CommandParseException.class,
                 () -> parser.parse("listPhoto e/MISSING"));
@@ -291,8 +291,8 @@ public class PhotoTest {
     public void openPhoto_nonexistentEvent_rejectsCommand()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         assertAll(
                 () -> assertThrows(CommandParseException.class,
@@ -308,8 +308,8 @@ public class PhotoTest {
     public void openPhoto_nonexistentPhoto_doesNotThrow()
             throws Exception {
 
-        ClubData clubData = new ClubData();
-        CommandParser parser = createPhotoCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createPhotoCommandParser(club);
 
         parser.parse("createEvent e/TEST n/Test");
 
@@ -376,24 +376,24 @@ public class PhotoTest {
         return source;
     }
 
-    private CommandParser createPhotoCommandParser(ClubData clubData) {
+    private CommandParser createPhotoCommandParser(Club club) {
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
 
         parser.register("createEvent",
-                new CreateEventCommand(ui, clubData));
+                new CreateEventCommand(ui, club));
 
         parser.register("addPhoto",
-                new AddPhotoCommand(ui, clubData));
+                new AddPhotoCommand(ui, club));
 
         parser.register("deletePhoto",
-                new DeletePhotoCommand(ui, clubData));
+                new DeletePhotoCommand(ui, club));
 
         parser.register("listPhoto",
-                new ListPhotoCommand(ui, clubData));
+                new ListPhotoCommand(ui, club));
 
         parser.register("openPhoto",
-                new OpenPhotoCommand(ui, clubData));
+                new OpenPhotoCommand(ui, club));
 
         return parser;
     }

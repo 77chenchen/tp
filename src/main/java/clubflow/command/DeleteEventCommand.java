@@ -3,7 +3,7 @@ package clubflow.command;
 import java.util.HashMap;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
@@ -13,17 +13,17 @@ import clubflow.exception.EventNotFoundException;
  */
 public class DeleteEventCommand extends Command {
     /** Shared store from which this command removes events. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command that deletes events from the supplied data store.
      *
      * @param ui user interface used to display command results
-     * @param clubData shared club data from which events are deleted
+     * @param club shared club data from which events are deleted
      */
-    public DeleteEventCommand(UserInterface ui, ClubData clubData) {
+    public DeleteEventCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag");
     }
 
@@ -50,7 +50,7 @@ public class DeleteEventCommand extends Command {
         assert args.containsKey(EventArgumentIds.TAG) : "Validated arguments must contain an event tag";
         String tag = args.get(EventArgumentIds.TAG);
 
-        if (!clubData.removeEventByTag(tag)) {
+        if (!club.removeEventByTag(tag)) {
             throw new EventNotFoundException(tag);
         }
         ui.print("Deleted event: " + tag);

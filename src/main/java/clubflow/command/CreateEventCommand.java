@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
@@ -15,17 +15,17 @@ import clubflow.exception.DuplicateEventException;
  */
 public class CreateEventCommand extends Command {
     /** Shared store used by all event commands in the current ClubFlow session. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command that adds events to the supplied data store.
      *
      * @param ui user interface used to display command results
-     * @param clubData shared club data in which events are stored
+     * @param club shared club data in which events are stored
      */
-    public CreateEventCommand(UserInterface ui, ClubData clubData) {
+    public CreateEventCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag [n/Name] [d/YYYY-MM-DD] [by/YYYY-MM-DD] [b/Budget] [v/Venue] [l/Logistics]");
     }
 
@@ -84,8 +84,8 @@ public class CreateEventCommand extends Command {
                 args.getOrDefault(EventArgumentIds.LOGISTICS, "")
         );
 
-        // ClubData performs the case-insensitive duplicate-tag check.
-        if (!clubData.addEvent(event)) {
+        // Club performs the case-insensitive duplicate-tag check.
+        if (!club.addEvent(event)) {
             throw new DuplicateEventException(event.getTag());
         }
         ui.print("Created event: " + event.getTag());

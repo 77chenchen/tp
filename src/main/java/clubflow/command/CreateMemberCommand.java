@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -15,17 +15,17 @@ import clubflow.member.Member;
  * Creates a club member and stores the member in the shared club data.
  */
 public class CreateMemberCommand extends Command {
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command that adds members to the supplied data store.
      *
      * @param ui user interface used to display command results
-     * @param clubData shared club data in which members are stored
+     * @param club shared club data in which members are stored
      */
-    public CreateMemberCommand(UserInterface ui, ClubData clubData) {
+    public CreateMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("n/Name [t/TeleHandle] [e/Email] [f/Function]...");
     }
 
@@ -97,7 +97,7 @@ public class CreateMemberCommand extends Command {
                 args.getOrDefault(MemberArgumentIds.EMAIL, ""),
                 functions
         );
-        clubData.addMember(member);
+        club.addMember(member);
         ui.print("Created member: " + member.getName());
         return false;
     }
