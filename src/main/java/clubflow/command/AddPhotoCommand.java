@@ -3,8 +3,8 @@ package clubflow.command;
 import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
-import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
+import clubflow.exception.PhotoLoadException;
 import clubflow.photo.Photo;
 
 import java.util.HashMap;
@@ -50,22 +50,19 @@ public class AddPhotoCommand extends Command{
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws PhotoLoadException {
         String tag = args.get(EventArgumentIds.TAG);
         String name = args.get(EventArgumentIds.NAME);
         String path = args.get(EventArgumentIds.PATH);
 
         Photo p = null;
-        try {
-            Event e = clubData.getEvent(tag);
-            p = e.addPhoto(path, name);
-        } catch (ClubFlowException e) {
-            ui.print(e.getMessage());
-            return false;
-        }
+        Event e = clubData.getEvent(tag);
+        p = e.addPhoto(path, name);
 
         ui.print("Photo \"" + name + "\" has been added to event \"" + tag
                 + "\". (" + path + " -> " + p.getPath() + ")");
+
+        clubData.markUnsaved();
         return false;
     }
 }

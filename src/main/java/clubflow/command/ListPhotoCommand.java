@@ -60,6 +60,9 @@ public class ListPhotoCommand extends Command{
 
     private void printEventPhotoNames(Event e){
         ui.print("Photos of " + e.getTag() + ": ");
+        if (e.getPhotoNames().isEmpty()){
+            ui.print("No photo is in this event.", 1);
+        }
         int index = 0;
         for (String name : e.getPhotoNames()){
             index++;

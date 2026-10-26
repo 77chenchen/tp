@@ -43,14 +43,13 @@ public class OpenPhotoCommand extends Command{
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws PhotoOpenException {
         String tag = args.get(EventArgumentIds.TAG);
         Event e = clubData.getEvent(tag);
 
         if (!args.containsKey(EventArgumentIds.NAME)){
             if (!e.openPhotoDir()){
-                ui.print("Cannot open the photo directory now. Please try again.");
-                return false;
+                throw new PhotoOpenException("Cannot open the photo directory now. Please try again.");
             }
             ui.print("Opened directory of photos in event \"" + tag + "\".");
             return false;
@@ -58,15 +57,10 @@ public class OpenPhotoCommand extends Command{
 
         String name = args.get(EventArgumentIds.NAME);
 
-        try {
-            if (!e.openPhoto(name)){
-                ui.print("No photo has name \"" + name + "\" in event \"" + tag + "\".");
-                return false;
-            }
-        } catch (PhotoOpenException ex) {
-            ui.print(ex.getMessage());
-            return false;
+        if (!e.openPhoto(name)){
+            throw new PhotoOpenException("No photo has name \"" + name + "\" in event \"" + tag + "\".");
         }
+
         ui.print("Opened photo \"" + name + "\" in event \"" + tag + "\".");
         return false;
     }

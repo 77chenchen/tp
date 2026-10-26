@@ -1,5 +1,6 @@
 package clubflow;
 
+import clubflow.command.AddAllPhotoCommand;
 import clubflow.command.AddPhotoCommand;
 import clubflow.command.AssignMemberCommand;
 import clubflow.command.CommandParser;
@@ -126,6 +127,11 @@ public class ClubFlow {
 
         parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
         parser.registerAlias("addPhoto", "ap");
+
+        parser.register("addAllPhoto", new AddAllPhotoCommand(ui, clubData));
+        parser.registerAlias("addAllPhoto", "aap");
+        parser.registerAlias("addAllPhoto", "addAllPhotos");
+        parser.registerAlias("addAllPhoto", "addPhotos");
 
         parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
         parser.registerAlias("openPhoto", "op");

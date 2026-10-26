@@ -11,8 +11,10 @@ import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
+import clubflow.exception.PhotoOpenException;
 import clubflow.photo.Photo;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,9 +31,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PhotoTest {
-
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    public void cleanTestPhotos() throws Exception {
+        Path directory = Path.of(Event.PHOTO_SAVE_ROOT)
+                .resolve(Event.PHOTO_RELATIVE_PATH)
+                .resolve("TEST");
+
+        if (Files.exists(directory)) {
+            try (var paths = Files.walk(directory)) {
+                for (Path path : paths.sorted(
+                        java.util.Comparator.reverseOrder()).toList()) {
+                    Files.delete(path);
+                }
+            }
+        }
+    }
 
     @Test
     public void addPhoto_validImage_addsPhoto() throws Exception {
@@ -119,7 +136,8 @@ public class PhotoTest {
 
         Path missing = tempDir.resolve("missing.png");
 
-        parser.parse("addPhoto e/TEST n/photo1 p/\"" + missing + "\"");
+        assertThrows(PhotoLoadException.class,
+                () -> parser.parse("addPhoto e/TEST n/photo1 p/\"" + missing + "\""));
 
         Event event = clubData.findEventByTag("TEST").orElseThrow();
 
@@ -138,7 +156,8 @@ public class PhotoTest {
         Path invalid = tempDir.resolve("invalid.txt");
         Files.writeString(invalid, "This is not an image.");
 
-        parser.parse("addPhoto e/TEST n/photo1 p/\"" + invalid + "\"");
+        assertThrows(PhotoLoadException.class,
+                () -> parser.parse("addPhoto e/TEST n/photo1 p/\"" + invalid + "\""));
 
         Event event = clubData.findEventByTag("TEST").orElseThrow();
 
@@ -158,7 +177,8 @@ public class PhotoTest {
         Path source2 = createTestImage("source2.png");
 
         parser.parse("addPhoto e/TEST n/photo1 p/\"" + source1 + "\"");
-        parser.parse("addPhoto e/TEST n/photo1 p/\"" + source2 + "\"");
+        assertThrows(PhotoLoadException.class,
+                () -> parser.parse("addPhoto e/TEST n/photo1 p/\"" + source2 + "\""));
 
         Event event = clubData.findEventByTag("TEST").orElseThrow();
 
@@ -200,7 +220,7 @@ public class PhotoTest {
 
         parser.parse("createEvent e/TEST n/Test");
 
-        assertDoesNotThrow(
+        assertThrows(PhotoDeleteException.class,
                 () -> parser.parse("deletePhoto e/TEST n/MISSING"));
 
         Event event = clubData.findEventByTag("TEST").orElseThrow();
@@ -313,7 +333,7 @@ public class PhotoTest {
 
         parser.parse("createEvent e/TEST n/Test");
 
-        assertDoesNotThrow(
+        assertThrows(PhotoOpenException.class,
                 () -> parser.parse("openPhoto e/TEST n/MISSING"));
     }
 

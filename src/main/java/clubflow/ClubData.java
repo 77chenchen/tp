@@ -33,10 +33,14 @@ public class ClubData {
         return unsavedChanges;
     }
 
+    /** Marks the current club data as unsaved */
+    public void markUnsaved() {
+        unsavedChanges = true;
+    }
+
     /** Marks the current club data as saved */
     public void markSaved() {
         unsavedChanges = false;
-        return;
     }
 
     /**
@@ -241,6 +245,7 @@ public class ClubData {
         }
         //@@author 77chenchen
         Event previousEvent = existingEvent.get();
+        updatedEvent.copyPhotosFrom(previousEvent);
         List<EventAssignment> updatedAssignments = new ArrayList<>(assignments.size());
         for (EventAssignment assignment : assignments) {
             Event assignedEvent = assignment.getEvent() == previousEvent ? updatedEvent : assignment.getEvent();

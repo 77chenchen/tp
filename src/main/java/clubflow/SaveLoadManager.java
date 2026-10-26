@@ -281,7 +281,15 @@ public class SaveLoadManager {
 
     private void savePhotos(String saveFilePath) throws IOException {
         String photoCopyPath = Path.of(saveFilePath).toAbsolutePath().normalize().getParent().toString();
-        copyDirectory(photoCopyPath, Event.PHOTO_SAVE_ROOT + Event.PHOTO_RELATIVE_PATH);
+        Path source = Path.of(Event.PHOTO_SAVE_ROOT + Event.PHOTO_RELATIVE_PATH).toAbsolutePath().normalize();
+        Path destination = Path.of(photoCopyPath).resolve(source.getFileName());
+
+        if (source.equals(destination)) {
+            return;
+        }
+
+        deleteDirectory(destination.toString());
+        copyDirectory(photoCopyPath, source.toString());
     }
 
     private static void deleteDirectory(String path) throws IOException {
