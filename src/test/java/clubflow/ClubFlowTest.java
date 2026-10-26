@@ -201,12 +201,29 @@ class ClubFlowTest {
                         .filter(line -> line.contains("[CF] Syntax of command \"findevent\":")).count()),
                 () -> assertEquals(2, result.lines()
                         .filter(line -> line.equals("[CF] > findevent [e/Keyword] [q/Keyword] [n/Name]"
-                                + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]")).count()),
+                                + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]"
+                                + " [b/Budget] [min/Budget] [max/Budget] [s/completed|pending]")).count()),
                 () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] 1. Alice")).count()),
                 () -> assertTrue(result.contains("[CF] Aliases: [fe]")),
                 () -> assertTrue(result.contains("[CF] Syntax of command \"findmember\":")),
                 () -> assertTrue(result.contains("[CF] Aliases: [fm]")),
                 () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
+    void run_findBudgetAndStatus_reflectsMarkAndUnmarkAndContinuesAfterInvalidFilters() {
+        String result = runSession("createEvent e/PLAN n/Party b/100\ncreateEvent e/HIGH n/Meeting b/200\n"
+                + "fe s/pending max/100\nmark e/PLAN\nfe s/completed b/100\nfe s/pending max/100\n"
+                + "unmark e/PLAN\nfe s/pending min/100 max/100\nfe b/NaN\nfe s/unknown\nfe b/100\nexit\n");
+
+        assertAll(
+                () -> assertEquals(4, result.lines().filter(line -> line.equals("[CF] [PLAN] Party")).count()),
+                () -> assertFalse(result.contains("[CF] [HIGH] Meeting")),
+                () -> assertTrue(result.contains("[CF] No matching events found.")),
+                () -> assertTrue(result.contains("Search budget must be a finite non-negative number after b/.")),
+                () -> assertTrue(result.contains("Search status must be completed or pending after s/.")),
+                () -> assertTrue(result.contains("[CF] Goodbye!"))
         );
     }
 

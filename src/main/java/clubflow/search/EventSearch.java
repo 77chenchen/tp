@@ -12,7 +12,7 @@ import clubflow.UserInterface;
 import clubflow.event.Event;
 
 /**
- * Filters current events by text and dates and displays matching event summaries.
+ * Filters current events by text, dates, budgets, and completion status and displays matching summaries.
  */
 public class EventSearch {
     /** Interface used to display search results. */
@@ -35,6 +35,7 @@ public class EventSearch {
     /**
      * Finds events satisfying every supplied filter, preserving store order.
      * Text filters use case-insensitive substrings; date filters use exact dates.
+     * Budget bounds are inclusive, and status reflects whether an event is marked completed.
      *
      * @param filters non-empty filters validated by the event search command; keys and values must not be null
      */
@@ -83,6 +84,26 @@ public class EventSearch {
         case "by" -> {
             LocalDate deadline = LocalDate.parse(keyword);
             yield event -> deadline.equals(event.getDeadline());
+        }
+        case "b" -> {
+            double budget = Double.parseDouble(keyword);
+            yield event -> event.getBudget() == budget;
+        }
+        case "min" -> {
+            double minimum = Double.parseDouble(keyword);
+            yield event -> event.getBudget() >= minimum;
+        }
+        case "max" -> {
+            double maximum = Double.parseDouble(keyword);
+            yield event -> event.getBudget() <= maximum;
+        }
+        case "s" -> {
+            boolean completed = switch (keyword) {
+            case "completed" -> true;
+            case "pending" -> false;
+            default -> throw new IllegalArgumentException("Search status must be completed or pending");
+            };
+            yield event -> event.isCompleted() == completed;
         }
         default -> throw new IllegalArgumentException("Unsupported search filter: " + id);
         };

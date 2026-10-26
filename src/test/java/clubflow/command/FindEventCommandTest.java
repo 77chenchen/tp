@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -114,9 +115,9 @@ class FindEventCommandTest {
 
     @Test
     void findEvent_emptyStore_printsNotFoundMessage() throws ClubFlowException {
-        assertFalse(parser.parse("findEvent e/party"));
-
-        assertEquals(List.of("[TEST] No matching events found."), printedLines());
+        for (String filter : List.of("e/party", "b/0", "min/0", "max/0", "s/completed", "s/pending")) {
+            assertSearchResults("findEvent " + filter);
+        }
     }
 
     @Test
@@ -212,8 +213,97 @@ class FindEventCommandTest {
     }
 
     @Test
+    void findEvent_exactBudget_matchesNumbersRatherThanText() throws ClubFlowException {
+        club.addEvent(new Event("FREE", "Free event", null, null, 0, "", ""));
+        club.addEvent(new Event("EXACT", "Party", null, null, 100.50, "", ""));
+        club.addEvent(new Event("OTHER", "Meeting", null, null, 100.51, "", ""));
+
+        for (String value : List.of("100.5", "100.50", "1.005e2", "\" 100.50 \"")) {
+            assertSearchResults("fe b/" + value, "[EXACT] Party");
+        }
+        assertSearchResults("fe b/0", "[FREE] Free event");
+        assertSearchResults("fe b/-0.0", "[FREE] Free event");
+        assertSearchResults("fe b/999");
+    }
+
+    @Test
+    void findEvent_budgetBounds_areInclusiveAndMayBeUsedIndividually() throws ClubFlowException {
+        club.addEvent(new Event("FREE", "Free event", null, null, 0, "", ""));
+        club.addEvent(new Event("LOW", "Low budget", null, null, 99.99, "", ""));
+        club.addEvent(new Event("FIRST", "Party", null, null, 100.50, "", ""));
+        club.addEvent(new Event("SECOND", "Meeting", null, null, 200, "", ""));
+        club.addEvent(new Event("HIGH", "High budget", null, null, 200.01, "", ""));
+
+        assertSearchResults("fe min/100.5 max/200", "[FIRST] Party", "[SECOND] Meeting");
+        assertSearchResults("fe min/200", "[SECOND] Meeting", "[HIGH] High budget");
+        assertSearchResults("fe max/99.99", "[FREE] Free event", "[LOW] Low budget");
+        assertSearchResults("fe min/100.50 max/100.5", "[FIRST] Party");
+        assertSearchResults("fe b/100.5 min/100.5 max/100.5", "[FIRST] Party");
+        assertSearchResults("fe max/0", "[FREE] Free event");
+        assertSearchResults("fe min/1000");
+    }
+
+    @Test
+    void findEvent_status_usesCompletionFlagRatherThanEventDate() throws ClubFlowException {
+        Event pending = new Event("PENDING", "Past event", LocalDate.of(2000, 1, 1), null, 0, "", "");
+        club.addEvent(pending);
+        club.addEvent(new Event("DONE", "Future event", LocalDate.of(2099, 1, 1), null, 0, "", "", true));
+
+        assertSearchResults("fe s/\" COMPLETED \"", "[DONE] Future event");
+        assertSearchResults("fe s/PENDING", "[PENDING] Past event");
+
+        club.updateEvent(pending.withCompleted(true));
+        List<Event> originalEvents = club.getEvents();
+        club.markSaved();
+
+        assertSearchResults("fe s/completed", "[PENDING] Past event", "[DONE] Future event");
+        assertSearchResults("fe s/pending");
+        assertEquals(originalEvents, club.getEvents());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void findEvent_budgetStatusAndExistingFilters_requireEveryMatch() throws ClubFlowException {
+        LocalDate date = LocalDate.of(2026, 12, 25);
+        club.addEvent(new Event("MATCH", "Party", date, null, 100, "Hall", "Chairs", true));
+        club.addEvent(new Event("PENDING", "Party", date, null, 100, "Hall", "Chairs"));
+        club.addEvent(new Event("BUDGET", "Party", date, null, 101, "Hall", "Chairs", true));
+        club.addEvent(new Event("VENUE", "Party", date, null, 100, "Office", "Chairs", true));
+        List<Event> originalEvents = club.getEvents();
+        club.markSaved();
+
+        assertSearchResults("fe s/completed b/100 min/50 max/150 q/party n/party v/hall l/chairs d/2026-12-25",
+                "[MATCH] Party");
+        assertSearchResults("fe s/pending min/100 max/100", "[PENDING] Party");
+        assertEquals(originalEvents, club.getEvents());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void findEvent_invalidBudgetsAndStatus_rejectBeforeSearchingOrChangingData() throws ClubFlowException {
+        club.addEvent(new Event("KEEP", "Party", null, null, 100, "", ""));
+        List<Event> originalEvents = club.getEvents();
+        club.markSaved();
+
+        for (String id : List.of("b", "min", "max")) {
+            for (String value : List.of("-1", "NaN", "Infinity", "-Infinity", "1e309", "abc")) {
+                String input = "fe " + id + "/" + value;
+                assertThrows(CommandParseException.class, () -> parser.parse(input), input);
+            }
+        }
+        for (String filter : List.of("min/200 max/100", "b/50 min/100", "b/200 max/100",
+                "s/true", "s/false", "s/done", "s/complete", "s/completedx")) {
+            assertThrows(CommandParseException.class, () -> parser.parse("fe " + filter), filter);
+        }
+
+        assertEquals(List.of(), printedLines());
+        assertEquals(originalEvents, club.getEvents());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
     void findEvent_blankFilter_rejectsEvenWhenAnotherFilterIsValid() {
-        for (String id : List.of("e", "q", "n", "v", "l", "d", "by")) {
+        for (String id : List.of("e", "q", "n", "v", "l", "d", "by", "b", "min", "max", "s")) {
             String otherFilter = id.equals("e") ? "q/party" : "e/party";
             for (String value : List.of("", "\"\"", "\"   \"")) {
                 assertThrows(CommandParseException.class, () -> parser.parse("fe " + id + "/" + value));
@@ -248,10 +338,13 @@ class FindEventCommandTest {
         assertThrows(CommandParseException.class, () -> command.execute(args));
         assertThrows(IllegalArgumentException.class, () -> search.search(args));
 
-        args.put("v", null);
-        assertThrows(NullPointerException.class, () -> command.validateArgs(args));
-        assertThrows(NullPointerException.class, () -> command.execute(args));
-        assertThrows(NullPointerException.class, () -> search.search(args));
+        for (String id : command.optionalArgIds()) {
+            args.clear();
+            args.put(id, null);
+            assertThrows(NullPointerException.class, () -> command.validateArgs(args), id);
+            assertThrows(NullPointerException.class, () -> command.execute(args), id);
+            assertThrows(NullPointerException.class, () -> search.search(args), id);
+        }
         args.clear();
         args.put(null, "hall");
         assertThrows(NullPointerException.class, () -> command.validateArgs(args));
@@ -274,11 +367,28 @@ class FindEventCommandTest {
     void findEvent_unsupportedOrDuplicateArguments_rejectsInputWithoutSearching() {
         for (String input : List.of("findEvent m/Alice", "findEvent all",
                 "findEvent e/party m/Alice", "findEvent e/party e/meeting", "fe v/hall v/office",
-                "fe q/party q/meeting", "fe b/100", "fe completed/true")) {
+                "fe q/party q/meeting", "fe b/100 b/200", "fe min/0 min/100", "fe max/100 max/200",
+                "fe s/pending s/completed", "fe completed/true")) {
             assertThrows(CommandParseException.class, () -> parser.parse(input), input);
         }
 
         assertEquals(List.of(), printedLines());
+    }
+
+    /** Checks result summaries and their order for a search, including the no-match message. */
+    private void assertSearchResults(String input, String... summaries) throws ClubFlowException {
+        output.reset();
+        assertFalse(parser.parse(input));
+        List<String> expected = new ArrayList<>();
+        if (summaries.length == 0) {
+            expected.add("[TEST] No matching events found.");
+        } else {
+            expected.add("[TEST] Found " + summaries.length + " matching event(s).");
+            for (String summary : summaries) {
+                expected.add("[TEST] " + summary);
+            }
+        }
+        assertEquals(expected, printedLines(), input);
     }
 
     /**
