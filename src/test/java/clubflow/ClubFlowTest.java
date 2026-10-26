@@ -33,6 +33,7 @@ class ClubFlowTest {
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
 
+    //@@author Eugene3129
     @BeforeEach
     void captureOutput() {
         output = new ByteArrayOutputStream();
@@ -92,6 +93,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_saveCommand_reportsUnknownCommand() {
         String result = runSession("save\nexit\n");
@@ -115,6 +117,7 @@ class ClubFlowTest {
         assertFalse(secondSession.contains("Command syntax error"));
     }
 
+    //@@author Eugene3129
     @Test
     void run_missingEvents_reportsEachErrorOnceAndContinuesWithStoredData() {
         String result = runSession("createEvent e/XMAS n/Party\n"
@@ -260,6 +263,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_completionAutosave_restoresStatusInANewSessionAndAllowsUnmarking() throws IOException {
         String savedSession = runSession("createEvent e/XMAS n/\"Christmas Party\" "
@@ -290,6 +294,7 @@ class ClubFlowTest {
         assertFalse(new SaveLoadManager().load(saveFile).findEventByTag("XMAS").orElseThrow().isCompleted());
     }
 
+    //@@author Eugene3129
     @Test
     void run_memberCommands_shareAliasesAndConfirmationInput() {
         String result = runSession("createMember n/Lucy t/lucy\naddMember n/Thomas e/thomas@example.com\n"
@@ -310,6 +315,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_separateInstances_restoreAutomaticallySavedData() {
         runSession("createEvent e/PRIVATE\ncreateMember n/Lucy t/lucy\nexit\n");
@@ -340,7 +346,7 @@ class ClubFlowTest {
         assertTrue(secondSession.contains("Unassigned member Alicia from event PARTY."));
         assertTrue(new SaveLoadManager().load(testDirectory.resolve("clubs.cf")).getAssignments().isEmpty());
     }
-    //@@author
+    //@@author Eugene3129
 
     @Test
     void main_exitInput_startsAndStopsWithAssertionsEnabled() {
@@ -353,6 +359,7 @@ class ClubFlowTest {
         assertTrue(result.contains("[CF] Goodbye!"));
     }
 
+    //@@author
     /**
      * Runs a fresh application with scripted input and captures only that session's output.
      *

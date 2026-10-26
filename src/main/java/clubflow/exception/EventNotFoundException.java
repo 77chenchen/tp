@@ -1,5 +1,6 @@
 package clubflow.exception;
 
+//@@author Eugene3129
 /**
  * Reports that a command refers to an event tag that is not currently stored.
  */

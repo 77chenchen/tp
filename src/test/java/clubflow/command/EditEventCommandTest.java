@@ -28,6 +28,7 @@ import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
 
+//@@author Eugene3129
 /**
  * Tests partial event updates, validation, and persistence through the command parser.
  */

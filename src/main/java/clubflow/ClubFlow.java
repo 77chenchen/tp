@@ -167,6 +167,7 @@ public class ClubFlow {
         LOGGER.info("ClubFlow initialized");
     }
 
+    //@@author Eugene3129
     /**
      * Routes application logs to a file instead of Java's default console handler.
      *
@@ -188,6 +189,7 @@ public class ClubFlow {
         return packageLogger;
     }
 
+    //@@author
     /**
      * Starts running the ClubFlow app.
      */

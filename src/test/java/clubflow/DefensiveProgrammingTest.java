@@ -18,6 +18,7 @@ import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
 
+//@@author Eugene3129
 /**
  * Tests defensive checks at the application's public boundaries.
  */

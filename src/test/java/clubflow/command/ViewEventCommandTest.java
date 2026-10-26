@@ -22,6 +22,7 @@ import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.EventNotFoundException;
 
+//@@author Eugene3129
 /**
  * Checks the event details and messages displayed through the command parser.
  */

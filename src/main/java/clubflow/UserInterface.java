@@ -113,6 +113,7 @@ public class UserInterface {
         print(message, 0);
     }
 
+    //@@author Eugene3129
     /**
      * Prints a message with two spaces per indentation level after the print prefix.
      *
@@ -128,6 +129,7 @@ public class UserInterface {
         System.out.println(printPrefix + INDENT.repeat(indentLevel) + message);
     }
 
+    //@@author czfray
     /**
      * Prints a block of text without the application prefix for easy copying.
      * 

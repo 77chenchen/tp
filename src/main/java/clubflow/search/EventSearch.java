@@ -32,6 +32,7 @@ public class EventSearch {
         this.club = Objects.requireNonNull(club, "Club data must not be null");
     }
 
+    //@@author Eugene3129
     /**
      * Finds events satisfying every supplied filter, preserving store order.
      * Text filters use case-insensitive substrings; date filters use exact dates.

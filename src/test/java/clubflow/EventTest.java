@@ -36,6 +36,7 @@ public class EventTest {
         assertFalse(event.isCompleted());
     }
 
+    //@@author Eugene3129
     @Test
     public void withCompleted_changesStateWithoutChangingOriginalDetails() {
         Event original = new Event("XMAS", "Party", LocalDate.of(2026, 12, 25),

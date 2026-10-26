@@ -43,6 +43,7 @@ public class CommandParser {
         aliasMap = new HashMap<>();
     }
 
+    //@@author Eugene3129
     /**
      * Registers a command into the command parser.
      * @param keyword The keyword to set for the command.
@@ -67,6 +68,7 @@ public class CommandParser {
         LOGGER.fine(() -> "Registered command: " + normalizedKeyword);
     }
 
+    //@@author
     /**
      * Registers an alias for an existing command.
      *
@@ -126,6 +128,7 @@ public class CommandParser {
         return terminate;
     }
 
+    //@@author Eugene3129
     /**
      * Verifies that a command declares a consistent set of argument IDs.
      * Invalid declarations indicate a programming error, rather than bad user input.
@@ -183,6 +186,7 @@ public class CommandParser {
         return separate(null, input);
     }
 
+    //@@author
     /**
      * Recursively separates the remaining input and accumulates its tokens.
      *

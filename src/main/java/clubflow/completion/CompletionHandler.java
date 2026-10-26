@@ -2,6 +2,7 @@ package clubflow.completion;
 
 import clubflow.exception.ClubFlowException;
 
+//@@author Eugene3129
 /**
  * Updates completion for one item type and allows application errors to reach the main loop.
  */
