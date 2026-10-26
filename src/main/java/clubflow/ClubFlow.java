@@ -88,7 +88,7 @@ public class ClubFlow {
         parser.registerAlias("createEvent", "ce");
 
         parser.register("editEvent", new EditEventCommand(ui, clubData));
-        parser.registerAlias("editEvent", "e");
+        parser.registerAlias("editEvent", "ee");
 
         parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
         parser.registerAlias("deleteEvent", "de");
@@ -106,6 +106,7 @@ public class ClubFlow {
         parser.register("createMember", new CreateMemberCommand(ui, clubData));
         parser.registerAlias("createMember", "cm");
         parser.registerAlias("createMember", "addMember");
+
         parser.register("viewMember", new ViewMemberCommand(ui, clubData));
         parser.registerAlias("viewMember", "vm");
 
