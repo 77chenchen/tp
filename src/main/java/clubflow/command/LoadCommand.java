@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.SaveLoadManager;
 import clubflow.exception.CommandParseException;
@@ -20,17 +20,17 @@ public class LoadCommand extends Command {
     private static final Logger LOGGER = Logger.getLogger(LoadCommand.class.getName());
 
     /** Club data shared with the other commands. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a load command for the shared club data.
      *
      * @param ui interface used to display the result
-     * @param clubData club data to replace after a successful load
+     * @param club club data to replace after a successful load
      */
-    public LoadCommand(UserInterface ui, ClubData clubData) {
+    public LoadCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("p/Path");
     }
 
@@ -80,8 +80,8 @@ public class LoadCommand extends Command {
         Path path = Path.of(pathString);
 
         try {
-            ClubData loaded = new SaveLoadManager().load(path);
-            clubData.replaceWith(loaded);
+            Club loaded = new SaveLoadManager().load(path);
+            club.replaceWith(loaded);
             ui.print("Data loaded successfully!");
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Could not load club data from " + path, e);

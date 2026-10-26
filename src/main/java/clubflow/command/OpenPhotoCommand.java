@@ -1,6 +1,6 @@
 package clubflow.command;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
@@ -10,16 +10,16 @@ import java.util.HashMap;
 
 public class OpenPhotoCommand extends Command{
 
-    private ClubData clubData;
+    private Club club;
 
     /**
      * Creates an open photo command.
      *
      * @param ui User Interface to print command messages in.
      */
-    public OpenPhotoCommand(UserInterface ui, ClubData clubData) {
+    public OpenPhotoCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = clubData;
+        this.club = club;
         addSyntax("e/Tag");
         addSyntax("e/Tag n/Name");
     }
@@ -36,7 +36,7 @@ public class OpenPhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.getEvent(args.get(EventArgumentIds.TAG)) == null){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -45,7 +45,7 @@ public class OpenPhotoCommand extends Command{
     @Override
     public boolean execute(HashMap<String, String> args) {
         String tag = args.get(EventArgumentIds.TAG);
-        Event e = clubData.getEvent(tag);
+        Event e = club.getEvent(tag);
 
         if (!args.containsKey(EventArgumentIds.NAME)){
             if (!e.openPhotoDir()){

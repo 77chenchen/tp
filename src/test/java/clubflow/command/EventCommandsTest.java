@@ -12,11 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
+import clubflow.Club;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
@@ -47,13 +47,13 @@ class EventCommandsTest {
 
     @Test
     void eventCommands_sharedClubData_createViewAndDeleteEvent() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createEventCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createEventCommandParser(club);
 
         parser.parse("createEvent e/XMAS n/\"Christmas Party\" d/2026-12-25 "
                 + "by/2026-12-20 b/500 v/\"Main Hall\" l/\"Tables and chairs\"");
 
-        Event event = clubData.findEventByTag("XMAS").orElseThrow();
+        Event event = club.findEventByTag("XMAS").orElseThrow();
         assertEquals("Christmas Party", event.getName());
         assertEquals(LocalDate.of(2026, 12, 25), event.getDate());
         assertEquals(LocalDate.of(2026, 12, 20), event.getDeadline());
@@ -69,7 +69,7 @@ class EventCommandsTest {
         assertTrue(printedLines().contains("[TEST] [XMAS] Christmas Party"));
 
         parser.parse("deleteEvent e/XMAS");
-        assertEquals(0, clubData.getEvents().size());
+        assertEquals(0, club.getEvents().size());
 
         output.reset();
         EventNotFoundException error = assertThrows(EventNotFoundException.class,
@@ -84,11 +84,11 @@ class EventCommandsTest {
 
     @Test
     void deleteEvent_unknownTag_throwsAndPreservesExistingEvents() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createEventCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createEventCommandParser(club);
         parser.parse("createEvent e/XMAS n/\"Christmas Party\"");
         parser.parse("createEvent e/AGM n/Meeting");
-        List<Event> existingEvents = clubData.getEvents();
+        List<Event> existingEvents = club.getEvents();
         output.reset();
 
         EventNotFoundException error = assertThrows(EventNotFoundException.class,
@@ -96,13 +96,13 @@ class EventCommandsTest {
 
         assertEquals("Event not found: UNKNOWN", error.getMessage());
         assertEquals(List.of(), printedLines());
-        assertEquals(existingEvents, clubData.getEvents());
+        assertEquals(existingEvents, club.getEvents());
     }
 
     @Test
     void createEvent_invalidValues_rejectsCommand() {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createEventCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createEventCommandParser(club);
 
         assertAll(
                 () -> assertThrows(CommandParseException.class,
@@ -118,19 +118,19 @@ class EventCommandsTest {
                 () -> assertThrows(CommandParseException.class,
                         () -> parser.parse("deleteEvent e/"))
         );
-        assertEquals(0, clubData.getEvents().size());
+        assertEquals(0, club.getEvents().size());
     }
 
     @Test
     void createEvent_duplicateTags_throwsAndPreservesExistingEvents() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createEventCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createEventCommandParser(club);
 
         parser.parse("createEvent e/XMAS n/Original d/2026-12-25 "
                 + "by/2026-12-20 b/500 v/Hall l/Chairs");
-        clubData.updateEvent(clubData.getEvents().getFirst().withCompleted(true));
+        club.updateEvent(club.getEvents().getFirst().withCompleted(true));
         parser.parse("createEvent e/AGM n/Meeting");
-        List<Event> existingEvents = clubData.getEvents();
+        List<Event> existingEvents = club.getEvents();
         output.reset();
 
         for (String tag : List.of("XMAS", "xmas", "XmAs")) {
@@ -138,34 +138,34 @@ class EventCommandsTest {
                     () -> parser.parse("createEvent e/" + tag + " n/Duplicate b/999"));
 
             assertEquals("Event already exists: " + tag, error.getMessage());
-            assertEquals(existingEvents, clubData.getEvents());
+            assertEquals(existingEvents, club.getEvents());
         }
         assertEquals(List.of(), printedLines());
     }
 
     @Test
     void createEvent_sameNameWithDifferentTags_allowsBothEvents() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createEventCommandParser(clubData);
+        Club club = new Club();
+        CommandParser parser = createEventCommandParser(club);
 
         parser.parse("createEvent e/XMAS n/Party");
         parser.parse("createEvent e/NYE n/Party");
 
-        assertEquals(List.of("XMAS", "NYE"), clubData.getEvents().stream().map(Event::getTag).toList());
+        assertEquals(List.of("XMAS", "NYE"), club.getEvents().stream().map(Event::getTag).toList());
     }
 
     /**
      * Creates a parser whose event commands all share the supplied data store.
      *
-     * @param clubData data store shared by the event commands
+     * @param club data store shared by the event commands
      * @return parser configured with create, view, and delete event commands
      */
-    private CommandParser createEventCommandParser(ClubData clubData) {
+    private CommandParser createEventCommandParser(Club club) {
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
-        parser.register("createEvent", new CreateEventCommand(ui, clubData));
-        parser.register("viewEvent", new ViewEventCommand(ui, clubData));
-        parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
+        parser.register("createEvent", new CreateEventCommand(ui, club));
+        parser.register("viewEvent", new ViewEventCommand(ui, club));
+        parser.register("deleteEvent", new DeleteEventCommand(ui, club));
         return parser;
     }
 

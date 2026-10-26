@@ -16,7 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
@@ -29,7 +29,7 @@ class ViewEventCommandTest {
     private final PrintStream originalOutput = System.out;
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
-    private ClubData clubData;
+    private Club club;
     private CommandParser parser;
 
     @BeforeEach
@@ -37,10 +37,10 @@ class ViewEventCommandTest {
         output = new ByteArrayOutputStream();
         capturedOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
         System.setOut(capturedOutput);
-        clubData = new ClubData();
+        club = new Club();
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         parser = new CommandParser(ui);
-        parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        parser.register("viewEvent", new ViewEventCommand(ui, club));
     }
 
     @AfterEach
@@ -51,8 +51,8 @@ class ViewEventCommandTest {
 
     @Test
     void viewEvent_matchingTag_printsOnlySelectedEventDetails() throws ClubFlowException {
-        clubData.addEvent(christmasParty());
-        clubData.addEvent(new Event("OTHER", "Other event", null, null, 0, "", ""));
+        club.addEvent(christmasParty());
+        club.addEvent(new Event("OTHER", "Other event", null, null, 0, "", ""));
 
         assertFalse(parser.parse("viewEvent e/xmas"));
 
@@ -70,7 +70,7 @@ class ViewEventCommandTest {
     @Test
     void viewEvent_missingDetails_printsPlaceholdersAndZeroBudget() throws ClubFlowException {
         // Both empty strings and whitespace count as unspecified text.
-        clubData.addEvent(new Event("DRAFT", "", null, null, 0, "   ", ""));
+        club.addEvent(new Event("DRAFT", "", null, null, 0, "   ", ""));
 
         assertFalse(parser.parse("viewEvent e/DRAFT"));
 
@@ -87,8 +87,8 @@ class ViewEventCommandTest {
 
     @Test
     void viewEvent_allEvents_printsEveryEventInInsertionOrder() throws ClubFlowException {
-        clubData.addEvent(christmasParty().withCompleted(true));
-        clubData.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
+        club.addEvent(christmasParty().withCompleted(true));
+        club.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
 
         assertFalse(parser.parse("viewEvent all"));
 
@@ -121,19 +121,19 @@ class ViewEventCommandTest {
     @Test
     void viewEvent_unknownTag_throwsWithoutChangingEventsOrPrintingErrors() {
         Event existing = christmasParty();
-        clubData.addEvent(existing);
+        club.addEvent(existing);
 
         EventNotFoundException error = assertThrows(EventNotFoundException.class,
                 () -> parser.parse("viewEvent e/UNKNOWN"));
 
         assertEquals("Event not found: UNKNOWN", error.getMessage());
-        assertEquals(List.of(existing), clubData.getEvents());
+        assertEquals(List.of(existing), club.getEvents());
         assertEquals(List.of(), printedLines());
     }
 
     @Test
     void viewEvent_nonEnglishLocale_keepsBudgetDecimalPoint() throws ClubFlowException {
-        clubData.addEvent(new Event("MEETING", "Meeting", null, null, 12.5, "", ""));
+        club.addEvent(new Event("MEETING", "Meeting", null, null, 12.5, "", ""));
         Locale originalLocale = Locale.getDefault(Locale.Category.FORMAT);
         try {
             // German formatting normally uses a comma as its decimal separator.

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 
@@ -16,17 +16,17 @@ public class EventSearch {
     private final UserInterface ui;
 
     /** Shared store queried on each search so results reflect the current events. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates an event search handler.
      *
      * @param ui user interface used to display matches
-     * @param clubData shared club data containing the events to search
+     * @param club shared club data containing the events to search
      */
-    public EventSearch(UserInterface ui, ClubData clubData) {
+    public EventSearch(UserInterface ui, Club club) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
     }
 
     /**
@@ -37,7 +37,7 @@ public class EventSearch {
     public void search(String keyword) {
         String normalizedKeyword = Objects.requireNonNull(keyword, "Search keyword must not be null")
                 .toLowerCase(Locale.ROOT);
-        List<Event> matches = clubData.getEvents().stream()
+        List<Event> matches = club.getEvents().stream()
                 .filter(event -> event.getTag().toLowerCase(Locale.ROOT).contains(normalizedKeyword)
                         || event.getName().toLowerCase(Locale.ROOT).contains(normalizedKeyword))
                 .toList();

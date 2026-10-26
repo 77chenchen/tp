@@ -55,8 +55,8 @@ public class DefensiveProgrammingTest {
                 () -> assertThrows(IllegalArgumentException.class,
                         () -> new Event("PARTY", "Party", LocalDate.now(), null,
                                 Double.NaN, "Hall", "")),
-                () -> assertThrows(NullPointerException.class, () -> new ClubData().addMember(null)),
-                () -> assertThrows(NullPointerException.class, () -> new ClubData().addEvent(null))
+                () -> assertThrows(NullPointerException.class, () -> new Club().addMember(null)),
+                () -> assertThrows(NullPointerException.class, () -> new Club().addEvent(null))
         );
     }
 

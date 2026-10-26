@@ -13,11 +13,11 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import clubflow.Club;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
@@ -45,13 +45,13 @@ class MemberCommandsTest {
 
     @Test
     void createMember_validDetails_storesMemberAndRepeatedFunctions() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = new Club();
+        CommandParser parser = createMemberParser(club, "");
 
         parser.parse("createMember n/\"Lucy Tan\" t/lucytan e/lucy@example.com "
                 + "f/president f/publicity");
 
-        Member member = clubData.getMembers().getFirst();
+        Member member = club.getMembers().getFirst();
         assertAll(
                 () -> assertEquals("Lucy Tan", member.getName()),
                 () -> assertEquals("lucytan", member.getTelegramHandle()),
@@ -63,12 +63,12 @@ class MemberCommandsTest {
 
     @Test
     void addMember_emailOnlyAlias_storesMemberWithoutFunctions() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = new Club();
+        CommandParser parser = createMemberParser(club, "");
 
         parser.parse("addMember n/Thomas e/thomas@example.com");
 
-        Member member = clubData.getMembers().getFirst();
+        Member member = club.getMembers().getFirst();
         assertAll(
                 () -> assertEquals("Thomas", member.getName()),
                 () -> assertEquals("", member.getTelegramHandle()),
@@ -78,8 +78,8 @@ class MemberCommandsTest {
 
     @Test
     void createMember_missingOrInvalidRequiredDetails_throwsParseException() {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = new Club();
+        CommandParser parser = createMemberParser(club, "");
 
         assertAll(
                 () -> assertThrows(CommandParseException.class,
@@ -91,13 +91,13 @@ class MemberCommandsTest {
                 () -> assertThrows(CommandParseException.class,
                         () -> parser.parse("createMember n/Lucy e/lucy@example.com f/\"\""))
         );
-        assertTrue(clubData.getMembers().isEmpty());
+        assertTrue(club.getMembers().isEmpty());
     }
 
     @Test
     void viewMember_noMembers_printsEmptyMessage() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = new Club();
+        CommandParser parser = createMemberParser(club, "");
 
         parser.parse("viewMember");
 
@@ -106,10 +106,10 @@ class MemberCommandsTest {
 
     @Test
     void viewMember_membersExist_printsIndexesAndDetails() throws ClubFlowException {
-        ClubData clubData = new ClubData();
-        clubData.addMember(new Member("Lucy", "lucy", "", List.of("president")));
-        clubData.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = new Club();
+        club.addMember(new Member("Lucy", "lucy", "", List.of("president")));
+        club.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
+        CommandParser parser = createMemberParser(club, "");
 
         parser.parse("viewMember");
 
@@ -126,49 +126,49 @@ class MemberCommandsTest {
 
     @Test
     void deleteMember_forceFlag_removesMemberWithoutConfirmation() throws ClubFlowException {
-        ClubData clubData = dataWithTwoMembers();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = dataWithTwoMembers();
+        CommandParser parser = createMemberParser(club, "");
 
         parser.parse("deleteMember i/1 /f");
 
         assertAll(
-                () -> assertEquals(1, clubData.getMembers().size()),
-                () -> assertEquals("Thomas", clubData.getMembers().getFirst().getName()),
+                () -> assertEquals(1, club.getMembers().size()),
+                () -> assertEquals("Thomas", club.getMembers().getFirst().getName()),
                 () -> assertTrue(printedOutput().contains("Deleted member: Lucy"))
         );
     }
 
     @Test
     void deleteMember_withoutForce_respectsConfirmation() throws ClubFlowException {
-        ClubData clubData = dataWithTwoMembers();
-        CommandParser parser = createMemberParser(clubData, "no\n");
+        Club club = dataWithTwoMembers();
+        CommandParser parser = createMemberParser(club, "no\n");
 
         parser.parse("deleteMember i/1");
 
         assertAll(
-                () -> assertEquals(2, clubData.getMembers().size()),
+                () -> assertEquals(2, club.getMembers().size()),
                 () -> assertTrue(printedOutput().contains("Deletion cancelled."))
         );
     }
 
     @Test
     void deleteMember_confirmed_removesSelectedMember() throws ClubFlowException {
-        ClubData clubData = dataWithTwoMembers();
-        CommandParser parser = createMemberParser(clubData, "yes\n");
+        Club club = dataWithTwoMembers();
+        CommandParser parser = createMemberParser(club, "yes\n");
 
         parser.parse("deleteMember i/2");
 
         assertAll(
-                () -> assertEquals(1, clubData.getMembers().size()),
-                () -> assertEquals("Lucy", clubData.getMembers().getFirst().getName()),
+                () -> assertEquals(1, club.getMembers().size()),
+                () -> assertEquals("Lucy", club.getMembers().getFirst().getName()),
                 () -> assertTrue(printedOutput().contains("Deleted member: Thomas"))
         );
     }
 
     @Test
     void deleteMember_invalidIndex_rejectsOrReportsMissingMember() throws ClubFlowException {
-        ClubData clubData = dataWithTwoMembers();
-        CommandParser parser = createMemberParser(clubData, "");
+        Club club = dataWithTwoMembers();
+        CommandParser parser = createMemberParser(club, "");
 
         assertAll(
                 () -> assertThrows(CommandParseException.class,
@@ -178,7 +178,7 @@ class MemberCommandsTest {
                 () -> assertFalse(parser.parse("deleteMember i/3 /f"))
         );
         assertAll(
-                () -> assertEquals(2, clubData.getMembers().size()),
+                () -> assertEquals(2, club.getMembers().size()),
                 () -> assertTrue(printedOutput().contains("Member not found at index 3."))
         );
     }
@@ -186,26 +186,26 @@ class MemberCommandsTest {
     /**
      * Creates a parser with all member commands and aliases registered.
      */
-    private CommandParser createMemberParser(ClubData clubData, String input) {
+    private CommandParser createMemberParser(Club club, String input) {
         System.setIn(new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)));
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
-        CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, clubData);
+        CreateMemberCommand createMemberCommand = new CreateMemberCommand(ui, club);
         parser.register("createMember", createMemberCommand);
         parser.register("addMember", createMemberCommand);
-        parser.register("viewMember", new ViewMemberCommand(ui, clubData));
-        parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
+        parser.register("viewMember", new ViewMemberCommand(ui, club));
+        parser.register("deleteMember", new DeleteMemberCommand(ui, club));
         return parser;
     }
 
     /**
      * Returns sample data whose order makes index-based deletion easy to verify.
      */
-    private ClubData dataWithTwoMembers() {
-        ClubData clubData = new ClubData();
-        clubData.addMember(new Member("Lucy", "lucy", "", List.of("president")));
-        clubData.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
-        return clubData;
+    private Club dataWithTwoMembers() {
+        Club club = new Club();
+        club.addMember(new Member("Lucy", "lucy", "", List.of("president")));
+        club.addMember(new Member("Thomas", "", "thomas@example.com", List.of()));
+        return club;
     }
 
     private String printedOutput() {

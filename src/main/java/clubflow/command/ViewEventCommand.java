@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
@@ -18,17 +18,17 @@ public class ViewEventCommand extends Command {
     private static final String EVENT_DETAIL_FORMAT = "%-10s %s";
 
     /** Shared store queried by this command. */
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command for viewing events.
      *
      * @param ui user interface used to display event information
-     * @param clubData shared club data containing the events to display
+     * @param club shared club data containing the events to display
      */
-    public ViewEventCommand(UserInterface ui, ClubData clubData) {
+    public ViewEventCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag");
         addSyntax("all");
     }
@@ -69,18 +69,18 @@ public class ViewEventCommand extends Command {
         assert args.containsKey(EventArgumentIds.ALL) ^ args.containsKey(EventArgumentIds.TAG)
                 : "Validated arguments must select one view mode";
         if (args.containsKey(EventArgumentIds.ALL)) {
-            if (clubData.getEvents().isEmpty()) {
+            if (club.getEvents().isEmpty()) {
                 ui.print("No events found.");
                 return false;
             }
 
             ui.print("Displaying all events.");
-            for (Event event : clubData.getEvents()) {
+            for (Event event : club.getEvents()) {
                 printEvent(event);
             }
         } else {
             String tag = args.get(EventArgumentIds.TAG);
-            Event event = clubData.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
+            Event event = club.findEventByTag(tag).orElseThrow(() -> new EventNotFoundException(tag));
             printEvent(event);
         }
 

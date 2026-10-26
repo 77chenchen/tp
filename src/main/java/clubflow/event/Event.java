@@ -155,6 +155,16 @@ public class Event {
         return new Event(tag, name, date, deadline, budget, venue, logistics, completed);
     }
 
+    //@@author camimaigrot
+    /**
+     * Copies photo references from another Event.
+     *
+     * @param original event containing existing photos
+     */
+    public void copyPhotosFrom(Event original) {
+        this.photos = new HashMap<>(original.photos);
+    }
+
     //@@author czfray
     public List<String> getPhotoNames(){
         return new ArrayList<>(photos.keySet());
@@ -219,7 +229,6 @@ public class Event {
                 errors++;
             }
         }
-        photos = new HashMap<>();
         return errors;
     }
 

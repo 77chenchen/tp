@@ -12,8 +12,8 @@ import clubflow.member.Member;
 /**
  * Stores the members and events managed by ClubFlow.
  */
-public class ClubData {
-    private static final Logger LOGGER = Logger.getLogger(ClubData.class.getName());
+public class Club {
+    private static final Logger LOGGER = Logger.getLogger(Club.class.getName());
 
     // These mutable lists remain private; callers receive read-only snapshots.
     private final List<Member> members = new ArrayList<>();
@@ -27,6 +27,13 @@ public class ClubData {
         return unsavedChanges;
     }
 
+    //@@author camimaigrot
+    /** Marks this club as having unsaved changes */
+    public void markUnsaved() {
+        unsavedChanges = true;
+    }
+
+    //@@author Bryan-chua
     /** Marks the current club data as saved */
     public void markSaved() {
         unsavedChanges = false;
@@ -70,7 +77,7 @@ public class ClubData {
 
     /**
      * Returns a read-only snapshot of the club's members.
-     * Later changes to ClubData are not reflected in the returned list.
+     * Later changes to Club are not reflected in the returned list.
      *
      * @return members currently stored in ClubFlow
      */
@@ -111,7 +118,7 @@ public class ClubData {
 
     /**
      * Returns a read-only snapshot of the club's events.
-     * Later changes to ClubData are not reflected in the returned list.
+     * Later changes to Club are not reflected in the returned list.
      *
      * @return events currently stored in ClubFlow
      */
@@ -162,6 +169,9 @@ public class ClubData {
             return false;
         }
         int previousSize = events.size();
+
+        updatedEvent.copyPhotosFrom(existingEvent.get());
+
         events.set(events.indexOf(existingEvent.get()), updatedEvent);
         assert events.size() == previousSize : "Updating an event must preserve the event count";
         LOGGER.fine(() -> "Updated event: " + updatedEvent.getTag());
@@ -196,7 +206,7 @@ public class ClubData {
      *
      * @param loaded club data whose members and events should become current
      */
-    public void replaceWith(ClubData loaded) {
+    public void replaceWith(Club loaded) {
         Objects.requireNonNull(loaded, "Loaded club data must not be null");
         List<Member> loadedMembers = loaded.getMembers();
         List<Event> loadedEvents = loaded.getEvents();

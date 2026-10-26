@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -13,17 +13,17 @@ import clubflow.member.Member;
  * Deletes a member selected by the one-based index shown by {@code viewMember}.
  */
 public class DeleteMemberCommand extends Command {
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command that deletes members from the supplied data store.
      *
      * @param ui user interface used to confirm and display command results
-     * @param clubData shared club data from which members are deleted
+     * @param club shared club data from which members are deleted
      */
-    public DeleteMemberCommand(UserInterface ui, ClubData clubData) {
+    public DeleteMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("i/Index [f]");
     }
 
@@ -59,7 +59,7 @@ public class DeleteMemberCommand extends Command {
         Objects.requireNonNull(args, "Arguments must not be null");
         assert args.containsKey(MemberArgumentIds.INDEX) : "Validated arguments must contain a member index";
         int index = Integer.parseInt(args.get(MemberArgumentIds.INDEX));
-        Optional<Member> memberToDelete = clubData.findMemberByIndex(index);
+        Optional<Member> memberToDelete = club.findMemberByIndex(index);
         if (memberToDelete.isEmpty()) {
             ui.print("Member not found at index " + index + ".");
             return false;
@@ -71,7 +71,7 @@ public class DeleteMemberCommand extends Command {
             return false;
         }
 
-        Optional<Member> removedMember = clubData.removeMemberByIndex(index);
+        Optional<Member> removedMember = club.removeMemberByIndex(index);
         assert removedMember.isPresent() && removedMember.get() == member
                 : "The selected member must still exist when deletion occurs";
         ui.print("Deleted member: " + member.getName());

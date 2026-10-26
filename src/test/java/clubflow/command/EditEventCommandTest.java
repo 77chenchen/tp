@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.SaveLoadManager;
 import clubflow.UserInterface;
 import clubflow.event.Event;
@@ -35,7 +35,7 @@ class EditEventCommandTest {
     private final PrintStream originalOutput = System.out;
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
-    private ClubData clubData;
+    private Club club;
     private CommandParser parser;
     private Event originalEvent;
 
@@ -44,13 +44,13 @@ class EditEventCommandTest {
         output = new ByteArrayOutputStream();
         capturedOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
         System.setOut(capturedOutput);
-        clubData = new ClubData();
+        club = new Club();
         originalEvent = new Event("XMAS", "Christmas Party", LocalDate.of(2026, 12, 25),
                 LocalDate.of(2026, 12, 20), 500, "Main Hall", "Tables and chairs");
-        clubData.addEvent(originalEvent);
+        club.addEvent(originalEvent);
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         parser = new CommandParser(ui);
-        parser.register("editEvent", new EditEventCommand(ui, clubData));
+        parser.register("editEvent", new EditEventCommand(ui, club));
     }
 
     @AfterEach
@@ -63,7 +63,7 @@ class EditEventCommandTest {
     void editEvent_oneField_preservesOmittedDetailsAndOriginalTag() throws ClubFlowException {
         assertFalse(parser.parse("EDITEVENT E/xmas v/\"New Hall\""));
 
-        Event updated = clubData.findEventByTag("XMAS").orElseThrow();
+        Event updated = club.findEventByTag("XMAS").orElseThrow();
         assertEquals("New Hall", updated.getVenue());
         assertEquals("XMAS", updated.getTag());
         assertEquals(originalEvent.getName(), updated.getName());
@@ -79,23 +79,23 @@ class EditEventCommandTest {
         assertFalse(parser.parse("editEvent e/XMAS n/\"Winter Dinner\" d/2026-12-26 "
                 + "by/2026-12-21 b/625.50 v/Restaurant l/\"Book tables\""));
 
-        Event updated = clubData.findEventByTag("XMAS").orElseThrow();
+        Event updated = club.findEventByTag("XMAS").orElseThrow();
         assertEquals("Winter Dinner", updated.getName());
         assertEquals(LocalDate.of(2026, 12, 26), updated.getDate());
         assertEquals(LocalDate.of(2026, 12, 21), updated.getDeadline());
         assertEquals(625.50, updated.getBudget());
         assertEquals("Restaurant", updated.getVenue());
         assertEquals("Book tables", updated.getLogistics());
-        assertEquals(1, clubData.getEvents().size());
+        assertEquals(1, club.getEvents().size());
     }
 
     @Test
     void editEvent_draftEvent_preservesUnspecifiedDefaults() throws ClubFlowException {
-        clubData.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
+        club.addEvent(new Event("DRAFT", "", null, null, 0, "", ""));
 
         assertFalse(parser.parse("editEvent e/DRAFT n/Planning"));
 
-        Event updated = clubData.findEventByTag("DRAFT").orElseThrow();
+        Event updated = club.findEventByTag("DRAFT").orElseThrow();
         assertEquals("Planning", updated.getName());
         assertNull(updated.getDate());
         assertNull(updated.getDeadline());
@@ -108,7 +108,7 @@ class EditEventCommandTest {
     void editEvent_emptyTextAndZeroBudget_clearsSelectedDetails() throws ClubFlowException {
         assertFalse(parser.parse("editEvent e/XMAS n/\"\" v/\"\" l/\"\" b/0"));
 
-        Event updated = clubData.findEventByTag("XMAS").orElseThrow();
+        Event updated = club.findEventByTag("XMAS").orElseThrow();
         assertEquals("", updated.getName());
         assertEquals("", updated.getVenue());
         assertEquals("", updated.getLogistics());
@@ -123,7 +123,7 @@ class EditEventCommandTest {
                 () -> parser.parse("editEvent e/UNKNOWN n/New"));
 
         assertEquals("Event not found: UNKNOWN", error.getMessage());
-        assertEquals(List.of(originalEvent), clubData.getEvents());
+        assertEquals(List.of(originalEvent), club.getEvents());
         assertEquals(List.of(), printedLines());
     }
 
@@ -135,10 +135,10 @@ class EditEventCommandTest {
             String input = "editEvent e/XMAS n/Changed " + field;
 
             assertThrows(CommandParseException.class, () -> parser.parse(input), input);
-            assertSame(originalEvent, clubData.findEventByTag("XMAS").orElseThrow());
+            assertSame(originalEvent, club.findEventByTag("XMAS").orElseThrow());
         }
         assertThrows(CommandParseException.class, () -> parser.parse("editEvent e/XMAS n/Bad|Name"));
-        assertSame(originalEvent, clubData.findEventByTag("XMAS").orElseThrow());
+        assertSame(originalEvent, club.findEventByTag("XMAS").orElseThrow());
         assertEquals(List.of(), printedLines());
     }
 
@@ -150,29 +150,29 @@ class EditEventCommandTest {
             assertThrows(CommandParseException.class, () -> parser.parse(input), input);
         }
 
-        assertEquals(List.of(originalEvent), clubData.getEvents());
+        assertEquals(List.of(originalEvent), club.getEvents());
         assertEquals(List.of(), printedLines());
     }
 
     @Test
     void editEvent_multipleEvents_preservesOrderAndOtherEvents() throws ClubFlowException {
         Event other = new Event("OTHER", "Other", null, null, 0, "", "");
-        clubData.addEvent(other);
+        club.addEvent(other);
 
         parser.parse("editEvent e/XMAS n/Changed");
 
-        assertEquals("XMAS", clubData.getEvents().getFirst().getTag());
-        assertEquals("Changed", clubData.getEvents().getFirst().getName());
-        assertSame(other, clubData.getEvents().get(1));
+        assertEquals("XMAS", club.getEvents().getFirst().getTag());
+        assertEquals("Changed", club.getEvents().getFirst().getName());
+        assertSame(other, club.getEvents().get(1));
     }
 
     @Test
     void editEvent_completedEvent_preservesCompletionState() throws ClubFlowException {
-        clubData.updateEvent(originalEvent.withCompleted(true));
+        club.updateEvent(originalEvent.withCompleted(true));
 
         parser.parse("editEvent e/XMAS n/Dinner");
 
-        Event updated = clubData.findEventByTag("XMAS").orElseThrow();
+        Event updated = club.findEventByTag("XMAS").orElseThrow();
         assertTrue(updated.isCompleted());
         assertEquals("Dinner", updated.getName());
     }
@@ -184,7 +184,7 @@ class EditEventCommandTest {
         SaveLoadManager storage = new SaveLoadManager();
         Path saveFile = directory.resolve("edited.cf");
 
-        storage.save(clubData, saveFile);
+        storage.save(club, saveFile);
         Event loaded = storage.load(saveFile).findEventByTag("XMAS").orElseThrow();
 
         assertEquals("Dinner", loaded.getName());

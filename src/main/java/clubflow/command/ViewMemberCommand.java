@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.member.Member;
 
@@ -12,17 +12,17 @@ import clubflow.member.Member;
  * Displays all members currently stored in the club.
  */
 public class ViewMemberCommand extends Command {
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command for viewing members.
      *
      * @param ui user interface used to display member information
-     * @param clubData shared club data containing the members to display
+     * @param club shared club data containing the members to display
      */
-    public ViewMemberCommand(UserInterface ui, ClubData clubData) {
+    public ViewMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("");
     }
 
@@ -39,7 +39,7 @@ public class ViewMemberCommand extends Command {
     @Override
     public boolean execute(HashMap<String, String> args) {
         Objects.requireNonNull(args, "Arguments must not be null");
-        List<Member> members = clubData.getMembers();
+        List<Member> members = club.getMembers();
         if (members.isEmpty()) {
             ui.print("No members found.");
             return false;
