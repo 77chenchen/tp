@@ -97,7 +97,7 @@ class ClubFlowMultiClubTest {
     }
 
     @Test
-    void run_switchingDoesNotResetDefaultClubData() throws Exception {
+    void run_switchingDoesNotResetDefaultClub() throws Exception {
         runSession("createEvent e/FIRST n/Default\ncreateClub n/chess\n"
                 + "switchClub n/chess\ncreateEvent e/SECOND n/Chess\nexit\n");
 

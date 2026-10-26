@@ -3,7 +3,7 @@ package clubflow.command;
 import java.util.HashMap;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -16,12 +16,12 @@ import clubflow.member.Member;
 public class AssignMemberCommand extends Command {
     private static final String EVENT_TAG = "e";
     private static final String ROLE = "r";
-    private final ClubData clubData;
+    private final Club club;
 
     /** Creates an assignment command using the shared club data. */
-    public AssignMemberCommand(UserInterface ui, ClubData clubData) {
+    public AssignMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag i/Index [r/Role]");
     }
 
@@ -59,18 +59,18 @@ public class AssignMemberCommand extends Command {
         assert args.containsKey(EVENT_TAG) && args.containsKey(MemberArgumentIds.INDEX)
                 : "Validated arguments must identify an event and a member";
         String eventTag = args.get(EVENT_TAG);
-        if (clubData.findEventByTag(eventTag).isEmpty()) {
+        if (club.findEventByTag(eventTag).isEmpty()) {
             ui.print("Event not found: " + eventTag);
             return false;
         }
         int memberIndex = Integer.parseInt(args.get(MemberArgumentIds.INDEX));
-        Member member = clubData.findMemberByIndex(memberIndex).orElse(null);
+        Member member = club.findMemberByIndex(memberIndex).orElse(null);
         if (member == null) {
             ui.print("Member not found at index " + memberIndex + ".");
             return false;
         }
 
-        if (clubData.assignMemberToEvent(eventTag, member, args.getOrDefault(ROLE, ""))) {
+        if (club.assignMemberToEvent(eventTag, member, args.getOrDefault(ROLE, ""))) {
             ui.print("Assigned member " + member.getName() + " to event " + eventTag + ".");
         } else {
             ui.print("Member is already assigned to event " + eventTag + ".");

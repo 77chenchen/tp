@@ -1,7 +1,7 @@
 package clubflow.command;
 
 import clubflow.UserInterface;
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
 import clubflow.event.Event;
@@ -14,17 +14,17 @@ import java.util.Objects;
  * Generates a copyable invitation for an event selected by tag.
  */
 public class InviteCommand extends Command {
-    private final ClubData clubData;
+    private final Club club;
 
     /**
      * Creates a command that generates invitations from saved events.
      *
      * @param ui user interface used to display invitations
-     * @param clubData shared club data containing events
+     * @param club shared club data containing events
      */
-    public InviteCommand(UserInterface ui, ClubData clubData) {
+    public InviteCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("e/Tag");
     }
 
@@ -50,7 +50,7 @@ public class InviteCommand extends Command {
     @Override 
     public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         String tag = args.get(EventArgumentIds.TAG);
-        Event event = clubData.findEventByTag(tag)
+        Event event = club.findEventByTag(tag)
             .orElseThrow(() -> new EventNotFoundException(tag));
 
         String name = event.getName();

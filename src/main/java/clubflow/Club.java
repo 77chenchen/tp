@@ -256,7 +256,6 @@ public class Club {
         updatedEvent.copyPhotosFrom(existingEvent.get());
 
         events.set(events.indexOf(existingEvent.get()), updatedEvent);
-        events.set(events.indexOf(previousEvent), updatedEvent);
         //@@author 77chenchen
         assignments.clear();
         assignments.addAll(updatedAssignments);

@@ -130,7 +130,7 @@ public class ViewEventCommand extends Command {
     //@@author 77chenchen
     /** Shows the current roster when members have been assigned. */
     private void printAssignments(Event event) {
-        List<EventAssignment> assignments = clubData.getAssignmentsForEvent(event.getTag());
+        List<EventAssignment> assignments = club.getAssignmentsForEvent(event.getTag());
         if (assignments.isEmpty()) {
             return;
         }

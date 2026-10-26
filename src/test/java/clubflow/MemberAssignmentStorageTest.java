@@ -26,7 +26,7 @@ import clubflow.member.Member;
 class MemberAssignmentStorageTest {
     @Test
     void saveAndLoad_assignmentsSurviveMemberIndexChanges(@TempDir Path tempDir) throws IOException {
-        ClubData data = new ClubData();
+        Club data = new Club();
         Member first = new Member("Alice", "alice", "", List.of());
         Member second = new Member("Bob", "bob", "", List.of());
         data.addMember(first);
@@ -38,7 +38,7 @@ class MemberAssignmentStorageTest {
         Path saveFile = tempDir.resolve("club.cf");
         SaveLoadManager manager = new SaveLoadManager();
         manager.save(data, saveFile);
-        ClubData loaded = manager.load(saveFile);
+        Club loaded = manager.load(saveFile);
 
         EventAssignment assignment = loaded.getAssignmentsForEvent("PARTY").getFirst();
         assertSame(loaded.findMemberByIndex(1).orElseThrow(), assignment.getMember());
@@ -53,7 +53,7 @@ class MemberAssignmentStorageTest {
         Path saveFile = tempDir.resolve("old.cf");
         Files.writeString(saveFile, "MEMBER|Alice|alice||\nEVENT|Party|Party|null|null|0.0||\n");
 
-        ClubData loaded = new SaveLoadManager().load(saveFile);
+        Club loaded = new SaveLoadManager().load(saveFile);
 
         assertEquals(1, loaded.getMembers().size());
         assertEquals(1, loaded.getEvents().size());
@@ -73,7 +73,7 @@ class MemberAssignmentStorageTest {
 
     @Test
     void deletingEvent_removesItsAssignments() {
-        ClubData data = new ClubData();
+        Club data = new Club();
         Member member = new Member("Alice", "alice", "", List.of());
         data.addMember(member);
         data.addEvent(new Event("Party", "Party", null, null, 0, "", ""));
@@ -86,7 +86,7 @@ class MemberAssignmentStorageTest {
 
     @Test
     void duplicateNames_remainDistinctButSameObjectCannotBeAddedTwice(@TempDir Path tempDir) throws IOException {
-        ClubData data = new ClubData();
+        Club data = new Club();
         Member first = new Member("Alex", "alex", "", List.of());
         Member second = new Member("Alex", "alex", "", List.of());
         data.addMember(first);
@@ -97,7 +97,7 @@ class MemberAssignmentStorageTest {
 
         Path saveFile = tempDir.resolve("duplicate-names.cf");
         new SaveLoadManager().save(data, saveFile);
-        ClubData loaded = new SaveLoadManager().load(saveFile);
+        Club loaded = new SaveLoadManager().load(saveFile);
 
         assertSame(loaded.findMemberByIndex(2).orElseThrow(),
                 loaded.getAssignmentsForEvent("party").getFirst().getMember());
@@ -105,7 +105,7 @@ class MemberAssignmentStorageTest {
 
     @Test
     void memberAndAssignmentChanges_triggerAutosaveAndSurviveEventEdit(@TempDir Path tempDir) throws IOException {
-        ClubData data = new ClubData();
+        Club data = new Club();
         Member original = new Member("Alice", "alice", "", List.of());
         data.addMember(original);
         data.addEvent(new Event("Party", "Party", null, null, 0, "", ""));
@@ -129,7 +129,7 @@ class MemberAssignmentStorageTest {
         Path saveFile = tempDir.resolve("updated.cf");
         SaveLoadManager manager = new SaveLoadManager();
         manager.save(data, saveFile);
-        ClubData loaded = manager.load(saveFile);
+        Club loaded = manager.load(saveFile);
         assertEquals("Updated Party", loaded.getAssignmentsForEvent("party").getFirst().getEvent().getName());
         assertEquals("Alice Tan", loaded.getAssignmentsForEvent("party").getFirst().getMember().getName());
 

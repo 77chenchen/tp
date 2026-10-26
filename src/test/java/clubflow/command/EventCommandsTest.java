@@ -46,7 +46,7 @@ class EventCommandsTest {
     }
 
     @Test
-    void eventCommands_sharedClubData_createViewAndDeleteEvent() throws ClubFlowException {
+    void eventCommands_sharedClub_createViewAndDeleteEvent() throws ClubFlowException {
         Club club = new Club();
         CommandParser parser = createEventCommandParser(club);
 
