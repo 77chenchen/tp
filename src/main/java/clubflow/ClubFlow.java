@@ -16,6 +16,7 @@ import clubflow.command.ExitCommand;
 import clubflow.command.FindCommand;
 import clubflow.command.FindMemberCommand;
 import clubflow.command.HelpCommand;
+import clubflow.command.InviteCommand;
 import clubflow.command.ListPhotoCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.OpenPhotoCommand;
@@ -144,6 +145,7 @@ public class ClubFlow {
 
         parser.register("load", new LoadCommand(ui, clubData));
         parser.register("exit", new ExitCommand(ui));
+        parser.register("invite", new InviteCommand(ui, clubData));
 
         assert ui != null && parser != null && clubData != null
                 : "Application components must be initialized";
