@@ -9,7 +9,10 @@ import java.util.logging.Logger;
 
 import clubflow.event.Event;
 import clubflow.event.EventAssignment;
+import clubflow.exception.PhotoDeleteException;
+import clubflow.exception.PhotoLoadException;
 import clubflow.member.Member;
+import clubflow.photo.Photo;
 
 /**
  * Stores the members, events, and their assignments managed by ClubFlow.
@@ -31,11 +34,6 @@ public class ClubData {
     /** Returns whether there are unsaved changes or not */
     public boolean hasUnsavedChanges() {
         return unsavedChanges;
-    }
-
-    /** Marks the current club data as unsaved */
-    public void markUnsaved() {
-        unsavedChanges = true;
     }
 
     /** Marks the current club data as saved */
@@ -395,5 +393,76 @@ public class ClubData {
         LOGGER.info(() -> "Replaced club data with " + members.size() + " members and "
                 + events.size() + " events");
         unsavedChanges = true;
+    }
+
+    //@@author czfray
+    /**
+     * Adds a photo to an event and marks the data as unsaved.
+     *
+     * @param tag tag of the event
+     * @param path path to the source photo
+     * @param name name of the photo
+     * @return the added photo
+     * @throws PhotoLoadException if the photo cannot be loaded
+     */
+    public Photo addPhoto(String tag, String path, String name)
+            throws PhotoLoadException {
+        Event event = findEventByTag(tag)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
+
+        Photo photo = event.addPhoto(path, name);
+        unsavedChanges = true;
+        return photo;
+    }
+
+    /**
+     * Adds all photos from a directory to an event.
+     *
+     * @param tag tag of the event
+     * @param path path to the source directory
+     * @return array containing successful and failed imports
+     * @throws PhotoLoadException if the directory cannot be read
+     */
+    public int[] addPhotos(String tag, String path)
+            throws PhotoLoadException {
+        Event event = findEventByTag(tag)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
+
+        int[] result = event.addPhotos(path);
+        unsavedChanges = true;
+        return result;
+    }
+
+    /**
+     * Deletes a photo from an event.
+     *
+     * @param tag tag of the event
+     * @param name name of the photo
+     * @return true if the photo was deleted
+     * @throws PhotoDeleteException if deletion fails
+     */
+    public boolean deletePhoto(String tag, String name)
+            throws PhotoDeleteException {
+        Event event = findEventByTag(tag)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
+
+        boolean deleted = event.deletePhoto(name);
+        unsavedChanges = true;
+        return deleted;
+    }
+
+    /**
+     * Deletes all photos belonging to an event.
+     *
+     * @param tag tag of the event
+     * @return array containing successful and failed deletions
+     */
+    public int[] deleteAllPhotos(String tag) {
+        Event event = findEventByTag(tag)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
+
+        int[] result = event.deleteAllPhotos();
+        unsavedChanges = true;
+        return result;
     }
 }

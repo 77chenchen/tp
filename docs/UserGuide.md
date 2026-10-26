@@ -195,16 +195,18 @@ Example: `deleteMember i/1`
 
 ### Adding a photo: `addPhoto`
 
-Imports a photo into an event. The photo is stored using the specified name.
+Imports a photo into an event. If no name is provided, the photo is automatically named after its original filename, excluding the file extension.
 
-Format: `addPhoto e/TAG n/NAME p/PATH`
+Format: `addPhoto e/TAG [n/NAME] p/PATH`
 
 * The event must already exist.
-* `n/` specifies the name used to identify the photo.
+* `n/` optionally specifies a custom name for the photo. If omitted, the original filename without its extension is used for convenience.
 * `p/` specifies the path to the image being imported.
 * Imported photos are stored in PNG format.
 
-Example: `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"`
+Examples:
+* `addPhoto e/XMAS p/"images/group.jpg"` — Automatically names the photo `group`.
+* `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"` — Names the photo `GroupPhoto`.
 
 ### Adding All Photos to an Event: `addAllPhoto`
 
@@ -336,7 +338,7 @@ ClubFlow loads the data and photos automatically at startup.
 * Assign member `assignMember e/TAG i/INDEX [r/ROLE]` (alias `am`)
 * Unassign member `unassignMember e/TAG i/INDEX` (alias `um`)
 * Delete member `deleteMember i/INDEX [/f]` (alias `dm`)
-* Add photo `addPhoto e/TAG n/NAME p/PATH` (alias `ap`)
+* Add photo `addPhoto e/TAG [n/NAME] p/PATH` (alias `ap`)
 * Add photo directory `addAllPhoto e/TAG p/PATH` (alias `aap`, `addPhotos`, `addAllPhotos`)
 * List photos `listPhoto` or `listPhoto e/TAG` (alias `lp`)
 * Open photos `openPhoto e/TAG` or `openPhoto e/TAG n/NAME` (alias `op`)

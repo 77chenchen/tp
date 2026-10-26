@@ -2,7 +2,6 @@ package clubflow.command;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
-import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoLoadException;
 
@@ -50,12 +49,10 @@ public class AddAllPhotoCommand extends Command {
         String tag = args.get(EventArgumentIds.TAG);
         String path = args.get(EventArgumentIds.PATH);
 
-        Event event = clubData.getEvent(tag);
-        int[] result = event.addPhotos(path);
+        int[] result = clubData.addPhotos(tag, path);
         ui.print("Photos from \"" + path + "\" have been added to event \"" + tag + "\". ("
                 + result[0] + " additions, " + result[1] + " failures)");
 
-        clubData.markUnsaved();
         return false;
     }
 }

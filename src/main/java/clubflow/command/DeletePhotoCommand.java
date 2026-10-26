@@ -2,7 +2,6 @@ package clubflow.command;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
-import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoDeleteException;
 
@@ -59,24 +58,22 @@ public class DeletePhotoCommand extends Command{
     @Override
     public boolean execute(HashMap<String, String> args) throws PhotoDeleteException {
         String tag = args.get(EventArgumentIds.TAG);
-        Event e = clubData.getEvent(tag);
 
         if (args.containsKey(EventArgumentIds.ALL)){
-            int[] deleteStats = e.deleteAllPhotos();
+            int[] deleteStats = clubData.deleteAllPhotos(tag);
             ui.print("Deleted all photos in event \"" + tag + "\". " +
                     "(" + deleteStats[0] + " deletes, "
                     + deleteStats[1] + " failures)");
-            clubData.markUnsaved();
             return false;
         }
 
         String name = args.get(EventArgumentIds.NAME);
-        if (!e.deletePhoto(name)){
+
+        if (!clubData.deletePhoto(tag, name)){
             throw new PhotoDeleteException("No photo has name \"" + name + "\" in event \"" + tag + "\".");
         }
         ui.print("Deleted photo \"" + name + "\" in event \"" + tag + "\".");
 
-        clubData.markUnsaved();
         return false;
     }
 }

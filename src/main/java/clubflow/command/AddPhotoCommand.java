@@ -2,11 +2,12 @@ package clubflow.command;
 
 import clubflow.ClubData;
 import clubflow.UserInterface;
-import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoLoadException;
 import clubflow.photo.Photo;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.HashMap;
 
 public class AddPhotoCommand extends Command{
@@ -20,32 +21,45 @@ public class AddPhotoCommand extends Command{
     public AddPhotoCommand(UserInterface ui, ClubData clubData) {
         super(ui);
         this.clubData = clubData;
-        addSyntax("e/Tag n/Name p/Path");
+        addSyntax("e/Tag [n/Name] p/Path");
     }
 
     @Override
     public String[] requiredArgIds() {
-        return new String[] {EventArgumentIds.NAME, EventArgumentIds.TAG, EventArgumentIds.PATH};
+        return new String[] {EventArgumentIds.TAG, EventArgumentIds.PATH};
     }
 
     @Override
     public String[] optionalArgIds() {
-        return new String[0];
+        return new String[] {EventArgumentIds.NAME};
     }
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null) {
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
 
-        if (args.get(EventArgumentIds.PATH).isBlank()){
+        String path = args.get(EventArgumentIds.PATH);
+
+        if (path.isBlank()) {
             throw new CommandParseException("Photo source path cannot be blank.");
         }
 
-        if (args.get(EventArgumentIds.NAME).isBlank()){
-            throw new CommandParseException("Photo name cannot be blank.");
+        if (args.containsKey(EventArgumentIds.NAME)) {
+            if (args.get(EventArgumentIds.NAME).isBlank()) {
+                throw new CommandParseException("Photo name cannot be blank.");
+            }
+        } else {
+            try {
+                Path filePath = Path.of(path);
+                if (filePath.getFileName() == null || filePath.getFileName().toString().isBlank()) {
+                    throw new CommandParseException("Invalid photo source path: " + path);
+                }
+            } catch (InvalidPathException e) {
+                throw new CommandParseException("Invalid photo source path: " + path);
+            }
         }
     }
 
@@ -55,14 +69,16 @@ public class AddPhotoCommand extends Command{
         String name = args.get(EventArgumentIds.NAME);
         String path = args.get(EventArgumentIds.PATH);
 
-        Photo p = null;
-        Event e = clubData.getEvent(tag);
-        p = e.addPhoto(path, name);
+        if (name == null) {
+            String filename = Path.of(path).getFileName().toString();
+            int dotIndex = filename.lastIndexOf('.');
+            name = dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
+        }
 
+        Photo p = clubData.addPhoto(tag, path, name);
         ui.print("Photo \"" + name + "\" has been added to event \"" + tag
                 + "\". (" + path + " -> " + p.getPath() + ")");
 
-        clubData.markUnsaved();
         return false;
     }
 }

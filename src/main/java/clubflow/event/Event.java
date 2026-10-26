@@ -152,11 +152,14 @@ public class Event {
     /**
      * Returns a copy with the requested completion state, leaving this event unchanged.
      *
-     * @param completed desired completion state
+     * @param completed desired completion state.
      * @return event with the same details and the supplied completion state
      */
     public Event withCompleted(boolean completed) {
-        return new Event(tag, name, date, deadline, budget, venue, logistics, completed);
+        Event updated = new Event(tag, name, date, deadline,
+                budget, venue, logistics, completed);
+        updated.copyPhotosFrom(this);
+        return updated;
     }
 
     //@@author czfray
