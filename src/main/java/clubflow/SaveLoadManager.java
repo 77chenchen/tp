@@ -17,13 +17,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import clubflow.event.Event;
 import clubflow.event.EventAssignment;
-import clubflow.exception.PhotoLoadException;
-import clubflow.member.Member;
 
 /**
  * Saves and loads club data as member, event, and assignment records in a UTF-8 text file.
