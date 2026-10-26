@@ -108,9 +108,6 @@ public class PhotoTest {
                         () -> parser.parse("addPhoto e/TEST n/photo1")),
 
                 () -> assertThrows(CommandParseException.class,
-                        () -> parser.parse("addPhoto e/TEST p/source.png")),
-
-                () -> assertThrows(CommandParseException.class,
                         () -> parser.parse("addPhoto n/photo1 p/source.png")),
 
                 () -> assertThrows(CommandParseException.class,
@@ -463,6 +460,27 @@ public class PhotoTest {
                 () -> assertThrows(CommandParseException.class,
                         () -> parser.parse("addAllPhoto e/TEST p/\"\""))
         );
+    }
+
+    @Test
+    public void addPhoto_withoutName_usesFilename() throws Exception {
+        ClubData clubData = new ClubData();
+        CommandParser parser = createPhotoCommandParser(clubData);
+
+        parser.parse("createEvent e/TEST n/Test");
+
+        Path source = createTestImage("source.png");
+
+        parser.parse("addPhoto e/TEST p/\"" + source + "\"");
+
+        Event event = clubData.findEventByTag("TEST").orElseThrow();
+
+        assertAll(
+                () -> assertEquals(1, event.getPhotoNames().size()),
+                () -> assertTrue(event.getPhotoNames().contains("source"))
+        );
+
+        event.deleteAllPhotos();
     }
 
     private Path createTestImage(String filename) throws Exception {
