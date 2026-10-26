@@ -229,6 +229,7 @@ public class ClubManager {
      */
     public void saveActiveClub() throws IOException {
         saveLoadManager.save(activeClub, getActiveClubFile());
+        activeClub.markSaved();
     }
 
     /**

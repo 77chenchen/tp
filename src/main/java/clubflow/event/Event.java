@@ -7,6 +7,7 @@ import clubflow.exception.PhotoOpenException;
 import clubflow.photo.Photo;
 
 import java.awt.Desktop;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,14 +16,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a club event.
  */
 public class Event {
-
     public static final String PHOTO_SAVE_ROOT = "cache/";
     public static final String PHOTO_RELATIVE_PATH = "photos/";
+
+    private static final Logger LOGGER = Logger.getLogger(Event.class.getName());
 
     private final String tag;
     private final String name;
@@ -148,21 +152,14 @@ public class Event {
     /**
      * Returns a copy with the requested completion state, leaving this event unchanged.
      *
-     * @param completed desired completion state
+     * @param completed desired completion state.
      * @return event with the same details and the supplied completion state
      */
     public Event withCompleted(boolean completed) {
-        return new Event(tag, name, date, deadline, budget, venue, logistics, completed);
-    }
-
-    //@@author camimaigrot
-    /**
-     * Copies photo references from another Event.
-     *
-     * @param original event containing existing photos
-     */
-    public void copyPhotosFrom(Event original) {
-        this.photos = new HashMap<>(original.photos);
+        Event updated = new Event(tag, name, date, deadline,
+                budget, venue, logistics, completed);
+        updated.copyPhotosFrom(this);
+        return updated;
     }
 
     //@@author czfray
@@ -183,6 +180,50 @@ public class Event {
         Photo p = new Photo(photoPath, PHOTO_SAVE_ROOT + PHOTO_RELATIVE_PATH + tag, name);
         photos.put(name, p);
         return p;
+    }
+
+    /**
+     * Adds all photos from a directory to the event.
+     * Continues loading remaining photos if one fails.
+     *
+     * @param photosDirPath path to the directory containing the photos
+     * @return int array containing the number of successful and failed imports
+     * @throws PhotoLoadException if the directory is invalid or cannot be read
+     */
+    public int[] addPhotos(String photosDirPath) throws PhotoLoadException {
+        File directory = new File(photosDirPath);
+
+        if (!directory.isDirectory()) {
+            throw new PhotoLoadException("Invalid photo directory: " + photosDirPath);
+        }
+
+        File[] files = directory.listFiles();
+
+        if (files == null) {
+            throw new PhotoLoadException("Cannot read photo directory: " + photosDirPath);
+        }
+
+        int[] result = new int[2];
+
+        for (File file : files) {
+            if (!file.isFile()) {
+                continue;
+            }
+
+            String filename = file.getName();
+            int dotIndex = filename.lastIndexOf('.');
+            String name = dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
+
+            try {
+                addPhoto(file.getAbsolutePath(), name);
+                result[0]++;
+            } catch (PhotoLoadException e) {
+                LOGGER.log(Level.WARNING, e.getMessage() + "(" + filename + ")");
+                result[1]++;
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -217,19 +258,22 @@ public class Event {
     /**
      * Attempts to delete all photos belonging to the event.
      *
-     * @return the number of photos that failed to be deleted
+     * @return int array containing the number of successful and failed deletions
      */
-    public int deleteAllPhotos(){
-        int errors = 0;
-        for (String name: new ArrayList<>(photos.keySet())){
+    public int[] deleteAllPhotos() {
+        int[] result = new int[2];
+
+        for (String name : new ArrayList<>(photos.keySet())) {
             try {
                 photos.get(name).delete();
                 photos.remove(name);
+                result[0]++;
             } catch (PhotoDeleteException e) {
-                errors++;
+                LOGGER.log(Level.WARNING, e.getMessage() + "(" + name + ")");
+                result[1]++;
             }
         }
-        return errors;
+        return result;
     }
 
     /**
@@ -259,9 +303,19 @@ public class Event {
             Files.createDirectories(p);
             Desktop.getDesktop().open(p.toFile());
         } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to open photo directory: " + e.getMessage());
             return false;
         }
         return true;
+    }
+
+    /**
+     * Copies photo registrations from another event.
+     *
+     * @param original event whose photos should be preserved
+     */
+    public void copyPhotosFrom(Event original) {
+        this.photos = new HashMap<>(original.photos);
     }
 
 }

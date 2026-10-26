@@ -234,16 +234,16 @@ class ClubManagerTest {
         try {
             manager.switchClub("chess");
             club.addEvent(new Event(tag, "Chess event", null, null, 0, "", ""));
-            club.getEvent(tag).addPhoto(source.toString(), "portrait");
+            club.findEventByTag(tag).orElseThrow().addPhoto(source.toString(), "portrait");
             manager.switchClub("robotics");
             club.addEvent(new Event(tag, "Robotics event", null, null, 0, "", ""));
 
-            assertTrue(club.getEvent(tag).getPhotoNames().isEmpty());
+            assertTrue(club.findEventByTag(tag).orElseThrow().getPhotoNames().isEmpty());
             assertFalse(Files.exists(testDirectory.resolve(
                     "clubs/robotics/photos/" + tag + "/portrait.png")));
 
             manager.switchClub("chess");
-            assertEquals(List.of("portrait"), club.getEvent(tag).getPhotoNames());
+            assertEquals(List.of("portrait"), club.findEventByTag(tag).orElseThrow().getPhotoNames());
             assertTrue(Files.isRegularFile(testDirectory.resolve(
                     "clubs/chess/photos/" + tag + "/portrait.png")));
         } finally {

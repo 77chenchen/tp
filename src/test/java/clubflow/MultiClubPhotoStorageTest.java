@@ -10,10 +10,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 /** Tests photo snapshots without relying on the machine's image viewer. */
 class MultiClubPhotoStorageTest {
@@ -60,7 +62,7 @@ class MultiClubPhotoStorageTest {
                 + EVENT_TAG + "/portrait.png")));
 
         Club restoredChess = storage.load(chessSave);
-        assertEquals(List.of("portrait"), restoredChess.getEvent(EVENT_TAG).getPhotoNames());
+        assertEquals(List.of("portrait"), restoredChess.findEventByTag(EVENT_TAG).orElseThrow().getPhotoNames());
         assertTrue(Files.isRegularFile(cachedPhoto));
     }
 
@@ -122,7 +124,7 @@ class MultiClubPhotoStorageTest {
         assertTrue(club.updateEvent(new Event(EVENT_TAG, "After", null, null, 0, "", "")));
 
         assertTrue(club.hasUnsavedChanges());
-        assertEquals(List.of("registered"), club.getEvent(EVENT_TAG).getPhotoNames());
+        assertEquals(List.of("registered"), club.findEventByTag(EVENT_TAG).orElseThrow().getPhotoNames());
         assertEquals("Before", original.getName());
     }
 
@@ -133,10 +135,11 @@ class MultiClubPhotoStorageTest {
         club.addEvent(event);
         club.markSaved();
         club.markUnsaved();
+
         assertTrue(club.hasUnsavedChanges());
 
         event.loadPhoto("missing-file");
-        assertEquals(1, event.deleteAllPhotos());
+        assertArrayEquals(new int[]{0, 1}, event.deleteAllPhotos());
         assertEquals(List.of("missing-file"), event.getPhotoNames());
     }
 }

@@ -4,6 +4,8 @@ import clubflow.command.AddPhotoCommand;
 import clubflow.command.CommandParser;
 import clubflow.command.DeletePhotoCommand;
 import clubflow.event.Event;
+import clubflow.exception.PhotoDeleteException;
+import clubflow.exception.PhotoLoadException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +19,9 @@ import java.util.Comparator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 /** Checks that photo commands correctly trigger or skip autosave. */
 class PhotoAutosaveTest {
@@ -74,8 +78,9 @@ class PhotoAutosaveTest {
         club.addEvent(new Event(EVENT_TAG, "Event", null, null, 0, "", ""));
         club.markSaved();
 
-        createParser(club).parse("addPhoto e/" + EVENT_TAG
-                + " n/missing p/\"" + testDirectory.resolve("missing.png") + "\"");
+        assertThrows(PhotoLoadException.class, () ->
+                createParser(club).parse("addPhoto e/" + EVENT_TAG
+                        + " n/missing p/\"" + testDirectory.resolve("missing.png") + "\""));
 
         assertFalse(club.hasUnsavedChanges());
     }
@@ -101,7 +106,8 @@ class PhotoAutosaveTest {
         club.addEvent(new Event(EVENT_TAG, "Event", null, null, 0, "", ""));
         club.markSaved();
 
-        createParser(club).parse("deletePhoto e/" + EVENT_TAG + " n/missing");
+        assertThrows(PhotoDeleteException.class, () ->
+                createParser(club).parse("deletePhoto e/" + EVENT_TAG + " n/missing"));
 
         assertFalse(club.hasUnsavedChanges());
     }

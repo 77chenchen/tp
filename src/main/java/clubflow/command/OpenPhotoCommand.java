@@ -36,21 +36,20 @@ public class OpenPhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (club.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws PhotoOpenException {
         String tag = args.get(EventArgumentIds.TAG);
-        Event e = club.getEvent(tag);
+        Event e = club.findEventByTag(tag).orElseThrow();
 
         if (!args.containsKey(EventArgumentIds.NAME)){
             if (!e.openPhotoDir()){
-                ui.print("Cannot open the photo directory now. Please try again.");
-                return false;
+                throw new PhotoOpenException("Cannot open the photo directory now. Please try again.");
             }
             ui.print("Opened directory of photos in event \"" + tag + "\".");
             return false;
@@ -58,15 +57,10 @@ public class OpenPhotoCommand extends Command{
 
         String name = args.get(EventArgumentIds.NAME);
 
-        try {
-            if (!e.openPhoto(name)){
-                ui.print("No photo has name \"" + name + "\" in event \"" + tag + "\".");
-                return false;
-            }
-        } catch (PhotoOpenException ex) {
-            ui.print(ex.getMessage());
-            return false;
+        if (!e.openPhoto(name)){
+            throw new PhotoOpenException("No photo has name \"" + name + "\" in event \"" + tag + "\".");
         }
+
         ui.print("Opened photo \"" + name + "\" in event \"" + tag + "\".");
         return false;
     }

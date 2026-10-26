@@ -2,7 +2,6 @@ package clubflow.command;
 
 import clubflow.Club;
 import clubflow.UserInterface;
-import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoDeleteException;
 
@@ -41,7 +40,7 @@ public class DeletePhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (club.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -57,34 +56,24 @@ public class DeletePhotoCommand extends Command{
     }
 
     @Override
-    public boolean execute(HashMap<String, String> args) {
+    public boolean execute(HashMap<String, String> args) throws PhotoDeleteException {
         String tag = args.get(EventArgumentIds.TAG);
-        Event e = club.getEvent(tag);
 
-        if (args.containsKey(EventArgumentIds.ALL)) {
-            int before = e.getPhotoNames().size();
-            int errors = e.deleteAllPhotos();
-
-            if (e.getPhotoNames().size() < before) {
-                club.markUnsaved();
-            }
-
-            ui.print("Deleted all photos in event \"" + tag + "\". (" + errors + " failures)");
+        if (args.containsKey(EventArgumentIds.ALL)){
+            int[] deleteStats = club.deleteAllPhotos(tag);
+            ui.print("Deleted all photos in event \"" + tag + "\". " +
+                    "(" + deleteStats[0] + " deletes, "
+                    + deleteStats[1] + " failures)");
             return false;
         }
 
         String name = args.get(EventArgumentIds.NAME);
-        try {
-            if (!e.deletePhoto(name)){
-                ui.print("No photo has name \"" + name + "\" in event \"" + tag + "\".");
-                return false;
-            }
-        } catch (PhotoDeleteException ex) {
-            ui.print(ex.getMessage());
-            return false;
+
+        if (!club.deletePhoto(tag, name)){
+            throw new PhotoDeleteException("No photo has name \"" + name + "\" in event \"" + tag + "\".");
         }
-        club.markUnsaved();
         ui.print("Deleted photo \"" + name + "\" in event \"" + tag + "\".");
+
         return false;
     }
 }

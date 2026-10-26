@@ -33,6 +33,14 @@ public class Photo {
      *                            is unsupported, or the image cannot be saved
      */
     public Photo(String sourcePath, String destPath, String name) throws PhotoLoadException {
+
+        if (name == null || name.isBlank()
+                || name.contains("..")
+                || name.contains("/")
+                || name.contains("\\")) {
+            throw new PhotoLoadException("Invalid photo name: " + name);
+        }
+
         BufferedImage image;
         Path source = Path.of(sourcePath);
         Path destFolderPath = Path.of(destPath);

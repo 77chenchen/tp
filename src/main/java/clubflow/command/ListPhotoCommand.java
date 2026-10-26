@@ -37,7 +37,7 @@ public class ListPhotoCommand extends Command{
         if (!args.containsKey(EventArgumentIds.TAG)) {
             return;
         }
-        if (club.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -47,7 +47,7 @@ public class ListPhotoCommand extends Command{
     public boolean execute(HashMap<String, String> args) {
         ui.print("The photo name list is as following:");
         if (args.containsKey(EventArgumentIds.TAG)){
-            Event e = club.getEvent(args.get(EventArgumentIds.TAG));
+            Event e = club.findEventByTag(args.get(EventArgumentIds.TAG)).orElse(null);
             printEventPhotoNames(e);
             return false;
         }
@@ -60,6 +60,9 @@ public class ListPhotoCommand extends Command{
 
     private void printEventPhotoNames(Event e){
         ui.print("Photos of " + e.getTag() + ": ");
+        if (e.getPhotoNames().isEmpty()){
+            ui.print("No photo is in this event.", 1);
+        }
         int index = 0;
         for (String name : e.getPhotoNames()){
             index++;

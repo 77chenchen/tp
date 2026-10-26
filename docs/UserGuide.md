@@ -193,6 +193,78 @@ Format: `deleteMember i/INDEX [/f]`
 
 Example: `deleteMember i/1`
 
+### Adding a photo: `addPhoto`
+
+Imports a photo into an event. If no name is provided, the photo is automatically named after its original filename, excluding the file extension.
+
+Format: `addPhoto e/TAG [n/NAME] p/PATH`
+
+* The event must already exist.
+* `n/` optionally specifies a custom name for the photo. If omitted, the original filename without its extension is used for convenience.
+* `p/` specifies the path to the image being imported.
+* Imported photos are stored in PNG format.
+
+Examples:
+* `addPhoto e/XMAS p/"images/group.jpg"` — Automatically names the photo `group`.
+* `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"` — Names the photo `GroupPhoto`.
+
+### Adding All Photos to an Event: `addAllPhoto`
+
+Imports all photos from a specified directory into an event.
+
+**Format:**
+`addAllPhoto e/TAG p/PATH`
+
+**Parameters:**
+- `e/TAG`: Tag of the event to add photos to.
+- `p/PATH`: Path to the directory containing the photos.
+
+**Example:**
+`addAllPhoto e/CAMP p/"C:\Users\Ray\Pictures\Camp"`
+
+**Notes:**
+* For convenience, each imported photo is automatically named after its original filename, excluding file extension.
+* All supported images in the specified directory are imported and converted to PNG format.
+* Each photo retains its original filename without the file extension.
+* Subdirectories are ignored.
+* If a photo fails to import, the remaining photos will still be processed.
+* The number of successful and failed imports will be displayed.
+* Imported photos are automatically saved.
+
+### Listing photos: `listPhoto`
+
+Lists photos belonging to a specific event or all events.
+
+Format: `listPhoto` or `listPhoto e/TAG`
+
+* Without arguments, lists photos across all events.
+* With `e/TAG`, lists only photos belonging to the specified event.
+
+Examples: `listPhoto` and `listPhoto e/XMAS`
+
+### Opening photos: `openPhoto`
+
+Opens photos belonging to an event using the system's default image viewer.
+
+Format: `openPhoto e/TAG` or `openPhoto e/TAG n/NAME`
+
+* Without `n/`, opens the photos belonging to the specified event.
+* With `n/NAME`, opens only the specified photo.
+
+Examples: `openPhoto e/XMAS` and `openPhoto e/XMAS n/GroupPhoto`
+
+### Deleting photos: `deletePhoto`
+
+Deletes a specific photo or all photos belonging to an event.
+
+Format: `deletePhoto e/TAG n/NAME` or `deletePhoto e/TAG all`
+
+* Use `n/NAME` to delete a specific photo.
+* Use `all` to delete all photos belonging to the event.
+* Deleting photos does not delete the event itself.
+
+Examples: `deletePhoto e/XMAS n/GroupPhoto` and `deletePhoto e/XMAS all`
+
 ### Automatic saving and loading data
 
 Changes to events, members, and member-event assignments are automatically saved to `saves/clubs.cf`.
@@ -212,6 +284,30 @@ Loading replaces the current events, members, and assignments, then automaticall
 
 Example: `load p/saves/my-club.cf`
 
+### Photo storage and loading
+
+Photos are stored in a `photos/` directory alongside the club data file (`clubs.cf`).
+
+When ClubFlow loads a saved club data file, it uses the `photos/` directory located in the same folder as that file.
+
+For example, the directory structure may look like this:
+
+```text
+saves/
+├── clubs.cf
+└── photos/
+    ├── XMAS/
+    │   ├── GroupPhoto.png
+    │   └── Venue.png
+    └── ORIENTATION/
+        └── TeamPhoto.png
+```
+
+* Photos are organised into folders according to their event tags.
+* Photos are stored as PNG files.
+* When using `load p/PATH`, ClubFlow loads photos from the `photos/` directory next to the specified save file.
+* When transferring club data to another computer, copy both `clubs.cf` and its accompanying `photos/` directory to preserve the photos.
+
 ### Exiting: `exit`
 
 Closes ClubFlow after attempting to save any outstanding changes.
@@ -220,26 +316,32 @@ Closes ClubFlow after attempting to save any outstanding changes.
 
 **Q**: How do I transfer my data to another computer?
 
-**A**: Close ClubFlow after checking for any save errors, then copy `saves/clubs.cf` to the same relative location
-on the other computer. ClubFlow loads it automatically at startup.
+**A**: Close ClubFlow after checking for any save errors, then copy `saves/clubs.cf`
+and the accompanying `saves/photos/` directory (if exist) to the same relative location on the other computer. 
+ClubFlow loads the data and photos automatically at startup.
 
 ## Command Summary
 
 * Show commands and aliases `help` or `help c/COMMAND`
-* Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
-* Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]`
-* View event `viewEvent e/TAG` or view all events `viewEvent all`
+* Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ce`)
+* Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ee`)
+* View event `viewEvent e/TAG` or view all events `viewEvent all` (alias `ve`)
 * Mark event completed `mark e/TAG`
 * Mark event not completed `unmark e/TAG`
-* Delete event `deleteEvent e/TAG`
+* Delete event `deleteEvent e/TAG` (alias `de`)
 * Find data `find TYPE/KEYWORD` (currently supports `e` for events)
-* Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (also `addMember`)
-* View members `viewMember`
+* Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (aliases `cm`, `addMember`)
+* View members `viewMember` (alias `vm`)
 * Edit member `editMember i/INDEX [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (alias `em`)
 * Find members `findMember q/KEYWORD [q/KEYWORD]... [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...`
   (alias `fm`; at least one filter is required)
 * Assign member `assignMember e/TAG i/INDEX [r/ROLE]` (alias `am`)
 * Unassign member `unassignMember e/TAG i/INDEX` (alias `um`)
-* Delete member `deleteMember i/INDEX [/f]`
+* Delete member `deleteMember i/INDEX [/f]` (alias `dm`)
+* Add photo `addPhoto e/TAG [n/NAME] p/PATH` (alias `ap`)
+* Add photo directory `addAllPhoto e/TAG p/PATH` (alias `aap`, `addPhotos`, `addAllPhotos`)
+* List photos `listPhoto` or `listPhoto e/TAG` (alias `lp`)
+* Open photos `openPhoto e/TAG` or `openPhoto e/TAG n/NAME` (alias `op`)
+* Delete photos `deletePhoto e/TAG n/NAME` or `deletePhoto e/TAG all` (alias `dp`)
 * Load data `load p/PATH`
 * Exit `exit`

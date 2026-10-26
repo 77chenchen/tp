@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.logging.Logger;
 
 import clubflow.event.EventAssignment;
+import clubflow.photo.Photo;
 
 /**
  * Saves and loads club data as member, event, and assignment records in a UTF-8 text file.
@@ -235,7 +236,7 @@ public class SaveLoadManager {
             throws IOException {
 
         Path source = saveFile.toAbsolutePath()
-                .normalize().getParent().resolve("photos");
+                .normalize().getParent().resolve(Event.PHOTO_RELATIVE_PATH);
 
         Path cache = getCachePhotosPath();
 
@@ -254,7 +255,7 @@ public class SaveLoadManager {
             for (File file : files) {
                 if (file.isFile()
                         && file.getName().toLowerCase()
-                        .endsWith(".png")) {
+                        .endsWith(Photo.PHOTO_FORMAT)) {
 
                     String name = file.getName();
                     event.loadPhoto(
@@ -271,7 +272,7 @@ public class SaveLoadManager {
             throws IOException {
 
         Path destination = saveFile.toAbsolutePath()
-                .normalize().getParent().resolve("photos");
+                .normalize().getParent().resolve(Event.PHOTO_RELATIVE_PATH);
 
         Path cache = getCachePhotosPath();
 
