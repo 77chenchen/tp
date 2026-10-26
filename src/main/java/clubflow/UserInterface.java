@@ -129,6 +129,15 @@ public class UserInterface {
     }
 
     /**
+     * Prints a block of text without the application prefix for easy copying.
+     * 
+     * @param text text to display
+     */
+    public void printWithoutPrefix(String text) {
+        System.out.println(Objects.requireNonNull(text, "Printed text must not be null"));
+    }
+
+    /**
      * Reads user's input on screen.
      * @return User's line input.
      */
