@@ -23,6 +23,10 @@ import clubflow.command.OpenPhotoCommand;
 import clubflow.command.UnassignMemberCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
+import clubflow.command.CreateClubCommand;
+import clubflow.command.SwitchClubCommand;
+import clubflow.command.ListClubsCommand;
+import clubflow.command.CurrentClubCommand;
 import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
@@ -38,7 +42,6 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -52,7 +55,7 @@ public class ClubFlow {
     private static final Logger LOGGER = Logger.getLogger(ClubFlow.class.getName());
 
     /** File used for automatic loading and saving. */
-    private static final Path DEFAULT_SAVE_PATH = Path.of("saves", "clubs.cf");
+    private static final Path DEFAULT_SAVE_PATH = Path.of("saves", "clubs", "default", "club.cf");
 
     /** Terminal interface shared by the parser and commands. */
     private final UserInterface ui;
@@ -61,11 +64,12 @@ public class ClubFlow {
     private final CommandParser parser;
 
     /** In-memory store shared by all commands that manage club data. */
-    private final ClubData clubData;
+    private final Club club;
 
     /** Save file for this app instance; tests use temporary files. */
     private final Path savePath;
 
+    private final ClubManager clubManager;
     /**
      * Initializes the ClubFlow app.
      */
@@ -82,72 +86,84 @@ public class ClubFlow {
         this.savePath = Objects.requireNonNull(savePath, "Save path must not be null");
         ui = new UserInterface("[CF] ", "> ");
         parser = new CommandParser(ui);
-        clubData = new ClubData();
+        club = new Club();
+        clubManager = savePath.equals(DEFAULT_SAVE_PATH)
+                ? new ClubManager(club)
+                : new ClubManager(club, savePath);
+
+        parser.register("createClub", new CreateClubCommand(ui, clubManager));
+
+        parser.register("switchClub", new SwitchClubCommand(ui, clubManager));
+
+        parser.register("listClubs", new ListClubsCommand(ui, clubManager));
+
+        parser.register("currentClub", new CurrentClubCommand(ui, clubManager));
 
         parser.register("help", new HelpCommand(ui, parser));
 
-        parser.register("createEvent", new CreateEventCommand(ui, clubData));
+        parser.register("createEvent", new CreateEventCommand(ui, club));
         parser.registerAlias("createEvent", "ce");
 
-        parser.register("editEvent", new EditEventCommand(ui, clubData));
+        parser.register("editEvent", new EditEventCommand(ui, club));
         parser.registerAlias("editEvent", "ee");
 
-        parser.register("deleteEvent", new DeleteEventCommand(ui, clubData));
+        parser.register("deleteEvent", new DeleteEventCommand(ui, club));
         parser.registerAlias("deleteEvent", "de");
 
-        parser.register("viewEvent", new ViewEventCommand(ui, clubData));
+        parser.register("viewEvent", new ViewEventCommand(ui, club));
         parser.registerAlias("viewEvent", "ve");
 
-        EventSearch eventSearch = new EventSearch(ui, clubData);
+        EventSearch eventSearch = new EventSearch(ui, club);
         parser.register("find", new FindCommand(ui, Map.of("e", eventSearch::search)));
-        EventCompletion eventCompletion = new EventCompletion(ui, clubData);
+        EventCompletion eventCompletion = new EventCompletion(ui, club);
         Map<String, CompletionHandler> completionHandlers = Map.of("e", eventCompletion::setCompleted);
         parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
         parser.register("unmark", new CompletionCommand(ui, completionHandlers, false));
 
-        parser.register("createMember", new CreateMemberCommand(ui, clubData));
+        parser.register("createMember", new CreateMemberCommand(ui, club));
         parser.registerAlias("createMember", "cm");
         parser.registerAlias("createMember", "addMember");
 
-        parser.register("viewMember", new ViewMemberCommand(ui, clubData));
+        parser.register("viewMember", new ViewMemberCommand(ui, club));
         parser.registerAlias("viewMember", "vm");
 
-        parser.register("deleteMember", new DeleteMemberCommand(ui, clubData));
+        parser.register("deleteMember", new DeleteMemberCommand(ui, club));
         parser.registerAlias("deleteMember", "dm");
 
         //@@author 77chenchen
-        parser.register("editMember", new EditMemberCommand(ui, clubData));
+        parser.register("editMember", new EditMemberCommand(ui, club));
         parser.registerAlias("editMember", "em");
-        parser.register("findMember", new FindMemberCommand(ui, clubData));
+        parser.register("findMember", new FindMemberCommand(ui, club));
         parser.registerAlias("findMember", "fm");
-        parser.register("assignMember", new AssignMemberCommand(ui, clubData));
+        parser.register("assignMember", new AssignMemberCommand(ui, club));
         parser.registerAlias("assignMember", "am");
-        parser.register("unassignMember", new UnassignMemberCommand(ui, clubData));
+        parser.register("unassignMember", new UnassignMemberCommand(ui, club));
         parser.registerAlias("unassignMember", "um");
         //@@author
 
-        parser.register("addPhoto", new AddPhotoCommand(ui, clubData));
+        parser.register("addPhoto", new AddPhotoCommand(ui, club));
         parser.registerAlias("addPhoto", "ap");
 
-        parser.register("addAllPhoto", new AddAllPhotoCommand(ui, clubData));
+
+        parser.register("addAllPhoto", new AddAllPhotoCommand(ui, club));
         parser.registerAlias("addAllPhoto", "aap");
         parser.registerAlias("addAllPhoto", "addAllPhotos");
         parser.registerAlias("addAllPhoto", "addPhotos");
 
-        parser.register("openPhoto", new OpenPhotoCommand(ui, clubData));
+        parser.register("openPhoto", new OpenPhotoCommand(ui, club));
         parser.registerAlias("openPhoto", "op");
 
-        parser.register("deletePhoto", new DeletePhotoCommand(ui, clubData));
+        parser.register("deletePhoto", new DeletePhotoCommand(ui, club));
         parser.registerAlias("deletePhoto", "dp");
 
-        parser.register("listPhoto", new ListPhotoCommand(ui, clubData));
+        parser.register("listPhoto", new ListPhotoCommand(ui, club));
         parser.registerAlias("listPhoto", "lp");
 
-        parser.register("load", new LoadCommand(ui, clubData));
+        parser.register("load", new LoadCommand(ui, club));
         parser.register("exit", new ExitCommand(ui));
-        parser.register("invite", new InviteCommand(ui, clubData));
+        parser.register("invite", new InviteCommand(ui, club));
 
-        assert ui != null && parser != null && clubData != null
+        assert ui != null && parser != null && club != null
                 : "Application components must be initialized";
         LOGGER.info("ClubFlow initialized");
     }
@@ -179,17 +195,14 @@ public class ClubFlow {
     public void run() {
         ui.welcome();
 
-        if (Files.exists(savePath)) {
-            try {
-                ClubData loaded = new SaveLoadManager().load(savePath);
-                clubData.replaceWith(loaded);
-                clubData.markSaved();
+        try {
+            if (clubManager.initialize()) {
                 ui.print("Saved data loaded.");
-            } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Could not load data file", e);
-                ui.print("Could not load saved data: " + e.getMessage());
-                return;
             }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not load club data", e);
+            ui.print("Could not load saved data: " + e.getMessage());
+            return;
         }
 
         LOGGER.info("ClubFlow started");
@@ -197,10 +210,9 @@ public class ClubFlow {
             try {
                 String input = ui.prompt();
                 boolean terminate = parser.parse(input);
-                if (clubData.hasUnsavedChanges()) {
+                if (club.hasUnsavedChanges()) {
                     try {
-                        new SaveLoadManager().save(clubData, savePath);
-                        clubData.markSaved();
+                        clubManager.saveActiveClub();
                     } catch (IOException e) {
                         LOGGER.log(Level.WARNING, "Autosave failed", e);
                         ui.print("Changes could not be saved: " + e.getMessage());

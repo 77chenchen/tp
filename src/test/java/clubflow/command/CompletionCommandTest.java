@@ -15,11 +15,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import clubflow.Club;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.ClubData;
 import clubflow.UserInterface;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
@@ -36,7 +36,7 @@ class CompletionCommandTest {
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
     private UserInterface ui;
-    private ClubData clubData;
+    private Club club;
     private CommandParser parser;
     private Event originalEvent;
 
@@ -46,11 +46,11 @@ class CompletionCommandTest {
         capturedOutput = new PrintStream(output, true, StandardCharsets.UTF_8);
         System.setOut(capturedOutput);
         ui = new UserInterface("[TEST] ", "> ");
-        clubData = new ClubData();
+        club = new Club();
         originalEvent = new Event("XMAS", "Christmas Party", LocalDate.of(2026, 12, 25),
                 LocalDate.of(2026, 12, 20), 500, "Main Hall", "Tables and chairs");
-        clubData.addEvent(originalEvent);
-        EventCompletion eventCompletion = new EventCompletion(ui, clubData);
+        club.addEvent(originalEvent);
+        EventCompletion eventCompletion = new EventCompletion(ui, club);
         Map<String, CompletionHandler> handlers = Map.of("e", eventCompletion::setCompleted);
         parser = new CommandParser(ui);
         parser.register("mark", new CompletionCommand(ui, handlers, true));
@@ -66,12 +66,12 @@ class CompletionCommandTest {
     @Test
     void mark_caseInsensitiveTag_preservesDetailsOrderAndSnapshots() throws ClubFlowException {
         Event other = new Event("OTHER", "Other event", null, null, 0, "", "");
-        clubData.addEvent(other);
-        List<Event> snapshot = clubData.getEvents();
+        club.addEvent(other);
+        List<Event> snapshot = club.getEvents();
 
         assertFalse(parser.parse("MARK E/xmas"));
 
-        Event marked = clubData.getEvents().getFirst();
+        Event marked = club.getEvents().getFirst();
         assertTrue(marked.isCompleted());
         assertEquals("XMAS", marked.getTag());
         assertEquals(originalEvent.getName(), marked.getName());
@@ -80,8 +80,8 @@ class CompletionCommandTest {
         assertEquals(originalEvent.getBudget(), marked.getBudget());
         assertEquals(originalEvent.getVenue(), marked.getVenue());
         assertEquals(originalEvent.getLogistics(), marked.getLogistics());
-        assertEquals(2, clubData.getEvents().size());
-        assertSame(other, clubData.getEvents().get(1));
+        assertEquals(2, club.getEvents().size());
+        assertSame(other, club.getEvents().get(1));
         assertEquals(List.of(originalEvent, other), snapshot);
         assertFalse(snapshot.getFirst().isCompleted());
         assertEquals(List.of("[TEST] Marked event as completed: XMAS"), printedLines());
@@ -94,7 +94,7 @@ class CompletionCommandTest {
 
         assertFalse(parser.parse("UNMARK E/xmas"));
 
-        Event unmarked = clubData.findEventByTag("XMAS").orElseThrow();
+        Event unmarked = club.findEventByTag("XMAS").orElseThrow();
         assertFalse(unmarked.isCompleted());
         assertEquals(originalEvent.getName(), unmarked.getName());
         assertEquals(originalEvent.getDate(), unmarked.getDate());
@@ -104,18 +104,18 @@ class CompletionCommandTest {
     @Test
     void completion_repeatedCommands_keepRequestedState() throws ClubFlowException {
         parser.parse("mark e/XMAS");
-        Event marked = clubData.findEventByTag("XMAS").orElseThrow();
+        Event marked = club.findEventByTag("XMAS").orElseThrow();
 
         parser.parse("mark e/XMAS");
 
-        assertSame(marked, clubData.findEventByTag("XMAS").orElseThrow());
+        assertSame(marked, club.findEventByTag("XMAS").orElseThrow());
         assertTrue(marked.isCompleted());
         parser.parse("unmark e/XMAS");
-        Event unmarked = clubData.findEventByTag("XMAS").orElseThrow();
+        Event unmarked = club.findEventByTag("XMAS").orElseThrow();
 
         parser.parse("unmark e/XMAS");
 
-        assertSame(unmarked, clubData.findEventByTag("XMAS").orElseThrow());
+        assertSame(unmarked, club.findEventByTag("XMAS").orElseThrow());
         assertFalse(unmarked.isCompleted());
     }
 
@@ -128,7 +128,7 @@ class CompletionCommandTest {
 
         assertEquals("Event not found: UNKNOWN", markError.getMessage());
         assertEquals("Event not found: UNKNOWN", unmarkError.getMessage());
-        assertEquals(List.of(originalEvent), clubData.getEvents());
+        assertEquals(List.of(originalEvent), club.getEvents());
         assertEquals(List.of(), printedLines());
     }
 
@@ -142,21 +142,21 @@ class CompletionCommandTest {
             }
         }
 
-        assertSame(originalEvent, clubData.findEventByTag("XMAS").orElseThrow());
+        assertSame(originalEvent, club.findEventByTag("XMAS").orElseThrow());
         assertFalse(originalEvent.isCompleted());
         assertEquals(List.of(), printedLines());
     }
 
     @Test
     void completion_afterDataReplacement_usesCurrentEvents() throws ClubFlowException {
-        ClubData loaded = new ClubData();
+        Club loaded = new Club();
         loaded.addEvent(new Event("NEW", "Loaded event", null, null, 0, "", ""));
-        clubData.replaceWith(loaded);
+        club.replaceWith(loaded);
 
         parser.parse("mark e/NEW");
 
-        assertTrue(clubData.findEventByTag("NEW").orElseThrow().isCompleted());
-        assertTrue(clubData.findEventByTag("XMAS").isEmpty());
+        assertTrue(club.findEventByTag("NEW").orElseThrow().isCompleted());
+        assertTrue(club.findEventByTag("XMAS").isEmpty());
     }
 
     @Test

@@ -1,6 +1,6 @@
 package clubflow.command;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
@@ -8,16 +8,16 @@ import clubflow.exception.CommandParseException;
 import java.util.HashMap;
 
 public class ListPhotoCommand extends Command{
-    private ClubData clubData;
+    private Club club;
 
     /**
      * Creates a list photo command.
      *
      * @param ui User Interface to print command messages in.
      */
-    public ListPhotoCommand(UserInterface ui, ClubData clubData) {
+    public ListPhotoCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = clubData;
+        this.club = club;
         addSyntax("");
         addSyntax("e/Tag");
     }
@@ -37,7 +37,7 @@ public class ListPhotoCommand extends Command{
         if (!args.containsKey(EventArgumentIds.TAG)) {
             return;
         }
-        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -47,12 +47,12 @@ public class ListPhotoCommand extends Command{
     public boolean execute(HashMap<String, String> args) {
         ui.print("The photo name list is as following:");
         if (args.containsKey(EventArgumentIds.TAG)){
-            Event e = clubData.getEvent(args.get(EventArgumentIds.TAG));
+            Event e = club.findEventByTag(args.get(EventArgumentIds.TAG)).orElse(null);
             printEventPhotoNames(e);
             return false;
         }
 
-        for (Event e : clubData.getEvents()){
+        for (Event e : club.getEvents()){
             printEventPhotoNames(e);
         }
         return false;

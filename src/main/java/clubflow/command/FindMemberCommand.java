@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
@@ -26,12 +26,12 @@ public class FindMemberCommand extends Command {
     private static final int FUZZY_SCORE_BASE = 50;
     private static final int MAX_FUZZY_QUERY_LENGTH = 64;
     private static final int MAX_SUGGESTIONS = 5;
-    private final ClubData clubData;
+    private final Club club;
 
     /** Creates a member search command using the shared club data. */
-    public FindMemberCommand(UserInterface ui, ClubData clubData) {
+    public FindMemberCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = Objects.requireNonNull(clubData, "Club data must not be null");
+        this.club = Objects.requireNonNull(club, "Club data must not be null");
         addSyntax("q/Keyword [q/Keyword]... [n/Name] [t/TeleHandle] [e/Email] [f/Function]...");
         addSyntax("n/Name");
         addSyntax("t/TeleHandle");
@@ -77,7 +77,7 @@ public class FindMemberCommand extends Command {
         if (args.isEmpty()) {
             throw new IllegalArgumentException("At least one search filter is required");
         }
-        List<Member> members = clubData.getMembers();
+        List<Member> members = club.getMembers();
         List<SearchResult> directMatches = new ArrayList<>();
         List<SearchResult> possibleMatches = new ArrayList<>();
         for (int i = 0; i < members.size(); i++) {

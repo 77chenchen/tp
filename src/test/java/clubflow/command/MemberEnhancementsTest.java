@@ -15,7 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.event.Event;
 import clubflow.exception.ClubFlowException;
@@ -44,7 +44,7 @@ class MemberEnhancementsTest {
 
     @Test
     void editMember_partialUpdate_preservesOtherFieldsAndPosition() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         parser.parse("editMember i/2 e/new@example.com f/Logistics f/Treasurer");
@@ -60,7 +60,7 @@ class MemberEnhancementsTest {
 
     @Test
     void editMember_clearContactAndFunctions_retainsValidMember() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         parser.parse("editMember i/2 t/\"\" f/\"\"");
@@ -73,7 +73,7 @@ class MemberEnhancementsTest {
 
     @Test
     void editMember_invalidReplacement_doesNotChangeMemberOrAssignments() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
         parser.parse("assignMember e/party i/2 r/Host");
         Member original = data.findMemberByIndex(2).orElseThrow();
@@ -89,7 +89,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_caseInsensitiveMatches_keepOriginalIndexes() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         parser.parse("findMember q/LOGISTICS");
@@ -109,7 +109,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_multipleKeywordsAndFilters_narrowResults() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         parser.parse("findMember q/EXAMPLE q/logistics");
@@ -128,7 +128,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_quotedNamesRepeatedFunctionsAndDetails_disambiguateMembers() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         data.addMember(new Member("Alice Tan", "alicetan", "tan@example.com",
                 List.of("Publicity", "Logistics")));
         CommandParser parser = parserFor(data);
@@ -147,7 +147,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_rejectsMissingOrBlankFilters() {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         assertThrows(CommandParseException.class, () -> parser.parse("findMember"));
@@ -159,7 +159,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_fuzzyName_showsDirectResultsBeforeMultipleSuggestions() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         data.addMember(new Member("Alie", "alie", "alie@example.com", List.of()));
         data.addMember(new Member("Alce", "alce", "alce@example.com", List.of()));
         CommandParser parser = parserFor(data);
@@ -176,7 +176,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_directMatches_rankExactThenPrefixThenSubstring() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         data.addMember(new Member("Alice Tan", "alicetan", "tan@example.com", List.of()));
         data.addMember(new Member("Dr Alice", "dralice", "doctor@example.com", List.of()));
         CommandParser parser = parserFor(data);
@@ -190,7 +190,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_fuzzyTelegramAndLongName_workWithStrictOtherFilters() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         data.addMember(new Member("Marianne", "johndoe", "marianne@example.com", List.of("Host")));
         CommandParser parser = parserFor(data);
 
@@ -213,7 +213,7 @@ class MemberEnhancementsTest {
 
     @Test
     void findMember_shortQueriesStayStrictAndSuggestionsStopAtFive() throws ClubFlowException {
-        ClubData data = new ClubData();
+        Club data = new Club();
         CommandParser parser = parserFor(data);
         data.addMember(new Member("Bob", "bob", "bob@example.com", List.of()));
 
@@ -235,7 +235,7 @@ class MemberEnhancementsTest {
 
     @Test
     void assignMember_rejectsMissingAndDuplicate_andShowsRoster() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
 
         parser.parse("assignMember e/PARTY i/2 r/\"Lead Host\"");
@@ -257,7 +257,7 @@ class MemberEnhancementsTest {
 
     @Test
     void editAndDeleteMember_updateAssignmentReferences() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
         parser.parse("assignMember e/party i/2");
 
@@ -276,7 +276,7 @@ class MemberEnhancementsTest {
 
     @Test
     void unassignMember_removesOnlySelectedAssignment() throws ClubFlowException {
-        ClubData data = sampleData();
+        Club data = sampleData();
         CommandParser parser = parserFor(data);
         parser.parse("assignMember e/party i/1");
         parser.parse("assignMember e/party i/2 r/Host");
@@ -294,8 +294,8 @@ class MemberEnhancementsTest {
     }
 
     /** Builds independent sample data for each command scenario. */
-    private ClubData sampleData() {
-        ClubData data = new ClubData();
+    private Club sampleData() {
+        Club data = new Club();
         data.addMember(new Member("Alice", "", "alice@example.com", List.of("Publicity")));
         data.addMember(new Member("Bob", "bob", "bob@example.com", List.of("Logistics")));
         data.addEvent(new Event("party", "Club Party", null, null, 0, "Hall", ""));
@@ -303,7 +303,7 @@ class MemberEnhancementsTest {
     }
 
     /** Registers the new commands together with the event viewer they extend. */
-    private CommandParser parserFor(ClubData data) {
+    private CommandParser parserFor(Club data) {
         UserInterface ui = new UserInterface("[TEST] ", "> ");
         CommandParser parser = new CommandParser(ui);
         parser.register("editMember", new EditMemberCommand(ui, data));

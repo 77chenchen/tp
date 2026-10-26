@@ -1,6 +1,6 @@
 package clubflow.command;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoLoadException;
@@ -11,17 +11,18 @@ import java.nio.file.Path;
 import java.util.HashMap;
 
 public class AddPhotoCommand extends Command{
-    private ClubData clubData;
+    private Club club;
 
     /**
      * Creates an add photo command.
      *
      * @param ui User Interface to print command messages in.
      */
-    public AddPhotoCommand(UserInterface ui, ClubData clubData) {
+    public AddPhotoCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = clubData;
+        this.club = club;
         addSyntax("e/Tag [n/Name] p/Path");
+
     }
 
     @Override
@@ -36,7 +37,7 @@ public class AddPhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null) {
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -75,7 +76,8 @@ public class AddPhotoCommand extends Command{
             name = dotIndex > 0 ? filename.substring(0, dotIndex) : filename;
         }
 
-        Photo p = clubData.addPhoto(tag, path, name);
+        Photo p = club.addPhoto(tag, path, name);
+
         ui.print("Photo \"" + name + "\" has been added to event \"" + tag
                 + "\". (" + path + " -> " + p.getPath() + ")");
 

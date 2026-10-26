@@ -17,8 +17,8 @@ import clubflow.photo.Photo;
 /**
  * Stores the members, events, and their assignments managed by ClubFlow.
  */
-public class ClubData {
-    private static final Logger LOGGER = Logger.getLogger(ClubData.class.getName());
+public class Club {
+    private static final Logger LOGGER = Logger.getLogger(Club.class.getName());
 
     // These mutable lists remain private; callers receive read-only snapshots.
     private final List<Member> members = new ArrayList<>();
@@ -26,7 +26,6 @@ public class ClubData {
     //@@author 77chenchen
     /** Assignments refer to the actual objects, so deleting a preceding member cannot change their meaning. */
     private final List<EventAssignment> assignments = new ArrayList<>();
-    //@@author
 
     /** Tracks whether there are any unsaved changes */
     private boolean unsavedChanges = false;
@@ -36,6 +35,13 @@ public class ClubData {
         return unsavedChanges;
     }
 
+    //@@author camimaigrot
+    /** Marks this club as having unsaved changes */
+    public void markUnsaved() {
+        unsavedChanges = true;
+    }
+
+    //@@author Bryan-chua
     /** Marks the current club data as saved */
     public void markSaved() {
         unsavedChanges = false;
@@ -52,7 +58,7 @@ public class ClubData {
         if (members.stream().anyMatch(existing -> existing == member)) {
             throw new IllegalArgumentException("The same member object cannot be added twice");
         }
-        //@@author
+
         int previousSize = members.size();
         members.add(member);
         assert members.size() == previousSize + 1 : "Adding a member must increase the member count";
@@ -83,7 +89,7 @@ public class ClubData {
 
     /**
      * Returns a read-only snapshot of the club's members.
-     * Later changes to ClubData are not reflected in the returned list.
+     * Later changes to Club are not reflected in the returned list.
      *
      * @return members currently stored in ClubFlow
      */
@@ -124,8 +130,6 @@ public class ClubData {
         unsavedChanges = true;
         return Optional.of(removedMember);
     }
-
-    //@@author
 
     //@@author 77chenchen
     /**
@@ -191,27 +195,12 @@ public class ClubData {
 
     /**
      * Returns a read-only snapshot of the club's events.
-     * Later changes to ClubData are not reflected in the returned list.
+     * Later changes to Club are not reflected in the returned list.
      *
      * @return events currently stored in ClubFlow
      */
     public List<Event> getEvents() {
         return List.copyOf(events);
-    }
-
-    /**
-     * Retrieves an event with the specified tag.
-     *
-     * @param tag tag of the event to retrieve
-     * @return the matching event, or null if no event is found
-     */
-    public Event getEvent(String tag){
-        for(Event e : getEvents()){
-            if (e.getTag().equals(tag)){
-                return e;
-            }
-        }
-        return null;
     }
 
     /**
@@ -249,9 +238,12 @@ public class ClubData {
             Event assignedEvent = assignment.getEvent() == previousEvent ? updatedEvent : assignment.getEvent();
             updatedAssignments.add(new EventAssignment(assignedEvent, assignment.getMember(), assignment.getRole()));
         }
-        //@@author
+        //@@author camimaigrot
         int previousSize = events.size();
-        events.set(events.indexOf(previousEvent), updatedEvent);
+
+        updatedEvent.copyPhotosFrom(existingEvent.get());
+
+        events.set(events.indexOf(existingEvent.get()), updatedEvent);
         //@@author 77chenchen
         assignments.clear();
         assignments.addAll(updatedAssignments);
@@ -367,7 +359,7 @@ public class ClubData {
      *
      * @param loaded club data whose members and events should become current
      */
-    public void replaceWith(ClubData loaded) {
+    public void replaceWith(Club loaded) {
         Objects.requireNonNull(loaded, "Loaded club data must not be null");
         List<Member> loadedMembers = loaded.getMembers();
         List<Event> loadedEvents = loaded.getEvents();
@@ -447,7 +439,9 @@ public class ClubData {
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
 
         boolean deleted = event.deletePhoto(name);
-        unsavedChanges = true;
+        if (deleted) {
+            unsavedChanges = true;
+        }
         return deleted;
     }
 
@@ -461,8 +455,12 @@ public class ClubData {
         Event event = findEventByTag(tag)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
 
+        int before = event.getPhotoNames().size();
         int[] result = event.deleteAllPhotos();
-        unsavedChanges = true;
+
+        if (event.getPhotoNames().size() < before) {
+            unsavedChanges = true;
+        }
         return result;
     }
 }

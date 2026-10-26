@@ -41,7 +41,7 @@ test {
 }
 
 application {
-    mainClass = 'clubflow.ClubFlow'
+    mainClass = 'flow.ClubFlow'
 }
 
 jar {

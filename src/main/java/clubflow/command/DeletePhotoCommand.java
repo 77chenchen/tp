@@ -1,6 +1,6 @@
 package clubflow.command;
 
-import clubflow.ClubData;
+import clubflow.Club;
 import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.PhotoDeleteException;
@@ -9,16 +9,16 @@ import java.util.HashMap;
 
 public class DeletePhotoCommand extends Command{
 
-    private ClubData clubData;
+    private Club club;
 
     /**
      * Creates a delete photo command.
      *
      * @param ui User Interface to print command messages in.
      */
-    public DeletePhotoCommand(UserInterface ui, ClubData clubData) {
+    public DeletePhotoCommand(UserInterface ui, Club club) {
         super(ui);
-        this.clubData = clubData;
+        this.club = club;
         addSyntax("e/Tag all");
         addSyntax("e/Tag n/Name");
     }
@@ -40,7 +40,7 @@ public class DeletePhotoCommand extends Command{
 
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        if (clubData.getEvent(args.get(EventArgumentIds.TAG)) == null){
+        if (club.findEventByTag(args.get(EventArgumentIds.TAG)).isEmpty()){
             throw new CommandParseException("Event with tag \"" + args.get(EventArgumentIds.TAG)
                     + "\" does not exist.");
         }
@@ -60,7 +60,7 @@ public class DeletePhotoCommand extends Command{
         String tag = args.get(EventArgumentIds.TAG);
 
         if (args.containsKey(EventArgumentIds.ALL)){
-            int[] deleteStats = clubData.deleteAllPhotos(tag);
+            int[] deleteStats = club.deleteAllPhotos(tag);
             ui.print("Deleted all photos in event \"" + tag + "\". " +
                     "(" + deleteStats[0] + " deletes, "
                     + deleteStats[1] + " failures)");
@@ -69,7 +69,7 @@ public class DeletePhotoCommand extends Command{
 
         String name = args.get(EventArgumentIds.NAME);
 
-        if (!clubData.deletePhoto(tag, name)){
+        if (!club.deletePhoto(tag, name)){
             throw new PhotoDeleteException("No photo has name \"" + name + "\" in event \"" + tag + "\".");
         }
         ui.print("Deleted photo \"" + name + "\" in event \"" + tag + "\".");

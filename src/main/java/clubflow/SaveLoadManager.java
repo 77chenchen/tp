@@ -4,21 +4,23 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+
+import clubflow.member.Member;
+import clubflow.event.Event;
+
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import clubflow.event.Event;
 import clubflow.event.EventAssignment;
-import clubflow.exception.PhotoLoadException;
-import clubflow.member.Member;
+import clubflow.photo.Photo;
 
 /**
  * Saves and loads club data as member, event, and assignment records in a UTF-8 text file.
@@ -45,7 +47,7 @@ public class SaveLoadManager {
      * @param path destination file
      * @throws IOException if the directory or file cannot be written
      */
-    public void save(ClubData data, Path path) throws IOException {
+    public void save(Club data, Path path) throws IOException {
         Objects.requireNonNull(data, "Club data must not be null");
         Objects.requireNonNull(path, "Save path must not be null");
         List<String> lines = new ArrayList<>();
@@ -90,7 +92,7 @@ public class SaveLoadManager {
         Files.write(path, lines, StandardCharsets.UTF_8);
         LOGGER.info(() -> "Saved " + lines.size() + " records to " + path);
 
-        savePhotos(path.toString());
+        savePhotos(path, data);
     }
 
     /**
@@ -101,9 +103,9 @@ public class SaveLoadManager {
      * @return a new club data object containing the saved members and events
      * @throws IOException if the file cannot be read or contains an invalid record
      */
-    public ClubData load(Path path) throws IOException {
+    public Club load(Path path) throws IOException {
         Objects.requireNonNull(path, "Load path must not be null");
-        ClubData loaded = new ClubData();
+        Club loaded = new Club();
         List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
         //@@author 77chenchen
         List<PendingAssignment> pendingAssignments = new ArrayList<>();
@@ -197,7 +199,7 @@ public class SaveLoadManager {
         //@@author
         LOGGER.info(() -> "Loaded " + lines.size() + " records from " + path);
 
-        loadPhotos(path.toString(), loaded);
+        loadPhotos(path, loaded);
         return loaded;
     }
 
@@ -226,99 +228,159 @@ public class SaveLoadManager {
         return cause == null ? new IOException(message) : new IOException(message, cause);
     }
 
-    //@@author czfray
-    private void loadPhotos(String saveFilePath, ClubData clubData) {
+    //@@author camimaigrot
+    /**
+     * Loads the selected club's photos into the working cache.
+     */
+    private void loadPhotos(Path saveFile, Club club)
+            throws IOException {
 
-        Path clubsPath = Path.of(saveFilePath).toAbsolutePath().normalize();
-        Path photosPath = clubsPath.getParent().resolve(Event.PHOTO_RELATIVE_PATH);
+        Path source = saveFile.toAbsolutePath()
+                .normalize().getParent().resolve(Event.PHOTO_RELATIVE_PATH);
 
-        Path cachePhotosPath = Path.of(Event.PHOTO_SAVE_ROOT)
-                .resolve(Event.PHOTO_RELATIVE_PATH)
-                .toAbsolutePath()
-                .normalize();
+        Path cache = getCachePhotosPath();
 
-        if (!Files.isDirectory(photosPath)) {
-            return;
+        if (!source.equals(cache)) {
+            replacePhotos(source, cache, club.getEvents());
         }
 
-        boolean savingFromSaveRoot = photosPath.equals(cachePhotosPath);
-
-        try {
-            if (!savingFromSaveRoot) {
-                deleteDirectory(cachePhotosPath.toString());
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to clear photo cache: " + cachePhotosPath, e);
-            return;
-        }
-
-        for (Event e : clubData.getEvents()){
-            File folder = photosPath.resolve(e.getTag()).toFile();
+        for (Event event : club.getEvents()) {
+            File folder = cache.resolve(event.getTag()).toFile();
             File[] files = folder.listFiles();
 
             if (files == null) {
-                LOGGER.log(Level.INFO, "Cannot access event photo directory: " + folder.getAbsolutePath());
                 continue;
             }
 
             for (File file : files) {
-                if (file.isFile() && file.getName().toLowerCase().endsWith(".png")) {
+                if (file.isFile()
+                        && file.getName().toLowerCase()
+                        .endsWith(Photo.PHOTO_FORMAT)) {
+
                     String name = file.getName();
-                    name = name.substring(0, name.length() - 4);
-                    try {
-                        if (savingFromSaveRoot) {
-                            e.loadPhoto(name);
-                        } else {
-                            e.addPhoto(file.getPath(), name);
+                    event.loadPhoto(
+                            name.substring(0, name.length() - 4));
+                }
+            }
+        }
+    }
+
+    /**
+     * Saves only the active club's photo folders.
+     */
+    private void savePhotos(Path saveFile, Club club)
+            throws IOException {
+
+        Path destination = saveFile.toAbsolutePath()
+                .normalize().getParent().resolve(Event.PHOTO_RELATIVE_PATH);
+
+        Path cache = getCachePhotosPath();
+
+        if (!destination.equals(cache)) {
+            replacePhotos(cache, destination, club.getEvents());
+        }
+    }
+
+    /**
+     * Returns the shared working photo cache path.
+     */
+    private static Path getCachePhotosPath() {
+        return Path.of(Event.PHOTO_SAVE_ROOT,
+                        Event.PHOTO_RELATIVE_PATH)
+                .toAbsolutePath()
+                .normalize();
+    }
+
+    /**
+     * Replaces a photo directory using a staged copy.
+     */
+    private static void replacePhotos(
+            Path source, Path destination, List<Event> events)
+            throws IOException {
+
+        Path parent = destination.getParent();
+        Files.createDirectories(parent);
+
+        Path staged = Files.createTempDirectory(
+                parent, "photos-next-");
+
+        Path backup = null;
+        boolean installed = false;
+
+        try {
+            for (Event event : events) {
+                Path eventSource = source.resolve(event.getTag());
+
+                if (!Files.isDirectory(
+                        eventSource, LinkOption.NOFOLLOW_LINKS)) {
+                    continue;
+                }
+
+                Path eventDestination =
+                        staged.resolve(event.getTag());
+
+                try (var files = Files.walk(eventSource)) {
+                    for (Path file : files.toList()) {
+                        Path target = eventDestination.resolve(
+                                eventSource.relativize(file));
+
+                        if (Files.isDirectory(
+                                file, LinkOption.NOFOLLOW_LINKS)) {
+                            Files.createDirectories(target);
+                        } else if (Files.isRegularFile(
+                                file, LinkOption.NOFOLLOW_LINKS)) {
+                            Files.copy(file, target,
+                                    StandardCopyOption.REPLACE_EXISTING);
                         }
-                    } catch (PhotoLoadException ex) {
-                        LOGGER.log(Level.WARNING, "Failed to load photo: " + file.getPath(), ex);
                     }
                 }
             }
-        }
-    }
 
-    private void savePhotos(String saveFilePath) throws IOException {
-        String photoCopyPath = Path.of(saveFilePath).toAbsolutePath().normalize().getParent().toString();
-        Path source = Path.of(Event.PHOTO_SAVE_ROOT + Event.PHOTO_RELATIVE_PATH).toAbsolutePath().normalize();
-        Path destination = Path.of(photoCopyPath).resolve(source.getFileName());
+            if (Files.exists(destination)) {
+                backup = Files.createTempDirectory(
+                        parent, "photos-old-");
 
-        if (source.equals(destination)) {
-            return;
-        }
+                Files.delete(backup);
+                Files.move(destination, backup);
+            }
 
-        deleteDirectory(destination.toString());
-        copyDirectory(photoCopyPath, source.toString());
-    }
-
-    private static void deleteDirectory(String path) throws IOException {
-        Path pathObj = Path.of(path);
-        if (Files.isDirectory(pathObj)) {
-            try (var files = Files.walk(pathObj)) {
-                for (Path p : files.sorted(Comparator.reverseOrder()).toList()) {
-                    Files.delete(p);
+            try {
+                Files.move(staged, destination);
+                installed = true;
+            } catch (IOException e) {
+                if (backup != null) {
+                    try {
+                        Files.move(backup, destination);
+                    } catch (IOException rollbackFailure) {
+                        e.addSuppressed(rollbackFailure);
+                    }
                 }
+
+                throw e;
+            }
+        } finally {
+            deleteDirectory(staged);
+
+            if (installed && backup != null) {
+                deleteDirectory(backup);
             }
         }
     }
 
-    private static void copyDirectory(String destPath, String sourcePath) throws IOException {
-        Path source = Path.of(sourcePath);
-        Path destination = Path.of(destPath).resolve(source.getFileName());
+    /**
+     * Deletes a directory and its contents.
+     */
+    private static void deleteDirectory(Path path)
+            throws IOException {
 
-        if (!Files.isDirectory(source)) {
-            return;
-        }
+        if (Files.isDirectory(
+                path, LinkOption.NOFOLLOW_LINKS)) {
 
-        try (var paths = Files.walk(source)) {
-            for (Path path : paths.toList()) {
-                Path target = destination.resolve(source.relativize(path));
-
-                if (Files.isDirectory(path)) {
-                    Files.createDirectories(target);
-                } else {
-                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+            try (var files = Files.walk(path)) {
+                for (Path file : files
+                        .sorted(Comparator.reverseOrder())
+                        .toList()) {
+                    Files.delete(file);
                 }
             }
         }
