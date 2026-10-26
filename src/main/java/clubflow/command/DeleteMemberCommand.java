@@ -9,6 +9,8 @@ import clubflow.UserInterface;
 import clubflow.exception.CommandParseException;
 import clubflow.member.Member;
 
+//@@author 77chenchen
+
 /**
  * Deletes a member selected by the one-based index shown by {@code viewMember}.
  */
@@ -90,3 +92,5 @@ public class DeleteMemberCommand extends Command {
         return response.equalsIgnoreCase("y") || response.equalsIgnoreCase("yes");
     }
 }
+
+//@@author

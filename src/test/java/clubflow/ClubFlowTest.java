@@ -283,6 +283,27 @@ class ClubFlowTest {
         assertTrue(secondSession.contains("Lucy"));
     }
 
+    //@@author 77chenchen
+    @Test
+    void run_memberAssignmentCommands_autosaveAcrossSessions() throws IOException {
+        String firstSession = runSession("ce e/PARTY n/Party\ncm n/Alice t/alice\n"
+                + "am e/PARTY i/1 r/Host\nem i/1 n/Alicia\neditEvent e/PARTY n/Dinner\n"
+                + "help c/findMember\nexit\n");
+
+        assertTrue(firstSession.contains("Assigned member Alice to event PARTY."));
+        assertTrue(firstSession.contains("Syntax of command \"findmember\":"));
+        ClubData saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
+        assertEquals("Alicia", saved.getAssignmentsForEvent("PARTY").getFirst().getMember().getName());
+        assertEquals("Dinner", saved.getAssignmentsForEvent("PARTY").getFirst().getEvent().getName());
+
+        String secondSession = runSession("fm q/alicix\nve e/PARTY\num e/PARTY i/1\nexit\n");
+        assertTrue(secondSession.contains("Possible matches"));
+        assertTrue(secondSession.contains("Alicia (Host)"));
+        assertTrue(secondSession.contains("Unassigned member Alicia from event PARTY."));
+        assertTrue(new SaveLoadManager().load(testDirectory.resolve("clubs.cf")).getAssignments().isEmpty());
+    }
+    //@@author
+
     @Test
     void main_exitInput_startsAndStopsWithAssertionsEnabled() {
         System.setIn(new ByteArrayInputStream("exit\n".getBytes(StandardCharsets.UTF_8)));

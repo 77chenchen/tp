@@ -1,6 +1,7 @@
 package clubflow;
 
 import clubflow.command.AddPhotoCommand;
+import clubflow.command.AssignMemberCommand;
 import clubflow.command.CommandParser;
 import clubflow.command.CompletionCommand;
 import clubflow.command.CreateEventCommand;
@@ -9,12 +10,16 @@ import clubflow.command.DeleteEventCommand;
 import clubflow.command.DeleteMemberCommand;
 import clubflow.command.DeletePhotoCommand;
 import clubflow.command.EditEventCommand;
+import clubflow.command.EditMemberCommand;
 import clubflow.command.ExitCommand;
 import clubflow.command.FindCommand;
+import clubflow.command.FindMemberCommand;
 import clubflow.command.HelpCommand;
+import clubflow.command.InviteCommand;
 import clubflow.command.ListPhotoCommand;
 import clubflow.command.LoadCommand;
 import clubflow.command.OpenPhotoCommand;
+import clubflow.command.UnassignMemberCommand;
 import clubflow.command.ViewEventCommand;
 import clubflow.command.ViewMemberCommand;
 import clubflow.command.CreateClubCommand;
@@ -124,6 +129,17 @@ public class ClubFlow {
         parser.register("deleteMember", new DeleteMemberCommand(ui, club));
         parser.registerAlias("deleteMember", "dm");
 
+        //@@author 77chenchen
+        parser.register("editMember", new EditMemberCommand(ui, club));
+        parser.registerAlias("editMember", "em");
+        parser.register("findMember", new FindMemberCommand(ui, club));
+        parser.registerAlias("findMember", "fm");
+        parser.register("assignMember", new AssignMemberCommand(ui, club));
+        parser.registerAlias("assignMember", "am");
+        parser.register("unassignMember", new UnassignMemberCommand(ui, club));
+        parser.registerAlias("unassignMember", "um");
+        //@@author
+
         parser.register("addPhoto", new AddPhotoCommand(ui, club));
         parser.registerAlias("addPhoto", "ap");
 
@@ -138,6 +154,7 @@ public class ClubFlow {
 
         parser.register("load", new LoadCommand(ui, club));
         parser.register("exit", new ExitCommand(ui));
+        parser.register("invite", new InviteCommand(ui, club));
 
         assert ui != null && parser != null && club != null
                 : "Application components must be initialized";

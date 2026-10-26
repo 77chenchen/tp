@@ -15,8 +15,10 @@ import java.util.Objects;
  */
 public abstract class Command {
 
+    //@@author 77chenchen
     /** Separates repeated values stored by the parser under one argument ID. */
     static final String REPEATED_ARGUMENT_SEPARATOR = "\u001F";
+    //@@author
 
     /**
      * User Interface to print command messages in.
@@ -58,6 +60,7 @@ public abstract class Command {
         return new String[]{};
     }
 
+    //@@author 77chenchen
     /**
      * Returns IDs which users may specify more than once.
      * Commands without repeatable arguments can use this default empty result.
@@ -67,6 +70,7 @@ public abstract class Command {
     public String[] repeatableArgIds() {
         return new String[]{};
     }
+    //@@author
 
     /**
      * Returns all IDs of arguments that are valid.
@@ -98,6 +102,7 @@ public abstract class Command {
         // No command-specific validation is required by default.
     }
 
+    //@@author 77chenchen
     /**
      * Returns all values supplied for an argument, including repeated values.
      *
@@ -113,6 +118,7 @@ public abstract class Command {
         }
         return Arrays.asList(args.get(argId).split(REPEATED_ARGUMENT_SEPARATOR, -1));
     }
+    //@@author
 
     /**
      * Executes command with corresponding arguments.
