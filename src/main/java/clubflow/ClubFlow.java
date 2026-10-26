@@ -41,6 +41,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
+import java.util.Optional;
 import java.nio.file.Path;
 
 /**
@@ -202,7 +203,19 @@ public class ClubFlow {
         while (true) {
             try {
                 String input = ui.prompt();
+                Optional<String> suggestion = parser.suggestedCorrection(input);
+
+                if (suggestion.isPresent()) {
+                    String correctedInput = suggestion.get();
+
+                    if (!ui.confirmCorrection(correctedInput)) {
+                        ui.print("Command cancelled.");
+                        continue;
+                    }
+                    input = correctedInput;
+                }
                 boolean terminate = parser.parse(input);
+                
                 if (club.hasUnsavedChanges()) {
                     try {
                         clubManager.saveActiveClub();

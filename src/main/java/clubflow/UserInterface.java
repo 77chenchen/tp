@@ -145,4 +145,23 @@ public class UserInterface {
         System.out.print(promptPrefix);
         return scanner.nextLine();
     }
+
+    /**
+     * Confirms the corrected prompt
+     * @param correctedInput Corrected input from user
+     * @return Confirmation on the correction
+     */
+    public boolean confirmCorrection(String correctedInput) {
+        while (true) {
+            System.out.println("Corrected prompt: " + correctedInput);
+            System.out.println("Press <enter> if correct. Press 'c' and <enter> to cancel.");
+            String response = prompt();
+
+            if (response.isEmpty()) {
+                return true;
+            } else if (response.equalsIgnoreCase("c")) {
+                return false;
+            }
+        }
+    }
 }

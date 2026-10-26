@@ -305,6 +305,67 @@ class ClubFlowTest {
     //@@author
 
     @Test
+    void run_correctedCommandConfirmed_executesOnceAndAutosaves() throws IOException {
+        String result = runSession("creatEvent e/XMAS n/\"Christmas Party\"\n\nexit\n");
+
+        assertTrue(result.contains("Corrected prompt: createevent e/XMAS n/\"Christmas Party\""));
+        assertEquals(1, result.lines().filter(line -> line.contains("Created event: XMAS")).count());
+        assertFalse(result.contains("Command syntax error"));
+        Club saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
+        assertEquals("Christmas Party", saved.findEventByTag("XMAS").orElseThrow().getName());
+    }
+
+    @Test
+    void run_correctedCommandCancelled_doesNotExecuteAndContinues() throws IOException {
+        String result = runSession("creatEvent e/CANCELLED\nC\ncreateEvent e/KEPT\nexit\n");
+
+        assertTrue(result.contains("Command cancelled."));
+        assertFalse(result.contains("Created event: CANCELLED"));
+        assertTrue(result.contains("Created event: KEPT"));
+        Club saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
+        assertTrue(saved.findEventByTag("CANCELLED").isEmpty());
+        assertTrue(saved.findEventByTag("KEPT").isPresent());
+    }
+
+    @Test
+    void run_invalidCorrectionResponse_repromptsUntilConfirmed() {
+        String result = runSession("creatEvent e/XMAS\nmaybe\n \n\nexit\n");
+
+        assertEquals(3, result.lines().filter(line -> line.contains("Corrected prompt:")).count());
+        assertEquals(1, result.lines().filter(line -> line.contains("Created event: XMAS")).count());
+        assertFalse(result.contains("does not exist"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void run_confirmedCorrectionWithMissingArguments_stillValidatesSyntax() {
+        String result = runSession("invte\n\nexit\n");
+
+        assertTrue(result.contains("Corrected prompt: invite"));
+        assertTrue(result.contains("are required but missing."));
+        assertTrue(result.contains("Syntax of command \"invite\":"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void run_exactCommandsAndAliases_doNotRequestCorrection() {
+        String result = runSession("ce e/XMAS\nviewEvent e/XMAS\nexit\n");
+
+        assertFalse(result.contains("Corrected prompt:"));
+        assertTrue(result.contains("Created event: XMAS"));
+        assertTrue(result.contains("[XMAS] Not set"));
+        assertTrue(result.contains("Goodbye!"));
+    }
+
+    @Test
+    void run_endOfInputDuringCorrection_doesNotExecute() {
+        String result = assertDoesNotThrow(() -> runSession("creatEvent e/UNCONFIRMED\n"));
+
+        assertTrue(result.contains("Corrected prompt:"));
+        assertFalse(result.contains("Created event:"));
+    }
+
+    @Test
     void main_exitInput_startsAndStopsWithAssertionsEnabled() {
         System.setIn(new ByteArrayInputStream("exit\n".getBytes(StandardCharsets.UTF_8)));
 
