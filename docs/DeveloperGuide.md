@@ -94,6 +94,53 @@ saves the active club if it has unsaved changes, then checks the exit flag.
 
 ### Model component
 
+The Model component represents and manages the data of the currently active club. Its main classes are `Club`, `Event`, `Member`, `EventAssignment`, and `Photo`.
+
+The following class diagram illustrates the structure of the Model component and the relationships between its classes.
+
+![Structure of the Model Component](diagrams/ModelClassDiagram.png)
+
+[PlantUML source](diagrams/ModelClassDiagram.puml)
+
+The Model component:
+
+- Stores club members, events, and member-event assignments in a shared `Club` object.
+- Represents each event using an `Event` object containing event details, completion status, and associated photos.
+- Represents each member using a `Member` object containing contact information and club functions.
+- Uses `EventAssignment` objects to associate members with events, optionally specifying their responsibilities.
+- Uses `Photo` objects to manage images associated with events.
+- Maintains consistency between members, events, and assignments when data is modified or deleted.
+
+#### Data management
+
+`Club` maintains separate lists of `Member`, `Event`, and `EventAssignment` objects. These lists are private, and their public getters return read-only snapshots using `List.copyOf()`. This prevents callers from modifying the collections directly.
+
+Events are identified by unique, case-insensitive tags within a club. Members are accessed using one-based indices, corresponding to their positions in the member list.
+
+An `EventAssignment` holds references to a specific `Event` and `Member`, together with an optional role. Using object references rather than member indices ensures that removing another member does not change the meaning of existing assignments.
+
+#### Maintaining data consistency
+
+The Model maintains consistency when existing objects are replaced or removed.
+
+When an event is updated, `Club.updateEvent()` replaces the original `Event` object while preserving its position in the event list. It also transfers the original event's photos and recreates affected `EventAssignment` objects so that they reference the replacement event.
+
+Similarly, `Club.replaceMemberByIndex()` transfers existing assignments to the replacement member. Deleting an event or member removes its associated assignments, preventing references to objects that are no longer part of the club.
+
+#### Shared club instance
+
+Commands operate on a shared `Club` instance rather than maintaining separate copies of club data.
+
+When switching clubs, `ClubManager` loads the selected club and calls `Club.replaceWith()` to replace the shared object's contents. This allows existing command objects to continue using the same `Club` reference without being reconstructed.
+
+#### Tracking unsaved changes
+
+`Club` maintains an `unsavedChanges` flag to indicate whether its data has been modified.
+
+Operations that modify club data set this flag to `true`. After the active club is successfully saved, `ClubManager` calls `markSaved()` to clear the flag.
+
+This allows the application to identify changes requiring persistence without saving after every read-only operation.
+
 ### Storage component
 
 ### Common classes
