@@ -43,7 +43,9 @@ command examples are also available in the [User Guide](UserGuide.md).
   the Gradle wrapper in CI.
 * [ChatGPT](https://chatgpt.com/): assisted with event feature implementation,
   edge-case identification and JUnit test generation for event and photo management,
-  User Guide and Developer Guide content, and PlantUML diagram sources.
+  drafting and reviewing User Guide and Developer Guide documentation (including
+  manual testing instructions for import, invalid save files, and autosave recovery),
+  and PlantUML diagram sources.
 
 ## Setting up, getting started
 
@@ -1251,4 +1253,78 @@ The following tests verify photo importing, listing, opening, deletion, persiste
 
 ### Import and invalid save files
 
+Use a **fresh working directory** for this section. In a text editor, create
+`import.cf` there as UTF-8 with exactly these three lines:
+
+```text
+MEMBER|Alice|alice||Logistics
+EVENT|TAG|Imported event|2026-12-25|null|100.0|Main Hall||true
+ASSIGNMENT|TAG|1|Lead
+```
+
+1. **Successful replacement:** Launch ClubFlow and enter `createEvent e/OLD`,
+   then `load p/import.cf`. Expect `Data loaded successfully!`. Enter
+   `currentClub`, `viewEvent all`, `viewEvent e/TAG`, and `viewMember`. The
+   active club remains `default`; `OLD` is absent, and `TAG` is completed with a `$100.00` budget
+   and Alice assigned as `Lead`. Alice also appears at member index 1.
+   Exit and restart: these imported records should remain. The source
+   `import.cf` should be unchanged; autosave writes to
+   `saves/clubs/default/club.cf`.
+2. **Rejected imports:** Create `invalid.cf` containing
+   `EVENT|PARTIAL||null|null|0.0|||false`, followed by `EVENT|BROKEN` on the
+   next line. Enter `load p/invalid.cf`. Expect
+   `Data not loaded! Invalid event record at line 2`. Check `viewEvent all`
+   and `viewMember`, plus `viewEvent e/TAG` for its assignment: the existing
+   records remain and `PARTIAL` is absent. Repeat with the following files/paths:
+
+   | Test input | Expected result |
+   | --- | --- |
+   | `load p/missing.cf` (file does not exist) | `Data not loaded!` followed by an I/O explanation. |
+   | `load p/` | A command syntax error; a path is required. |
+   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path) | A command syntax error stating that the load path must be relative. |
+   | `invalid.cf` with `100.0` changed to `-1`, `NaN`, or `1e309` in the valid event line | `Data not loaded! Invalid event record` with the affected line number. |
+   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes` | The same invalid-event error. |
+   | `invalid.cf` containing the valid event line twice | A duplicate-event-tag error at line 2. |
+   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead` | An invalid-assignment error at line 1. |
+
+   For each file variant, replace `invalid.cf` with the described records and
+   run `load p/invalid.cf`. After each rejection, check
+   that the imported club is unchanged and still accepts commands. Restart
+   once more to confirm that failed imports did not overwrite its saved data.
+3. **Invalid startup file:** Exit ClubFlow. Copy
+   `saves/clubs/default/club.cf` to `club-backup.cf` in the working directory,
+   then replace the original file's contents with `EVENT|BROKEN`. Relaunch.
+   Expect `Could not load saved data: Invalid event record at line 1`, followed
+   by termination without a command prompt. The invalid file should remain
+   unchanged. Restore it from `club-backup.cf` and relaunch; the previously
+   imported records should be available again.
+
 ### Autosave failure and recovery
+
+Use another **fresh working directory**, with no photos. Keep ClubFlow running
+while changing the test files in a separate file manager or terminal.
+
+1. **Force a write failure:** Launch ClubFlow and enter
+   `createEvent e/TAG b/100`. Rename `saves/clubs/default/club.cf` to
+   `club.cf.bak`, then create an **empty directory** named `club.cf` in its
+   place. Enter `editEvent e/TAG b/150`. Expect the edit confirmation followed
+   by `Changes could not be saved:` and an OS-dependent I/O explanation.
+   Enter `viewEvent e/TAG`: the in-memory budget is `$150.00`, and another
+   save warning appears because the retry also fails. The backup still
+   contains the original `100.0` budget.
+2. **Recover without restarting:** Remove only the empty `club.cf` directory
+   and rename `club.cf.bak` back to `club.cf`. Enter `viewEvent e/TAG` again.
+   Expect `$150.00` and no save warning. This read command also retries the
+   pending save; the file should now contain `150.0`. Exit and restart, then
+   view `TAG` to confirm that `$150.00` persisted.
+3. **Exit while saving still fails:** Repeat the file-to-directory replacement,
+   then enter `editEvent e/TAG b/200` and `exit`. Expect save warnings for both
+   commands and normal termination after `Goodbye!`; exiting does not wait
+   for storage to recover. Remove the empty directory and restore the backup
+   before restarting. `TAG` should still have the last successfully saved
+   budget of `$150.00`; the unsaved `$200.00` change is lost.
+
+The working directory's `clubflow.log` should record `Autosave failed` at
+`WARNING` for failed attempts. These cases block the text-file write; photo
+synchronization failures are a separate case because the text file can be
+updated before photo saving fails.
