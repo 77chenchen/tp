@@ -1,0 +1,58 @@
+
+@startuml
+title Importing a photo into an event
+
+actor User
+participant "AddPhotoCommand" as Command
+participant "Club" as Club
+participant "Event" as Event
+participant "Photo" as Photo
+participant "File System" as FS
+
+User -> Command : addPhoto e/TAG p/PATH [n/NAME]
+activate Command
+
+Command -> Club : findEventByTag(tag)
+Club --> Command : Event
+
+Command -> Club : addPhoto(tag, path, name)
+activate Club
+
+Club -> Event : addPhoto(path, name)
+activate Event
+
+create Photo
+Event -> Photo : new Photo(path, destination, name)
+activate Photo
+
+Photo -> FS : Check destination and source
+FS --> Photo : File information
+
+Photo -> FS : Read source image
+FS --> Photo : Image data
+
+Photo -> FS : Create directory and write PNG
+FS --> Photo : Success
+
+Photo --> Event : Photo object
+deactivate Photo
+
+note right of Event
+Register photo by name
+in HashMap<String, Photo>
+end note
+
+Event --> Club : Photo object
+deactivate Event
+
+note right of Club
+unsavedChanges = true
+end note
+
+Club --> Command : Photo object
+deactivate Club
+
+Command -> User : Display success message
+deactivate Command
+
+@enduml
