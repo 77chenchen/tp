@@ -1,0 +1,27 @@
+' Shared DG typography: render at 16px and display at intrinsic-width / 16 em.
+' Explicit sizes override PlantUML's smaller defaults for members and arrows.
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam titleFontSize 16
+skinparam captionFontSize 16
+skinparam arrowFontSize 16
+skinparam classFontSize 16
+skinparam classAttributeFontSize 16
+skinparam classStereotypeFontSize 16
+skinparam circledCharacterFontSize 16
+skinparam objectFontSize 16
+skinparam objectAttributeFontSize 16
+skinparam componentFontSize 16
+skinparam participantFontSize 16
+skinparam actorFontSize 16
+skinparam noteFontSize 16
+skinparam sequenceReferenceFontSize 16
+skinparam sequenceGroupFontSize 16
+skinparam sequenceGroupHeaderFontSize 16
+skinparam sequenceBoxFontSize 16
+skinparam sequenceDelayFontSize 16
+skinparam sequenceDividerFontSize 16
+
+' Opaque ref frames mask lifelines and activation bars beneath their text.
+skinparam sequenceReferenceBackgroundColor #FFFFFF
+skinparam sequenceReferenceHeaderBackgroundColor #EEEEEE

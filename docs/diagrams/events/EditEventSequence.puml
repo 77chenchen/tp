@@ -1,0 +1,53 @@
+@startuml
+!include ../shared/UmlStyle.iuml
+title Editing an event
+caption Partial execution view - validated editEvent e/TAG b/150
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #F1F6FC
+skinparam ParticipantBorderColor #40566B
+skinparam ArrowColor #40566B
+hide footbox
+
+participant "command:EditEventCommand" as Command
+participant "club:Club" as Club
+participant "original:Event" as Original
+participant "updated:Event" as Updated
+
+[-> Command : execute(args)
+activate Command
+Command -> Club : findEventByTag("TAG")
+activate Club
+Club --> Command : Optional.of(original)
+deactivate Club
+
+ref over Command, Original
+Read omitted details and completion state
+end ref
+
+create Updated
+Command -> Updated : new Event(...)
+activate Updated
+||25||
+Updated --> Command
+deactivate Updated
+
+Command -> Club : updateEvent(updated)
+activate Club
+Club -> Updated : copyPhotosFrom(original)
+activate Updated
+||15||
+Updated --> Club
+deactivate Updated
+
+ref over Club, Updated
+Reconnect assignments to updated;
+keep the event's list position;
+mark the club as unsaved
+end ref
+
+Club --> Command : True
+deactivate Club
+[<-- Command : False
+deactivate Command
+@enduml

@@ -103,7 +103,7 @@ public class FindEventCommand extends Command {
                 return budget;
             }
         } catch (NumberFormatException e) {
-            // Report malformed and out-of-range numbers with the same user-facing message.
+            // Fall through to the shared validation error below for malformed and out-of-range numbers.
         }
         throw new CommandParseException("Search budget must be a finite non-negative number after " + id + "/.");
     }

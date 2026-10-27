@@ -43,26 +43,19 @@ Run commands below from the repository root. On Windows, use PowerShell:
 
 ```powershell
 java -version
-.\gradlew.bat classes
-java -ea -cp build/classes/java/main clubflow.ClubFlow
+.\gradlew.bat run
 ```
 
-`classes` compiles the application. `-ea` enables assertions that check internal
+`run` compiles and starts ClubFlow with assertions enabled to check internal
 assumptions. On macOS or Linux, replace `.\gradlew.bat` with `./gradlew`.
-Alternatively, run `clubflow.ClubFlow.main()` in the IDE with assertions enabled.
+Alternatively, run `clubflow.ClubFlow.main()` in the IDE with `-ea` enabled.
 
 To build the packaged application:
 
 ```powershell
 .\gradlew.bat shadowJar
-java -ea -cp build/libs/clubflow.jar clubflow.ClubFlow
+java -ea -jar build/libs/clubflow.jar
 ```
-
-**Current build configuration issue:** `build.gradle` sets `application.mainClass`
-to `flow.ClubFlow`, but the actual entry point is `clubflow.ClubFlow`. Until that
-setting is corrected, use the explicit classpath commands above rather than
-`gradlew run` or `java -jar`. The root README also contains starter instructions
-that do not describe the current application.
 
 Paths such as `saves/`, `cache/`, and `clubflow.log` are relative to the process's
 working directory. Launch from a separate folder for manual testing to avoid
@@ -72,12 +65,12 @@ changing development data.
 
 ### Architecture
 
-<!-- Diagram widths use intrinsic pixels / 16 in em to match the body font size. -->
+<!-- shared/UmlStyle.iuml uses 16px text. Intrinsic image width / 16 in em keeps it at body-text size; wide diagrams scroll instead of shrinking. -->
 <div style="overflow-x: auto;">
-  <a href="diagrams/Architecture.png"><img src="diagrams/Architecture.png" alt="ClubFlow architecture: logical view" style="width: 19.0625em; max-width: none; height: auto;"></a>
+  <a href="diagrams/architecture/Architecture.svg"><img src="diagrams/architecture/Architecture.svg" alt="ClubFlow architecture: logical view" style="width: 20.1875em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/Architecture.puml).
+[PlantUML source](diagrams/architecture/Architecture.puml).
 
 The following are logical responsibilities, not separate modules or a set of
 component interfaces. Most core classes are in the `clubflow` package.
@@ -89,6 +82,10 @@ component interfaces. Most core classes are in the `clubflow` package.
 | Command processing | `CommandParser`, `Command`, concrete command classes, search and completion helpers | Resolves keywords and aliases, validates arguments, and executes requests, including event filtering and completion dispatch. |
 | Club data | `Club`, `Event`, `Member`, `EventAssignment`, `Photo` | Holds the active club's data and maintains relationships. |
 | Storage | `ClubManager`, `SaveLoadManager` | Selects club files, migrates legacy data, serializes records, and synchronizes photos. |
+
+The model is not purely in-memory: `Event` and `Photo` handle photo file operations
+directly. Storage separately persists club records and synchronizes saved photo
+snapshots.
 
 `ClubFlow` constructs one `UserInterface`, one `CommandParser`, one shared `Club`,
 and one `ClubManager`. It creates command objects once and registers them with the
@@ -127,9 +124,11 @@ text input and output but does not own or modify club data.
 The following class diagram is intentionally limited to UI interaction. It
 shows that `UserInterface` is shared rather than recreated for every command.
 
-![UI class diagram](diagrams/UiClassDiagram.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="width: 21.6875em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/UiClassDiagram.puml).
+[PlantUML source](diagrams/architecture/UiClassDiagram.puml).
 
 **Design consideration:** keeping input and printing in one small class makes
 terminal formatting consistent. Commands currently print through this class
@@ -148,10 +147,10 @@ full keyword; commands are not rebuilt for each input line. The diagram below
 shows a partial class view of command processing.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/LogicClass.png"><img src="diagrams/LogicClass.png" alt="Partial class diagram of command processing" style="width: 37em; max-width: none; height: auto;"></a>
+  <a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Partial class diagram of command processing" style="width: 58.75em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/LogicClass.puml). `XYZCommand` represents the many
+[PlantUML source](diagrams/architecture/LogicClass.puml). `XYZCommand` represents the many
 concrete commands omitted from the diagram. The `+` and `-` markers denote
 public and private members respectively; only members relevant to command
 processing are shown.
@@ -188,9 +187,11 @@ The Model component represents and manages the data of the currently active club
 
 The following class diagram illustrates the structure of the Model component and the relationships between its classes.
 
-![Structure of the Model Component](diagrams/ModelClassDiagram.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/architecture/ModelClassDiagram.svg"><img src="diagrams/architecture/ModelClassDiagram.svg" alt="Structure of the Model Component" style="width: 38.8125em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/ModelClassDiagram.puml)
+[PlantUML source](diagrams/architecture/ModelClassDiagram.puml)
 
 The Model component:
 
@@ -264,10 +265,10 @@ Search has a different input contract (for example, no required event tag), so i
 filter validation stays in `FindEventCommand` rather than reusing this validator.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/EventValidationClass.png"><img src="diagrams/EventValidationClass.png" alt="Class diagram of shared validation for event creation and editing" style="width: 22.25em; max-width: none; height: auto;"></a>
+  <a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="width: 22.3125em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/EventValidationClass.puml).
+[PlantUML source](diagrams/common/EventValidationClass.puml).
 
 #### Error handling
 
@@ -316,10 +317,10 @@ the event list and the assignment roster.
 The creation flow below ends before the input loop's autosave step.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/CreateEventSequence.png"><img src="diagrams/CreateEventSequence.png" alt="Successful event creation sequence" style="width: 75.5em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/CreateEventSequence.svg"><img src="diagrams/events/CreateEventSequence.svg" alt="Successful event creation sequence" style="width: 75.5625em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/CreateEventSequence.puml).
+[PlantUML source](diagrams/events/CreateEventSequence.puml).
 
 #### Editing and replacement
 
@@ -330,20 +331,20 @@ When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/EditEventSequence.png"><img src="diagrams/EditEventSequence.png" alt="Event editing and replacement sequence" style="width: 39.1875em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/EditEventSequence.svg"><img src="diagrams/events/EditEventSequence.svg" alt="Event editing and replacement sequence" style="width: 39.25em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/EditEventSequence.puml).
+[PlantUML source](diagrams/events/EditEventSequence.puml).
 Autosave follows this flow; the club is marked saved only after persistence succeeds.
 
 An earlier list returned by `getEvents()` still references the previous event;
 the club's current list references the replacement instead.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/EventReplacementObject.png"><img src="diagrams/EventReplacementObject.png" alt="Object diagram showing current and earlier event references after editing" style="width: 29.5625em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/EventReplacementObject.svg"><img src="diagrams/events/EventReplacementObject.svg" alt="Object diagram showing current and earlier event references after editing" style="width: 29.625em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/EventReplacementObject.puml).
+[PlantUML source](diagrams/events/EventReplacementObject.puml).
 
 #### Search
 
@@ -354,16 +355,16 @@ filter values once per request. Consider indexing only if measured usage justifi
 the additional update logic.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/EventSearchClass.png"><img src="diagrams/EventSearchClass.png" alt="Class diagram separating event search validation, matching, and current club data" style="width: 12.4375em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="width: 12.5em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/EventSearchClass.puml).
+[PlantUML source](diagrams/events/EventSearchClass.puml).
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/FindEventSequence.png"><img src="diagrams/FindEventSequence.png" alt="Event search sequence" style="width: 46.6875em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/FindEventSequence.svg"><img src="diagrams/events/FindEventSequence.svg" alt="Event search sequence" style="width: 46.75em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/FindEventSequence.puml).
+[PlantUML source](diagrams/events/FindEventSequence.puml).
 
 #### Completion
 
@@ -377,18 +378,18 @@ Both commands share a method-reference handler bound to the same `EventCompletio
 object, as shown below.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/CompletionWiringObject.png"><img src="diagrams/CompletionWiringObject.png" alt="Object diagram of mark and unmark sharing an event completion handler" style="width: 32.6875em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/CompletionWiringObject.svg"><img src="diagrams/events/CompletionWiringObject.svg" alt="Object diagram of mark and unmark sharing an event completion handler" style="width: 32.75em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/CompletionWiringObject.puml).
+[PlantUML source](diagrams/events/CompletionWiringObject.puml).
 
 In the sequence diagram, `completed` is `True` for `mark` and `False` for `unmark`.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/CompletionSequence.png"><img src="diagrams/CompletionSequence.png" alt="Event completion sequence" style="width: 57.5625em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/CompletionSequence.svg"><img src="diagrams/events/CompletionSequence.svg" alt="Event completion sequence" style="width: 57.625em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/CompletionSequence.puml).
+[PlantUML source](diagrams/events/CompletionSequence.puml).
 
 #### Event invitations
 
@@ -470,9 +471,11 @@ of replacing the shared object itself. The unsaved flag is then cleared.
 `SaveLoadManager` also saves the current club's photos to its own directory and
 loads the target club's photos into the working cache.
 
-![Successful club switch sequence diagram](diagrams/SwitchClubSequence.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/clubs/SwitchClubSequence.svg"><img src="diagrams/clubs/SwitchClubSequence.svg" alt="Successful club switch sequence diagram" style="width: 57.875em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/SwitchClubSequence.puml).
+[PlantUML source](diagrams/clubs/SwitchClubSequence.puml).
 
 **Failure handling:** an unknown club raises `ClubNotFoundException`. Failure
 to save or load displays an I/O error; the active ID is not changed. A
@@ -514,9 +517,11 @@ Photos are imported into the working directory under `cache/photos/<event-tag>/`
 
 The following sequence diagram illustrates the process of importing a single photo.
 
-![Photo Import Sequence Diagram](diagrams/PhotoImportSequence.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/photos/PhotoImportSequence.svg"><img src="diagrams/photos/PhotoImportSequence.svg" alt="Photo Import Sequence Diagram" style="width: 83.375em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/PhotoImportSequence.puml)
+[PlantUML source](diagrams/photos/PhotoImportSequence.puml)
 
 The import process works as follows:
 
@@ -577,11 +582,32 @@ starter application example still needs updating. When changing a command,
 update its UG entry and this guide's affected diagrams or test steps in the
 same change so that the published instructions describe the code.
 
-The diagrams embedded here are generated from the `.puml` sources in
-[`docs/diagrams`](diagrams/). Keep the source and rendered image together, and
+The SVG diagrams embedded here are generated from the `.puml` sources in
+[`docs/diagrams`](diagrams/), grouped by architecture, common classes, and feature.
+Each source stays beside its SVG; shared settings are in
+[`UmlStyle.iuml`](diagrams/shared/UmlStyle.iuml). See the
+[diagram maintenance notes](diagrams/README.md) for regeneration instructions, and
 prefer a small diagram focused on one question over listing every command class.
 
 ### Logging
+
+[`ClubFlow.configureLogging()`](../src/main/java/clubflow/ClubFlow.java) configures
+Java's `java.util.logging` package for the `clubflow` logger hierarchy. Records
+are appended to `clubflow.log` in the working directory using `SimpleFormatter`.
+Parent console handlers are disabled so diagnostics do not interrupt command output.
+
+* `INFO`: application lifecycle and save/load activity.
+* `FINE`: command registration, execution, data changes, and expected command failures.
+* `WARNING`: file loading/saving and photo I/O failures.
+* `SEVERE`: unexpected runtime failures in the input loop.
+
+New classes should use `Logger.getLogger(MyClass.class.getName())` and inherit
+the package handler rather than install their own handlers. `FINE` diagnostics
+require the logger and handler levels to allow `FINE`; recording a message at
+that level does not itself enable it.
+
+If the log file cannot be opened, package logging is disabled without preventing
+startup. Log files are ignored by Git.
 
 ### Automated testing and style checks
 
