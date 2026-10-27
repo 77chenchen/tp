@@ -11,16 +11,20 @@ skinparam captionFontSize 16
 skinparam ArrowColor #40566B
 skinparam classBackgroundColor #F1F6FC
 skinparam classBorderColor #40566B
+skinparam classAttributeIconSize 0
 hide empty members
 
 class ClubFlow
 class CommandParser {
+  -aliases: HashMap<String, String>
   +register(keyword, command)
   +registerAlias(keyword, alias)
   +suggestedCorrection(input): Optional<String>
   +parse(input): boolean
+  -validateCommandDefinition(command)
 }
 abstract class Command {
+  -syntaxes: List<String>
   +requiredArgIds(): String[]
   +optionalArgIds(): String[]
   +flagArgIds(): String[]
@@ -28,10 +32,15 @@ abstract class Command {
   +validateArgs(args)
   +execute(args): boolean
 }
-class FindMemberCommand
+class FindMemberCommand {
+  +execute(args): boolean
+  -searchMember(index, member, args): SearchResult
+}
 class XYZCommand
 class Club
-class UserInterface
+class UserInterface {
+  +confirmCorrection(correctedInput): boolean
+}
 
 ClubFlow *-- CommandParser
 CommandParser --> "0..*" Command : registered commands

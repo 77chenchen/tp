@@ -118,7 +118,9 @@ shows a partial class view of command processing.
 </div>
 
 [PlantUML source](diagrams/LogicClass.puml). `XYZCommand` represents the many
-concrete commands omitted from the diagram.
+concrete commands omitted from the diagram. The `+` and `-` markers denote
+public and private members respectively; only members relevant to command
+processing are shown.
 
 How the Logic component processes input:
 
