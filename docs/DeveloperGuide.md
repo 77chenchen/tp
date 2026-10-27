@@ -236,7 +236,19 @@ In the diagram, `completed` is `True` for `mark` and `False` for `unmark`.
 
 ### Photo lifecycle and persistence limits
 
-ClubFlow supports importing, listing, opening, and deleting photos associated with events. Photo management is handled by the `Photo`, `Event`, and `Club` classes, while `SaveLoadManager` manages photo persistence across sessions and clubs.
+ClubFlow supports importing, listing, opening, and deleting photos associated with events. The following entry points are useful when modifying photo management behaviour. Command syntax and user-visible rules are documented in the [User Guide](UserGuide.md).
+
+| Feature           | Start here                                                                                               |
+|-------------------|----------------------------------------------------------------------------------------------------------|
+| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/AddPhotoCommand.java)                                |
+| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/AddAllPhotoCommand.java)                          |
+| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/ListPhotoCommand.java)                              |
+| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/OpenPhotoCommand.java)                              |
+| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/DeletePhotoCommand.java)                          |
+| Photo operations  | [Photo](../src/main/java/clubflow/photo/Photo.java), [Event](../src/main/java/clubflow/event/Event.java) |
+| Photo persistence | [SaveLoadManager](../src/main/java/clubflow/SaveLoadManager.java)                                        |
+
+Photo commands operate through the shared `Club` object, which delegates photo operations to the corresponding `Event`. The `Photo` class handles image file operations, while `SaveLoadManager` synchronizes photos between the working cache and club-specific save directories.
 
 #### Photo importing
 
