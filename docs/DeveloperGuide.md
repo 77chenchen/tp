@@ -98,11 +98,57 @@ saves the active club if it has unsaved changes, then checks the exit flag.
 
 ### Common classes
 
-The `clubflow.exception` package contains application exceptions, including
-`ClubFlowException` and `CommandParseException`. `ClubFlow` displays expected
-command failures and can print the selected command's syntax for parsing errors.
-It also catches unexpected runtime exceptions and records them in the log.
-There is no separate `commons` package.
+There is no separate `commons` package. Shared command infrastructure and helpers
+live alongside the commands; expected application failures use `clubflow.exception`.
+
+#### Command contract
+
+[`Command`](../src/main/java/clubflow/command/Command.java) is the shared extension
+point for commands. Its argument declarations and syntax strings serve different
+consumers: the parser enforces the declarations, while help displays the syntax.
+Keep both consistent when changing a command.
+
+[`CommandParser`](../src/main/java/clubflow/command/CommandParser.java) handles
+input structure, required/allowed arguments, and repetition rules before calling
+the command's `validateArgs()`. Keep field values and cross-field rules in the
+command or a focused validator, rather than adding feature-specific branches to
+the parser. The boolean returned by `execute()` requests application exit; it is
+**not** a success or data-changed flag. Autosave instead relies on the shared club's
+unsaved flag.
+
+#### Shared event validation
+
+[`EventArgumentIds`](../src/main/java/clubflow/command/EventArgumentIds.java) and
+[`EventArgumentValidator`](../src/main/java/clubflow/command/EventArgumentValidator.java)
+keep creation and editing aligned. The validator checks supplied event fields
+before mutation, including rejecting the save format's `|` separator. When a
+field rule changes, review both commands and the domain object's invariants.
+Search has a different input contract (for example, no required event tag), so its
+filter validation stays in `FindEventCommand` rather than reusing this validator.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/EventValidationClass.png"><img src="diagrams/EventValidationClass.png" alt="Class diagram of shared validation for event creation and editing" style="width: 22.25em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/EventValidationClass.puml).
+
+#### Error handling
+
+* [`ClubFlowException`](../src/main/java/clubflow/exception/ClubFlowException.java)
+  is the checked base type for expected application failures and standardizes
+  their messages. Propagate these failures to the input loop for display instead
+  of printing an error and then throwing it, which would report it twice.
+* [`CommandParseException`](../src/main/java/clubflow/exception/CommandParseException.java)
+  covers invalid command input. Once a command is selected, the parser attaches
+  its keyword so the input loop can also display the correct syntax.
+* [`EventNotFoundException`](../src/main/java/clubflow/exception/EventNotFoundException.java)
+  and [`DuplicateEventException`](../src/main/java/clubflow/exception/DuplicateEventException.java)
+  distinguish failed event lookup from a conflicting tag. These are domain
+  failures, not malformed command syntax.
+
+Programming-contract violations, such as invalid command registration, use
+unchecked exceptions rather than user-input errors. `ClubFlow` catches and logs
+unexpected runtime exceptions at the input-loop boundary.
 
 ## Implementation
 
@@ -151,6 +197,15 @@ the displayed/searchable details, and the save/load format together.
 [PlantUML source](diagrams/EditEventSequence.puml).
 Autosave follows this flow; the club is marked saved only after persistence succeeds.
 
+An earlier list returned by `getEvents()` still references the previous event;
+the club's current list references the replacement instead.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/EventReplacementObject.png"><img src="diagrams/EventReplacementObject.png" alt="Object diagram showing current and earlier event references after editing" style="width: 29.5625em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/EventReplacementObject.puml).
+
 #### Search
 
 Search combines predicates over the current event snapshot. A linear scan keeps
@@ -158,6 +213,12 @@ ordering predictable and avoids maintaining indexes as events change. Keep
 filter validation in `FindEventCommand` and matching in `EventSearch`; compile
 filter values once per request. Consider indexing only if measured usage justifies
 the additional update logic.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/EventSearchClass.png"><img src="diagrams/EventSearchClass.png" alt="Class diagram separating event search validation, matching, and current club data" style="width: 12.4375em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/EventSearchClass.puml).
 
 <div style="overflow-x: auto;">
   <a href="diagrams/FindEventSequence.png"><img src="diagrams/FindEventSequence.png" alt="Event search sequence" style="width: 46.6875em; max-width: none; height: auto;"></a>
@@ -173,7 +234,16 @@ independent of event details. Preserve idempotency: repeating a request must kee
 the requested state, not toggle it. Completion uses the same replacement path as
 editing, so both features must preserve unrelated data.
 
-In the diagram, `completed` is `True` for `mark` and `False` for `unmark`.
+Both commands share a method-reference handler bound to the same `EventCompletion`
+object, as shown below.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/CompletionWiringObject.png"><img src="diagrams/CompletionWiringObject.png" alt="Object diagram of mark and unmark sharing an event completion handler" style="width: 32.6875em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/CompletionWiringObject.puml).
+
+In the sequence diagram, `completed` is `True` for `mark` and `False` for `unmark`.
 
 <div style="overflow-x: auto;">
   <a href="diagrams/CompletionSequence.png"><img src="diagrams/CompletionSequence.png" alt="Event completion sequence" style="width: 57.5625em; max-width: none; height: auto;"></a>
