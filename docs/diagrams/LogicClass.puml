@@ -1,0 +1,42 @@
+@startuml
+title Command processing classes
+caption Partial class view; XYZCommand stands for other concrete commands
+top to bottom direction
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam classFontSize 16
+skinparam titleFontSize 16
+skinparam captionFontSize 16
+skinparam ArrowColor #40566B
+skinparam classBackgroundColor #F1F6FC
+skinparam classBorderColor #40566B
+hide empty members
+
+class ClubFlow
+class CommandParser {
+  +register(keyword, command)
+  +registerAlias(keyword, alias)
+  +suggestedCorrection(input): Optional<String>
+  +parse(input): boolean
+}
+abstract class Command {
+  +requiredArgIds(): String[]
+  +optionalArgIds(): String[]
+  +flagArgIds(): String[]
+  +repeatableArgIds(): String[]
+  +validateArgs(args)
+  +execute(args): boolean
+}
+class FindMemberCommand
+class XYZCommand
+class Club
+class UserInterface
+
+ClubFlow *-- CommandParser
+CommandParser --> "0..*" Command : registered commands
+Command <|-- FindMemberCommand
+Command <|-- XYZCommand
+FindMemberCommand --> Club : searches
+Command --> UserInterface : displays result
+@enduml
