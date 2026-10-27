@@ -29,6 +29,9 @@ public class CommandParser {
     private final UserInterface ui;
     private final HashMap<String, Command> commands;
 
+    /** Retains registered spelling for help and suggestions without changing case-insensitive lookup. */
+    private final HashMap<String, String> registeredKeywords;
+
     private final HashMap<String, String> aliases;
     private final HashMap<String, List<String>> aliasMap;
 
@@ -39,6 +42,7 @@ public class CommandParser {
     public CommandParser(UserInterface ui) {
         this.ui = Objects.requireNonNull(ui, "User interface must not be null");
         commands = new HashMap<>();
+        registeredKeywords = new HashMap<>();
 
         aliases = new HashMap<>();
         aliasMap = new HashMap<>();
@@ -49,7 +53,7 @@ public class CommandParser {
      * Registers a command into the command parser.
      * @param keyword The keyword to set for the command.
      *                e.g "test a/1 b/1" has keyword "test".
-     *                Command keywords are case-insensitive.
+     *                Keywords are case-insensitive; registered spelling is retained for help and suggestions.
      * @param command The command to be registered.
      */
     public void register(String keyword, Command command) {
@@ -64,6 +68,7 @@ public class CommandParser {
         if (commands.putIfAbsent(normalizedKeyword, command) != null) {
             throw new IllegalArgumentException("Command with keyword \"" + keyword + "\" already exists!");
         }
+        registeredKeywords.put(normalizedKeyword, keyword);
 
         assert commands.get(normalizedKeyword) == command : "Registered command must be retrievable";
         LOGGER.fine(() -> "Registered command: " + normalizedKeyword);
@@ -343,25 +348,23 @@ public class CommandParser {
 
     /**
      * Prints all supported syntaxes of a specified command.
+     * Resolves aliases to the full keyword and preserves its registered spelling.
      *
      * @param keyword The keyword of the command to display.
      */
     public void printCommandSyntax(String keyword){
-        Command cmd = commands.get(keyword.toLowerCase());
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        String canonicalKeyword = aliases.getOrDefault(normalizedKeyword, normalizedKeyword);
+        Command cmd = commands.get(canonicalKeyword);
+        String displayKeyword = registeredKeywords.get(canonicalKeyword);
 
-        String nonAliasKeyword = keyword.toLowerCase();
-
-        if (aliases.containsKey(keyword.toLowerCase())){
-            nonAliasKeyword = aliases.get(keyword.toLowerCase());
-        }
-
-        ui.print("Syntax of command \"" + nonAliasKeyword + "\":");
+        ui.print("Syntax of command \"" + displayKeyword + "\":");
 
         for (String syntax : cmd.getSyntaxes()){
-            ui.print("> " + nonAliasKeyword + " " + syntax);
+            ui.print("> " + displayKeyword + " " + syntax);
         }
 
-        List<String> keywordAliases = aliasMap.getOrDefault(nonAliasKeyword, new ArrayList<>());
+        List<String> keywordAliases = aliasMap.getOrDefault(canonicalKeyword, new ArrayList<>());
         if (!keywordAliases.isEmpty()){
             ui.print("Aliases: " + keywordAliases);
         }
@@ -425,7 +428,7 @@ public class CommandParser {
     }
 
     /**
-     * Suggests the closest command keyword while preserving the arguments.
+     * Suggests the closest command using its registered spelling while preserving the arguments.
      * 
      * @param input original command input
      * @return corrected input, or an empty optional if no unique match
@@ -485,6 +488,6 @@ public class CommandParser {
             return Optional.empty();
         }
 
-        return Optional.of(bestKeyword + remainder);
+        return Optional.of(registeredKeywords.get(bestKeyword) + remainder);
     }
 }
