@@ -86,6 +86,7 @@ public class Event {
         this.completed = completed;
     }
 
+    //@@author Eugene3129
     /**
      * Validates an optional text field against null and the save-file separator.
      *
@@ -116,6 +117,7 @@ public class Event {
         return checkedValue;
     }
 
+    //@@author camimaigrot
     public String getTag() {
         return tag;
     }
@@ -149,6 +151,7 @@ public class Event {
         return completed;
     }
 
+    //@@author
     /**
      * Returns a copy with the requested completion state, leaving this event unchanged.
      *

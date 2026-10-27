@@ -6,6 +6,7 @@ import java.util.HashMap;
 
 import clubflow.exception.CommandParseException;
 
+//@@author Eugene3129
 /**
  * Shares event field validation between creation and editing commands.
  */

@@ -66,6 +66,7 @@ public class Club {
         unsavedChanges = true;
     }
 
+    //@@author Eugene3129
     /**
      * Adds an event to the club.
      * Event tags are compared case-insensitively and must be unique.
@@ -191,7 +192,7 @@ public class Club {
                 || member.getFunctions().stream()
                         .anyMatch(function -> function.toLowerCase(Locale.ROOT).contains(query));
     }
-    //@@author
+    //@@author Eugene3129
 
     /**
      * Returns a read-only snapshot of the club's events.
@@ -216,6 +217,7 @@ public class Club {
                 .findFirst();
     }
 
+    //@@author
     /**
      * Replaces an existing event with updated details, preserving its position in the list.
      * The replacement must use the existing tag, compared case-insensitively.
@@ -254,6 +256,7 @@ public class Club {
         return true;
     }
 
+    //@@author Eugene3129
     /**
      * Removes the event with the given tag.
      *
@@ -268,9 +271,7 @@ public class Club {
         }
         int previousSize = events.size();
         boolean removed = events.remove(eventToRemove.get());
-        //@@author 77chenchen
         assignments.removeIf(assignment -> assignment.getEvent() == eventToRemove.get());
-        //@@author
         assert removed && events.size() == previousSize - 1
                 : "A found event must be removed exactly once";
         LOGGER.fine(() -> "Removed event; event count is now " + events.size());

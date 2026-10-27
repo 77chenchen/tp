@@ -183,6 +183,7 @@ public class ClubTest {
         assertEquals(List.of(secondMember), club.getMembers());
     }
 
+    //@@author Eugene3129
     /**
      * Creates a valid event fixture with the supplied tag.
      *

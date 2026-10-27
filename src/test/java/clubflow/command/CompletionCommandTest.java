@@ -28,6 +28,7 @@ import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
 
+//@@author Eugene3129
 /**
  * Tests completion dispatch, event updates, idempotent requests, and invalid input through the parser.
  */

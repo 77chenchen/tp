@@ -14,6 +14,7 @@ public class Member {
     private final String email;
     private final ArrayList<String> functions;
 
+    //@@author Eugene3129
     /**
      * Creates a member.
      *
@@ -70,6 +71,7 @@ public class Member {
         return value.contains("|");
     }
 
+    //@@author camimaigrot
     public String getName() {
         return name;
     }

@@ -35,6 +35,7 @@ public class ViewEventCommand extends Command {
         addSyntax("all");
     }
 
+    //@@author Eugene3129
     @Override
     public String[] requiredArgIds() {
         return new String[]{};
@@ -65,6 +66,7 @@ public class ViewEventCommand extends Command {
         }
     }
 
+    //@@author
     @Override
     public boolean execute(HashMap<String, String> args) throws EventNotFoundException {
         Objects.requireNonNull(args, "Arguments must not be null");
@@ -92,6 +94,7 @@ public class ViewEventCommand extends Command {
         return false;
     }
 
+    //@@author Eugene3129
     /**
      * Prints an event with labelled details and placeholders for missing values.
      *

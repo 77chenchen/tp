@@ -1,5 +1,6 @@
 package clubflow.command;
 
+//@@author Eugene3129
 /**
  * Defines the argument IDs shared by event commands.
  */

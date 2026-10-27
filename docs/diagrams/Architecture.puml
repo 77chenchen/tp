@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+title ClubFlow Architecture
+caption Logical view
+top to bottom direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam titleFontSize 16
+skinparam captionFontSize 16
+skinparam ArrowColor #40566B
+skinparam componentBackgroundColor #F1F6FC
+skinparam componentBorderColor #40566B
+skinparam nodesep 45
+skinparam ranksep 55
+
+component "Application coordination" as App
+component "User interaction" as UI
+component "Command processing" as Logic
+component "Club data" as Model
+component "Storage" as Storage
+rectangle "Local filesystem\n(external resource)" as Files
+
+App ..> UI
+App ..> Logic
+App ..> Storage
+Logic ..> UI
+Logic ..> Model
+Logic ..> Storage
+Storage ..> Model
+Storage ..> Files
+Model ..> Files
+@enduml

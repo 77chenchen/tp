@@ -32,6 +32,7 @@ class EventCommandsTest {
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
 
+    //@@author Eugene3129
     @BeforeEach
     void redirectOutput() {
         output = new ByteArrayOutputStream();
@@ -82,6 +83,7 @@ class EventCommandsTest {
         assertEquals(List.of("[TEST] No events found."), printedLines());
     }
 
+    //@@author
     @Test
     void deleteEvent_unknownTag_throwsAndPreservesExistingEvents() throws ClubFlowException {
         Club club = new Club();
@@ -99,6 +101,7 @@ class EventCommandsTest {
         assertEquals(existingEvents, club.getEvents());
     }
 
+    //@@author Eugene3129
     @Test
     void createEvent_invalidValues_rejectsCommand() {
         Club club = new Club();
@@ -121,6 +124,7 @@ class EventCommandsTest {
         assertEquals(0, club.getEvents().size());
     }
 
+    //@@author
     @Test
     void createEvent_duplicateTags_throwsAndPreservesExistingEvents() throws ClubFlowException {
         Club club = new Club();

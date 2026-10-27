@@ -1,0 +1,61 @@
+@startuml
+title Setting event completion
+caption Partial execution view - mark / unmark
+skinparam shadowing false
+skinparam defaultFontName SansSerif
+skinparam defaultFontSize 16
+skinparam titleFontSize 16
+skinparam sequenceMessageFontSize 16
+skinparam sequenceParticipantFontSize 16
+skinparam sequenceReferenceFontSize 16
+skinparam sequenceGroupFontSize 16
+skinparam sequenceGroupHeaderFontSize 16
+skinparam captionFontSize 16
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #F1F6FC
+skinparam ParticipantBorderColor #40566B
+skinparam ArrowColor #40566B
+hide footbox
+
+participant "command:CompletionCommand" as Command
+participant "handler:EventCompletion" as Handler
+participant "club:Club" as Club
+participant "event:Event" as Event
+participant "ui:UserInterface" as UI
+
+[-> Command : execute(args)
+activate Command
+Command -> Handler : setCompleted("TAG", completed)
+activate Handler
+Handler -> Club : findEventByTag("TAG")
+activate Club
+||15||
+Club --> Handler : Optional.of(event)
+deactivate Club
+
+Handler -> Event : isCompleted()
+activate Event
+||15||
+Event --> Handler : currentState
+deactivate Event
+
+opt currentState != completed
+    Handler -> Event : withCompleted(completed)
+    activate Event
+    ||25||
+    Event --> Handler : updatedEvent
+    deactivate Event
+
+    Handler -> Club : updateEvent(updatedEvent)
+    activate Club
+    ||15||
+    Club --> Handler : True
+    deactivate Club
+end
+
+Handler -> UI : print(message)
+Handler --> Command
+deactivate Handler
+[<-- Command : False
+deactivate Command
+@enduml

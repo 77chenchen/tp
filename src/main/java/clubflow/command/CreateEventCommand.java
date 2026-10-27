@@ -10,6 +10,7 @@ import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.DuplicateEventException;
 
+//@@author Eugene3129
 /**
  * Creates an event and stores it in the shared club data.
  */

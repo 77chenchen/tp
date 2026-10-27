@@ -33,6 +33,7 @@ class ClubFlowTest {
     private ByteArrayOutputStream output;
     private PrintStream capturedOutput;
 
+    //@@author Eugene3129
     @BeforeEach
     void captureOutput() {
         output = new ByteArrayOutputStream();
@@ -92,6 +93,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_saveCommand_reportsUnknownCommand() {
         String result = runSession("save\nexit\n");
@@ -115,12 +117,13 @@ class ClubFlowTest {
         assertFalse(secondSession.contains("Command syntax error"));
     }
 
+    //@@author Eugene3129
     @Test
     void run_missingEvents_reportsEachErrorOnceAndContinuesWithStoredData() {
         String result = runSession("createEvent e/XMAS n/Party\n"
                 + "mark e/MISSING_MARK\nunmark e/MISSING_UNMARK\n"
                 + "editEvent e/MISSING_EDIT n/Changed\ndeleteEvent e/MISSING_DELETE\n"
-                + "viewEvent e/MISSING_VIEW\nviewEvent e/XMAS\nfind e/Party\nexit\n");
+                + "viewEvent e/MISSING_VIEW\nviewEvent e/XMAS\nfe e/Party\nexit\n");
 
         assertEquals(List.of(
                 "[CF] Event not found: MISSING_MARK",
@@ -175,9 +178,9 @@ class ClubFlowTest {
     }
 
     @Test
-    void run_findCommand_searchesCreatedEventsAndReflectsDeletion() {
+    void run_findEventCommand_searchesCreatedEventsAndReflectsDeletion() {
         String result = runSession("createEvent e/XMAS n/\"Christmas Party\"\n"
-                + "find e/party\ndeleteEvent e/XMAS\nfind e/party\nexit\n");
+                + "findEvent e/party\ndeleteEvent e/XMAS\nfindEvent e/party\nexit\n");
 
         assertAll(
                 () -> assertTrue(result.contains("[CF] Found 1 matching event(s).")),
@@ -190,10 +193,48 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_findAliases_searchDifferentTypesAndShowCanonicalHelp() {
+        String result = runSession("createEvent e/XMAS n/Party v/\"Main Hall\"\ncm n/Alice t/alice\n"
+                + "findEvent e/party\nfe v/hall\nfindMember q/Alice\nfm q/Alice\n"
+                + "help c/findEvent\nhelp c/fe\nhelp c/fm\nexit\n");
+
+        assertAll(
+                () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] [XMAS] Party")).count()),
+                () -> assertEquals(2, result.lines()
+                        .filter(line -> line.contains("[CF] Syntax of command \"findevent\":")).count()),
+                () -> assertEquals(2, result.lines()
+                        .filter(line -> line.equals("[CF] > findevent [e/Keyword] [q/Keyword] [n/Name]"
+                                + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]"
+                                + " [b/Budget] [min/Budget] [max/Budget] [s/completed|pending]")).count()),
+                () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] 1. Alice")).count()),
+                () -> assertTrue(result.contains("[CF] Aliases: [fe]")),
+                () -> assertTrue(result.contains("[CF] Syntax of command \"findmember\":")),
+                () -> assertTrue(result.contains("[CF] Aliases: [fm]")),
+                () -> assertFalse(result.contains("Command syntax error"))
+        );
+    }
+
+    @Test
+    void run_findBudgetAndStatus_reflectsMarkAndUnmarkAndContinuesAfterInvalidFilters() {
+        String result = runSession("createEvent e/PLAN n/Party b/100\ncreateEvent e/HIGH n/Meeting b/200\n"
+                + "fe s/pending max/100\nmark e/PLAN\nfe s/completed b/100\nfe s/pending max/100\n"
+                + "unmark e/PLAN\nfe s/pending min/100 max/100\nfe b/NaN\nfe s/unknown\nfe b/100\nexit\n");
+
+        assertAll(
+                () -> assertEquals(4, result.lines().filter(line -> line.equals("[CF] [PLAN] Party")).count()),
+                () -> assertFalse(result.contains("[CF] [HIGH] Meeting")),
+                () -> assertTrue(result.contains("[CF] No matching events found.")),
+                () -> assertTrue(result.contains("Search budget must be a finite non-negative number after b/.")),
+                () -> assertTrue(result.contains("Search status must be completed or pending after s/.")),
+                () -> assertTrue(result.contains("[CF] Goodbye!"))
+        );
+    }
+
+    @Test
     void run_editEvent_updatesDetailsSeenByViewAndFind() {
         String result = runSession("createEvent e/XMAS n/Party v/\"Main Hall\"\n"
                 + "editEvent e/xmas n/Dinner b/600\nviewEvent e/XMAS\n"
-                + "find e/Dinner\nfind e/Party\nexit\n");
+                + "fe e/Dinner\nfe e/Party\nexit\n");
 
         assertAll(
                 () -> assertTrue(result.contains("[CF] Updated event: XMAS")),
@@ -222,6 +263,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_completionAutosave_restoresStatusInANewSessionAndAllowsUnmarking() throws IOException {
         String savedSession = runSession("createEvent e/XMAS n/\"Christmas Party\" "
@@ -252,6 +294,7 @@ class ClubFlowTest {
         assertFalse(new SaveLoadManager().load(saveFile).findEventByTag("XMAS").orElseThrow().isCompleted());
     }
 
+    //@@author Eugene3129
     @Test
     void run_memberCommands_shareAliasesAndConfirmationInput() {
         String result = runSession("createMember n/Lucy t/lucy\naddMember n/Thomas e/thomas@example.com\n"
@@ -272,6 +315,7 @@ class ClubFlowTest {
         );
     }
 
+    //@@author
     @Test
     void run_separateInstances_restoreAutomaticallySavedData() {
         runSession("createEvent e/PRIVATE\ncreateMember n/Lucy t/lucy\nexit\n");
@@ -302,7 +346,7 @@ class ClubFlowTest {
         assertTrue(secondSession.contains("Unassigned member Alicia from event PARTY."));
         assertTrue(new SaveLoadManager().load(testDirectory.resolve("clubs.cf")).getAssignments().isEmpty());
     }
-    //@@author
+    //@@author Eugene3129
 
     @Test
     void main_exitInput_startsAndStopsWithAssertionsEnabled() {
@@ -315,6 +359,7 @@ class ClubFlowTest {
         assertTrue(result.contains("[CF] Goodbye!"));
     }
 
+    //@@author
     /**
      * Runs a fresh application with scripted input and captures only that session's output.
      *

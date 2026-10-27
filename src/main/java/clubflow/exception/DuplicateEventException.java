@@ -1,5 +1,6 @@
 package clubflow.exception;
 
+//@@author Eugene3129
 /**
  * Reports that event creation would reuse a tag already stored by the application.
  */

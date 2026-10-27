@@ -20,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 import clubflow.event.Event;
 import clubflow.member.Member;
 
+//@@author Eugene3129
 /**
  * Checks persistence of complete and optional fields and rejection of malformed save files.
  * Every test writes only to a temporary directory managed by JUnit.

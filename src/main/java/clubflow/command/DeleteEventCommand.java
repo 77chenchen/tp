@@ -27,6 +27,7 @@ public class DeleteEventCommand extends Command {
         addSyntax("e/Tag");
     }
 
+    //@@author Eugene3129
     @Override
     public String[] requiredArgIds() {
         return new String[]{EventArgumentIds.TAG};

@@ -10,6 +10,7 @@ import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
 
+//@@author Eugene3129
 /**
  * Updates supplied details of an event selected by its tag, preserving omitted fields.
  */
