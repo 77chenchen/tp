@@ -10,7 +10,7 @@ command examples are also available in the [User Guide](UserGuide.md).
 * [Setting up, getting started](#setting-up-getting-started)
 * [Design](#design)
 * [Implementation](#implementation)
-* [Documentation, logging, testing, and development workflow](#documentation-logging-testing-and-development-workflow)
+* [Documentation, logging, testing, dev-ops](#documentation-logging-testing-dev-ops)
 * [Appendix A: Product Scope](#appendix-a-product-scope)
 * [Appendix B: User Stories](#appendix-b-user-stories)
 * [Appendix C: Non-Functional Requirements](#appendix-c-non-functional-requirements)
@@ -106,36 +106,38 @@ flag.
 
 ### Logic component
 
-The `clubflow.command` package handles a line of input in two stages. At startup,
-`ClubFlow` creates command objects and registers each keyword and alias with the
-`CommandParser`. An alias points to the same command object as its full keyword;
-commands are not rebuilt for each input line.
+Main entry point: [CommandParser.java](../src/main/java/clubflow/command/CommandParser.java).
+
+At startup, `ClubFlow` creates command objects and registers each keyword and
+alias with `CommandParser`. An alias points to the same command object as its
+full keyword; commands are not rebuilt for each input line. The diagram below
+shows a partial class view of command processing.
 
 <div style="overflow-x: auto;">
   <a href="diagrams/LogicClass.png"><img src="diagrams/LogicClass.png" alt="Partial class diagram of command processing" style="width: 37em; max-width: none; height: auto;"></a>
 </div>
 
 [PlantUML source](diagrams/LogicClass.puml). `XYZCommand` represents the many
-concrete commands; the diagram shows only representative classes and their
-dependencies.
+concrete commands omitted from the diagram.
 
-Before `parse(input)`, the input loop calls `suggestedCorrection(input)`. For an
-unknown command word of at least four characters, it compares that word with
-registered full command names and offers a uniquely closest spelling within
-one or two character edits, depending on word length. The original arguments
-are kept. `UserInterface.confirmCorrection(...)` runs the suggestion only
-after the user presses Enter; entering `c` cancels it. Exact command names and
-aliases bypass this step.
+How the Logic component processes input:
 
-When `parse(input)` runs, the parser identifies the command word, preserves text
-inside double quotes while splitting arguments, and checks each argument ID
-against that command's required, optional, flag, and repeatable IDs. It then
-calls `validateArgs(...)` for rules specific to the command before calling
-`execute(...)`. The existing [event creation sequence diagram](#event-management)
-shows this path with a concrete command. An invalid command or argument raises
-`CommandParseException`; `ClubFlow` displays the error and, when appropriate, the
-command syntax. A successful `execute(...)` returns `true` only when the
-application should exit.
+1. The input loop calls `suggestedCorrection(input)`. For an unknown command word
+   of at least four characters, the parser may offer a uniquely closest full
+   keyword within one or two character edits, depending on word length. It
+   preserves the arguments. Exact keywords and aliases need no correction.
+2. `UserInterface.confirmCorrection(...)` asks the user to press Enter to accept
+   the suggestion or `c` to cancel it. A cancelled command is not parsed.
+3. `CommandParser.parse(input)` identifies the keyword, preserves text inside
+   double quotes while splitting arguments, and checks each argument ID against
+   the command's required, optional, flag, and repeatable IDs.
+4. The command validates its own rules in `validateArgs(...)` and then runs
+   `execute(...)`. The [event creation sequence diagram](#event-management)
+   shows this path for one concrete command. A successful execution returns
+   `true` only when the application should exit.
+
+An invalid command or argument raises `CommandParseException`. `ClubFlow`
+displays the error and, when appropriate, the command syntax.
 
 Each concrete command receives only the collaborators it needs, such as the
 shared `Club`, `ClubManager`, or `UserInterface`. The parser knows the `Command`
@@ -157,6 +159,8 @@ It also catches unexpected runtime exceptions and records them in the log.
 There is no separate `commons` package.
 
 ## Implementation
+
+This section describes noteworthy details of selected implemented features.
 
 ### Event management
 
@@ -280,7 +284,7 @@ index before issuing a command that changes data.
 
 ### Photo lifecycle and persistence limits
 
-## Documentation, logging, testing, and development workflow
+## Documentation, logging, testing, dev-ops
 
 ### Documentation
 
@@ -320,11 +324,11 @@ assignments/photos after replacement, fresh search results, and restart persiste
 ## Appendix B: User Stories
 
 These MVP stories are based on the team's brainstorming list. Overlapping ideas
-about editing events and saving data have been combined. Priorities follow the
-[AB3 convention](https://se-education.org/addressbook-level3/DeveloperGuide.html#user-stories):
-high (`* * *`) means essential, medium (`* *`) means useful after the core
-workflow, and low (`*`) means optional. The stories below describe features
-available in the current implementation.
+about editing events and saving data have been combined. The stories below
+describe features available in the current implementation.
+
+Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low
+(unlikely to have) - `*`.
 
 | Priority | As a ... | I want to ... | So that I can ... |
 | --- | --- | --- | --- |
@@ -350,42 +354,80 @@ available in the current implementation.
 
 ### Use cases
 
-For these use cases, the actor is a club organiser and the system is ClubFlow.
+For all use cases below, the system is `ClubFlow` and the actor is the club
+organiser, unless specified otherwise.
 
 #### UC1: Create an event
 
 **MSS**
 
-1. The organiser enters `createEvent` with a new tag and any desired details.
-2. ClubFlow validates the fields and checks that the tag is unique within the active club.
+1. The organiser requests to create an event with a tag and any desired details.
+2. ClubFlow validates the details and checks that the tag is unique in the active club.
 3. ClubFlow adds the event, displays its tag, and attempts to autosave the club.
 
-**Extensions:** A missing tag, invalid detail, or duplicate tag produces an
-error and leaves the event list unchanged. An autosave failure is reported while
-the new event remains in memory for a later save attempt.
+Use case ends.
+
+**Extensions**
+
+* 2a. The tag is missing, a detail is invalid, or the tag already exists.
+  * 2a1. ClubFlow shows an error and leaves the event list unchanged.
+
+  Use case ends.
+* 3a. Autosave fails.
+  * 3a1. ClubFlow warns the organiser; the new event remains in memory for a
+    later save attempt.
+
+  Use case ends.
 
 #### UC2: Edit an event
 
 **MSS**
 
-1. The organiser views an existing event using its tag.
-2. The organiser enters `editEvent` with that tag and at least one changed detail.
-3. ClubFlow validates a replacement event, retains its position, completion
-   state, photos, and member assignments, then attempts autosave.
+1. The organiser requests to view an event using its tag.
+2. ClubFlow shows the event's details.
+3. The organiser requests to edit that event with at least one changed detail.
+4. ClubFlow validates and applies the changes while retaining the event's
+   position, completion state, photos, and member assignments.
+5. ClubFlow confirms the event tag and attempts autosave.
 
-**Extensions:** An unknown tag or invalid detail produces an error without applying
-the edit. An autosave failure leaves the edited data in memory and displays a warning.
+Use case ends.
+
+**Extensions**
+
+* 1a. The event tag is unknown.
+  * 1a1. ClubFlow shows an error.
+
+  Use case ends.
+* 4a. A changed detail is invalid.
+  * 4a1. ClubFlow shows an error without applying the edit.
+
+  Use case ends.
+* 5a. Autosave fails.
+  * 5a1. ClubFlow warns the organiser; the edited event remains in memory.
+
+  Use case ends.
 
 #### UC3: Delete an event
 
 **MSS**
 
-1. The organiser enters `deleteEvent` with an existing event tag.
-2. ClubFlow removes the event and its member assignments, displays a
-   confirmation, and attempts autosave.
+1. The organiser requests to delete an event using its tag.
+2. ClubFlow removes the event and its member assignments.
+3. ClubFlow displays a confirmation and attempts autosave.
 
-**Extensions:** An unknown tag produces an error; no event or assignment is
-removed. An autosave failure leaves the deletion in memory for a later attempt.
+Use case ends.
+
+**Extensions**
+
+* 1a. The event tag is unknown.
+  * 1a1. ClubFlow shows an error; no event or assignment is removed.
+
+  Use case ends.
+* 3a. Autosave fails.
+  * 3a1. ClubFlow warns the organiser; the deletion remains in memory for a
+    later save attempt.
+
+  Use case ends.
 
 #### UC4: Assign a member to an event
 
@@ -428,55 +470,94 @@ Start with an empty default club. Run these steps in order: the member workflow
 below uses the `CAMP` event left by this one. The User Guide gives additional
 command examples; automated tests cover input boundaries.
 
-1. Enter `createEvent e/CAMP n/"Welcome Camp" d/2026-12-25 b/100 v/"Main Hall"` and
-   `createEvent e/TEMP`. Run `viewEvent all`; both appear in creation order with
-   `Not completed` status.
-2. Enter `invite e/CAMP`. The copyable invitation names `Welcome Camp`, gives
-   `Date: 2026-12-25`, and gives `Location: Main Hall`. Enter `invite e/UNKNOWN`;
-   ClubFlow reports that the event is not found and prints no invitation.
-3. Enter `invte e/CAMP`. ClubFlow suggests `invite e/CAMP`; press Enter at its
-   confirmation prompt to print the same invitation. Enter `invte e/CAMP`
-   again and respond `c`; ClubFlow prints `Command cancelled.` and does not
-   print an invitation for the cancelled command.
-4. Enter `mark e/CAMP` twice and `editEvent e/camp b/150`. Run
-   `viewEvent e/CAMP`; the budget is `$150.00` and the status is `Completed`.
-   `viewEvent all` still lists `CAMP` before `TEMP`.
-5. Enter `findEvent s/completed min/150 max/150`. The only matching event is
-   `CAMP`. Try `findEvent q/Welcome`; it also finds `CAMP` by name.
-6. Enter `editEvent e/CAMP n/Changed b/-1` and `createEvent e/camp`. Both
-   commands report errors. `viewEvent e/CAMP` still shows `Welcome Camp` with a
-   `$150.00` budget; the duplicate was not added.
-7. Enter `exit`, restart from the **same working directory**, and check
-   `viewEvent e/CAMP` again. Its edited budget and completion state persist.
-   Enter `unmark e/CAMP` twice and `deleteEvent e/temp`, then restart once more.
-   `CAMP` is now `Not completed`, and `viewEvent all` no longer lists `TEMP`.
+1. Creating and viewing events
+
+   1. Prerequisites: The active default club has no events.
+   2. Test case: Enter `createEvent e/CAMP n/"Welcome Camp" d/2026-12-25 b/100 v/"Main Hall"`,
+      `createEvent e/TEMP`, then `viewEvent all`.
+   3. Expected: Both events appear in creation order with `Not completed` status.
+
+2. Generating an invitation
+
+   1. Test case: Enter `invite e/CAMP`.
+   2. Expected: A copyable text invitation names `Welcome Camp` and contains
+      `Date: 2026-12-25` and `Location: Main Hall`.
+   3. Test case: Enter `invite e/UNKNOWN`.
+   4. Expected: ClubFlow reports that the event is not found and prints no invitation.
+
+3. Correcting a command keyword
+
+   1. Test case: Enter `invte e/CAMP`, then press Enter at the confirmation prompt.
+   2. Expected: ClubFlow suggests `invite e/CAMP` and prints the invitation.
+   3. Test case: Enter `invte e/CAMP` again, then enter `c` at the prompt.
+   4. Expected: ClubFlow prints `Command cancelled.` and does not print an
+      invitation for the cancelled command.
+
+4. Editing, completing, and finding an event
+
+   1. Test case: Enter `mark e/CAMP` twice and `editEvent e/camp b/150`, then
+      `viewEvent e/CAMP` and `viewEvent all`.
+   2. Expected: `CAMP` has a `$150.00` budget and `Completed` status. It still
+      appears before `TEMP`.
+   3. Test case: Enter `findEvent s/completed min/150 max/150`, then
+      `findEvent q/Welcome`.
+   4. Expected: Both searches find `CAMP`.
+
+5. Rejecting invalid event changes
+
+   1. Test case: Enter `editEvent e/CAMP n/Changed b/-1` and `createEvent e/camp`,
+      then `viewEvent e/CAMP`.
+   2. Expected: Both changes produce errors. `CAMP` retains its `Welcome Camp`
+      name and `$150.00` budget; no duplicate is created.
+
+6. Checking restart persistence and deletion
+
+   1. Test case: Enter `exit`, restart from the same working directory, then
+      `viewEvent e/CAMP`.
+   2. Expected: The edited budget and completion state persist.
+   3. Test case: Enter `unmark e/CAMP` twice and `deleteEvent e/temp`, then
+      `exit`, restart, and enter `viewEvent all`.
+   4. Expected: `CAMP` is `Not completed` and `TEMP` is absent.
 
 ### Members, assignments, and deletion
 
-Continue in the same working directory after the event workflow. These steps
-also check that search results report the current member indices; do not reuse
-an index after deleting a member.
+Continue in the same working directory after the event workflow. Search results
+report current member indices; obtain a fresh index after deleting a member.
 
-1. Enter `createMember n/"Alice Tan" t/alice f/Logistics` and
-   `createMember n/"Bob Lim" e/bob@example.com f/Finance`. Run `viewMember`;
-   Alice is index 1 and Bob is index 2, with their respective contact and
-   function details.
-2. Enter `findMember q/alce`. Alice appears under `Possible matches`, because
-   the four-character query differs from `alice` by one edit. Enter
-   `findMember f/Finance`; Bob appears as a direct match at index 2. Enter
-   `findMember n/"Alice Tan" f/Logistics`; both filters match Alice directly.
-3. Enter `assignMember e/CAMP i/1 r/"Lead Host"` and `viewEvent e/CAMP`.
-   The assigned members section shows Alice with the role. Enter
-   `editMember i/1 n/"Alicia Tan"`; `viewEvent e/CAMP` now shows Alicia in the
-   same assignment, and `viewMember` still shows her at index 1.
-4. Enter `unassignMember e/CAMP i/1` and check that `viewEvent e/CAMP` no
-   longer lists Alicia. Assign her again with `assignMember e/CAMP i/1` so
-   deletion can test assignment cleanup.
-5. Enter `deleteMember i/2`, then type `n` at the confirmation prompt.
-   `viewMember` still shows both members. Enter `deleteMember i/1 /f`;
-   `viewMember` now shows only Bob at index 1, and `viewEvent e/CAMP` no longer
-   lists the deleted member. Restart once more; the roster and assignment
-   cleanup persist.
+1. Creating and finding members
+
+   1. Prerequisites: `CAMP` exists and the active club has no members.
+   2. Test case: Enter `createMember n/"Alice Tan" t/alice f/Logistics`,
+      `createMember n/"Bob Lim" e/bob@example.com f/Finance`, then `viewMember`.
+   3. Expected: Alice is index 1 and Bob is index 2, with their respective
+      contact and function details.
+   4. Test case: Enter `findMember q/alce`, `findMember f/Finance`, then
+      `findMember n/"Alice Tan" f/Logistics`.
+   5. Expected: Alice appears under `Possible matches` for `q/alce`; Bob is a
+      direct match at index 2 for `f/Finance`; both filters match Alice directly
+      in the final search.
+
+2. Assigning and editing a member
+
+   1. Test case: Enter `assignMember e/CAMP i/1 r/"Lead Host"`, then
+      `viewEvent e/CAMP`.
+   2. Expected: Alice appears in the assigned members section with that role.
+   3. Test case: Enter `editMember i/1 n/"Alicia Tan"`, then `viewEvent e/CAMP`
+      and `viewMember`.
+   4. Expected: The same assignment shows Alicia, still at member index 1.
+
+3. Unassigning and deleting a member
+
+   1. Test case: Enter `unassignMember e/CAMP i/1`, then `viewEvent e/CAMP`.
+   2. Expected: Alicia is no longer assigned. Enter `assignMember e/CAMP i/1`
+      to set up the deletion check.
+   3. Test case: Enter `deleteMember i/2`, then enter `n` at its confirmation
+      prompt. Run `viewMember`.
+   4. Expected: Both members remain.
+   5. Test case: Enter `deleteMember i/1 /f`, then `viewMember` and
+      `viewEvent e/CAMP`. Restart from the same working directory and check again.
+   6. Expected: Only Bob remains, now at index 1. The deleted member no longer
+      appears in the event assignment. Both changes persist after restart.
 
 ### Multiple clubs and restart persistence
 
