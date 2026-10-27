@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.Optional;
 
 /**
  * Represents a compiler that parses and executes user's command input in plaintext.
@@ -388,5 +389,102 @@ public class CommandParser {
      */
     public boolean commandExist(String keyword){
         return commands.containsKey(keyword.toLowerCase());
+    }
+
+    /**
+     * Calculates the min number of single-character edits needed to transform one string
+     * into another.
+     * 
+     * @param source first string
+     * @param target second string
+     * @return edit distance between the 2 strings
+     */
+    private int editDistance(String source, String target) {
+        int[][] distances = new int[source.length() + 1][target.length() + 1];
+
+        for (int i = 0; i <= source.length(); i++) {
+            distances[i][0] = i;
+        }
+        for (int j = 0; j <= target.length(); j++) {
+            distances[0][j] = j;
+        }
+
+        for (int i = 1; i <= source.length(); i++) {
+            for (int j = 1; j <= target.length(); j++) {
+                boolean sameCharacter = source.charAt(i - 1) == target.charAt(j - 1);
+                int replacementCost = sameCharacter ? 0 : 1;
+
+                int deletion = distances[i - 1][j] + 1;
+                int insertion = distances[i][j-1] + 1;
+                int matchOrReplacement = distances[i - 1][j - 1] + replacementCost;
+
+                distances[i][j] = Math.min(deletion, Math.min(insertion, matchOrReplacement));
+            }
+        }
+        return distances[source.length()][target.length()];
+    }
+
+    /**
+     * Suggests the closest command keyword while preserving the arguments.
+     * 
+     * @param input original command input
+     * @return corrected input, or an empty optional if no unique match
+     */
+    public Optional<String> suggestedCorrection(String input) {
+        if (input == null || input.isBlank()) {
+            return Optional.empty();
+        }
+
+        String trimmedInput = input.trim();
+        int firstSpace = trimmedInput.indexOf(SPACE_CHAR);
+        String keyword;
+        String remainder;
+        if (firstSpace == -1) {
+            keyword = trimmedInput;
+            remainder = "";
+        } else {
+            keyword = trimmedInput.substring(0, firstSpace);
+            remainder = trimmedInput.substring(firstSpace);
+        }
+
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        if (commands.containsKey(normalizedKeyword)) {
+            return Optional.empty();
+        }
+
+        if (normalizedKeyword.length() < 4) {
+            return Optional.empty();
+        }
+
+        int maxDistance = normalizedKeyword.length() <= 5 ? 1 : 2;
+        String bestKeyword = null;
+        int bestDistance = Integer.MAX_VALUE;
+        boolean tied = false;
+
+        for (String candidate : commands.keySet()) {
+            if (aliases.containsKey(candidate)) {
+                continue;
+            }
+
+            int distance = editDistance(normalizedKeyword, candidate);
+
+            if (distance > maxDistance) {
+                continue;
+            }
+
+            if (distance < bestDistance) {
+                bestKeyword = candidate;
+                bestDistance = distance;
+                tied = false;
+            } else if (distance == bestDistance) {
+                tied = true;
+            }
+        }
+
+        if (bestKeyword == null || tied) {
+            return Optional.empty();
+        }
+
+        return Optional.of(bestKeyword + remainder);
     }
 }
