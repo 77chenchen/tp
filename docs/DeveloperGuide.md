@@ -12,8 +12,11 @@ command examples are also available in the [User Guide](UserGuide.md).
 * [Design](#design)
 * [Implementation](#implementation)
 * [Documentation, logging, testing, and development workflow](#documentation-logging-testing-and-development-workflow)
-* [Appendix: Requirements](#appendix-requirements)
-* [Appendix E: Instructions for manual testing](#appendix-e-instructions-for-manual-testing)
+* [Appendix A: Product Scope](#appendix-a-product-scope)
+* [Appendix B: User Stories](#appendix-b-user-stories)
+* [Appendix C: Non-Functional Requirements](#appendix-c-non-functional-requirements)
+* [Appendix D: Glossary](#appendix-d-glossary)
+* [Appendix E: Instructions for Manual Testing](#appendix-e-instructions-for-manual-testing)
 
 ## Acknowledgements
 
@@ -338,11 +341,11 @@ photo viewers, permissions errors, and full release packaging. See
 
 ## Appendix: Requirements
 
-### Appendix A: Product scope
+## Appendix A: Product scope
 
-#### Target user profile
+### Target user profile
 
-#### Value proposition
+### Value proposition
 
 ClubFlow gives organisers of student clubs a single, lightweight command-line
 workspace for the information needed to run their activities:
@@ -362,7 +365,7 @@ The product is intended for local, offline record-keeping. It does not provide
 shared live editing, cloud synchronisation, or automatic event notifications;
 organisers coordinating across devices must transfer their files themselves.
 
-### Appendix B: User stories
+## Appendix B: User stories
 
 ### Use cases
 
@@ -423,7 +426,7 @@ Extensions: invalid input or an unknown event leaves data unchanged. Repeating
 the request keeps the same state. A save failure is reported; the in-memory change
 remains available for retry.
 
-### Appendix C: Non-functional requirements
+## Appendix C: Non-functional requirements
 
 The following requirements describe the intended v2.1 release. They are stated
 in terms that a tester or maintainer can check:
@@ -451,7 +454,7 @@ in terms that a tester or maintainer can check:
    transferable by copying the appropriate club directory while ClubFlow is
    not running. The user guide must identify the required paths.
 
-### Appendix D: Glossary
+## Appendix D: Glossary
 
 | Term | Meaning |
 | --- | --- |
