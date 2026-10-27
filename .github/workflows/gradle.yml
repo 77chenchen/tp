@@ -6,7 +6,8 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        # Use Intel macOS runners to avoid the reported ARM64 runner capacity constraints.
+        platform: [ubuntu-latest, macos-15-intel, windows-latest]
     runs-on: ${{ matrix.platform }}
 
     steps:

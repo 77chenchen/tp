@@ -34,7 +34,14 @@ Given below are my contributions to the project.
     - **User Guide**:
         - Documented photo management commands, syntax, and usage examples.
         - Added documentation for bulk photo importing and automatic photo naming.
-    - **Developer Guide**:
+      - Developer Guide:
+        - Documented the Model component, including class relationships and data consistency, with a UML class diagram.
+        - Explained the photo lifecycle, including importing, deletion, persistence, and error handling, with a UML sequence diagram.
+        - Wrote a guide for extending commands, including syntax definitions and aliases.
+        - Defined the target user profile and expanded the glossary.
+        - Documented use cases for event completion and photo importing.
+        - Added manual testing instructions for launching, help, shutdown, and photo management.
+        - Updated the setup instructions and Gradle configuration.
 
 - **Team-based contributions**:
     - Developed the shared command framework used by teammates to implement their commands.
@@ -44,7 +51,9 @@ Given below are my contributions to the project.
 
 - **Review and mentoring contributions**:
     - Reviewed [PR #46](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/46), providing feedback on command implementations, JUnit tests, and User Guide documentation.
+    - Reviewed [PR #56](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/56) and [PR #57](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/57), providing minor review comments and suggestions for improvement.
     - Provided reference implementations and guidance to teammates on using the command parsing, alias, and syntax systems.
 
 - **Use of AI tools**:
     - Used ChatGPT to assist in identifying edge cases and generating JUnit tests for the photo management system. Given the numerous possible failure scenarios involving file operations, image processing, and data persistence, ChatGPT helped improve test coverage and identify potential issues.
+    - Used ChatGPT for assistance in writing and improving parts of the User Guide and Developer Guide, particularly in refining explanations.
