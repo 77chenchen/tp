@@ -1,24 +1,88 @@
+
 # User Guide
 
 ## Introduction
 
 ClubFlow is a command-line application for managing club events and members.
 You can create, edit, view, find, complete, and delete events, manage members and their event assignments,
-and load club data. Changes are saved automatically.
+organise event photos, and work with multiple independent clubs. Changes are saved automatically.
 
 ## Quick Start
 
 1. Ensure that you have Java 25 installed.
-1. Place `clubflow.jar` in a folder of your choice and open a terminal in that folder.
-1. Run `java -jar clubflow.jar`.
-1. Enter commands at the `>` prompt. For example, enter `createEvent e/XMAS n/"Christmas Party"`.
-1. Enter `exit` to close the application. Changes are saved automatically.
+2. Place `clubflow.jar` in a folder of your choice and open a terminal in that folder.
+3. Run `java -jar clubflow.jar`.
+4. Enter commands at the `>` prompt. For example, enter `createEvent e/XMAS n/"Christmas Party"`.
+5. Enter `exit` to close the application. Changes are saved automatically.
 
 ## Features
 
 Command names and argument prefixes ignore case. Enclose values containing spaces in double quotes.
 Square brackets in the formats below indicate optional arguments; do not type the brackets.
 Enter `help` to list command formats, or `help c/findMember` to see one command's formats and aliases.
+
+### Managing multiple clubs
+
+Each club has its own events, members, assignments, and photos. On every launch,
+ClubFlow starts in the `default` club. To manage another club, create it and
+switch to it. Creating a club does not switch to it automatically.
+
+Club IDs use letters (`a` to `z`), digits (`0` to `9`), underscores (`_`), or
+hyphens (`-`) only, with **no spaces**. Club IDs are case-insensitive and are
+stored in lowercase, so `Chess` and `CHESS` refer to the same club. The ID
+`default` is reserved for the initial club. ClubFlow does not currently have
+a command for deleting or renaming clubs.
+
+#### Creating a club: `createClub`
+
+Creates an empty club without changing the active club.
+
+Format: `createClub n/CLUB_ID`
+
+Example: `createClub n/chess`
+
+* Success displays `Created club: chess` (using the spelling supplied).
+* An existing ID, regardless of case, displays `Club already exists: CLUB_ID`.
+* Invalid IDs, such as `school club` or `../school`, are rejected.
+
+#### Switching clubs: `switchClub`
+
+Saves the current club and loads the specified existing club. Subsequent event,
+member, and photo commands apply to the selected club only.
+
+Format: `switchClub n/CLUB_ID`
+
+Example: `switchClub n/chess`
+
+* Success displays `Active club: chess` (the lowercase ID).
+* Switching to a club that is already active leaves the active club unchanged.
+* An unknown ID displays `Club not found: CLUB_ID`; ClubFlow keeps the current
+  club selected. If saving or loading fails, it displays an error rather than
+  selecting the requested club.
+* To return to the initial club, enter `switchClub n/default`.
+
+#### Listing clubs: `listClubs`
+
+Displays clubs that have a valid save-file location, with `(active)` next to
+the currently selected club. The default club appears first, followed by
+other clubs in alphabetical order.
+
+Format: `listClubs`
+
+Example output:
+
+```text
+[CF] default (active)
+[CF] chess
+```
+
+#### Checking the active club: `currentClub`
+
+Displays the ID of the club currently being managed.
+
+Format: `currentClub`
+
+Example output: `[CF] Active club: default`
 
 ### Creating an event: `createEvent`
 
@@ -217,8 +281,8 @@ Format: `addPhoto e/TAG [n/NAME] p/PATH`
 * Imported photos are stored in PNG format.
 
 Examples:
-* `addPhoto e/XMAS p/"images/group.jpg"` — Automatically names the photo `group`.
-* `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"` — Names the photo `GroupPhoto`.
+* `addPhoto e/XMAS p/"images/group.jpg"` - Automatically names the photo `group`.
+* `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"` - Names the photo `GroupPhoto`.
 
 ### Adding All Photos to an Event: `addAllPhoto`
 
@@ -279,12 +343,18 @@ Examples: `deletePhoto e/XMAS n/GroupPhoto` and `deletePhoto e/XMAS all`
 
 ### Automatic saving and loading data
 
-Changes to events, members, and member-event assignments are automatically saved to `saves/clubs.cf`.
-ClubFlow loads this file at startup. If it does not exist, the app starts with empty data.
-If an existing file cannot be loaded, the app displays an error and stops.
+Changes to the active club are saved automatically in that club's own directory.
+The default club is stored at `saves/clubs/default/club.cf`; a club with ID
+`chess` is stored at `saves/clubs/chess/club.cf`. At startup, ClubFlow always
+loads the default club. If its save file is missing, ClubFlow creates an empty
+one. If an existing default save file cannot be loaded, it displays an error
+and stops. Existing data in the legacy `saves/clubs.cf` location is migrated
+to the default club when the new default file has not yet been created.
 
-To import another saved file, use `load p/PATH`.
-Loading replaces the current events, members, and assignments, then automatically saves them to `saves/clubs.cf`.
+To import another saved file into the **currently active club**, use
+`load p/PATH`. Importing replaces that club's in-memory events, members,
+and assignments; ClubFlow then attempts to save them to the active club's
+`club.cf` file. It does not switch clubs.
 
 * Paths are relative to the folder from which ClubFlow was started.
 * If autosaving fails, ClubFlow displays a warning and keeps the changes in memory.
@@ -298,27 +368,34 @@ Example: `load p/saves/my-club.cf`
 
 ### Photo storage and loading
 
-Photos are stored in a `photos/` directory alongside the club data file (`clubs.cf`).
-
-When ClubFlow loads a saved club data file, it uses the `photos/` directory located in the same folder as that file.
-
-For example, the directory structure may look like this:
+Saved photos are placed in a `photos/` directory alongside each club's
+`club.cf` file, separated by event tag. For example:
 
 ```text
 saves/
-├── clubs.cf
-└── photos/
-    ├── XMAS/
-    │   ├── GroupPhoto.png
-    │   └── Venue.png
-    └── ORIENTATION/
-        └── TeamPhoto.png
+└── clubs/
+    ├── default/
+    │   ├── club.cf
+    │   └── photos/
+    │       └── XMAS/
+    │           ├── GroupPhoto.png
+    │           └── Venue.png
+    └── chess/
+        ├── club.cf
+        └── photos/
+            └── AGM/
+                └── TeamPhoto.png
 ```
 
-* Photos are organised into folders according to their event tags.
-* Photos are stored as PNG files.
-* When using `load p/PATH`, ClubFlow loads photos from the `photos/` directory next to the specified save file.
-* When transferring club data to another computer, copy both `clubs.cf` and its accompanying `photos/` directory to preserve the photos.
+* Imported photos are stored in PNG format. During use, ClubFlow works with
+  `cache/photos/` and saves the active club's photos into its club-specific
+  directory. Switching clubs replaces the working photo cache with the
+  selected club's photos.
+* When using `load p/PATH`, ClubFlow reads photos from a `photos/` directory
+  next to the imported file. The successful import is then saved to the active
+  club's directory.
+* To transfer a club to another computer, copy its `club.cf` file **and**
+  adjacent `photos/` directory, keeping their relative layout.
 
 ### Exiting: `exit`
 
@@ -328,13 +405,18 @@ Closes ClubFlow after attempting to save any outstanding changes.
 
 **Q**: How do I transfer my data to another computer?
 
-**A**: Close ClubFlow after checking for any save errors, then copy `saves/clubs.cf`
-and the accompanying `saves/photos/` directory (if exist) to the same relative location on the other computer. 
-ClubFlow loads the data and photos automatically at startup.
+**A**: Close ClubFlow after checking for save errors. Copy the entire
+`saves/clubs/` directory to the same relative location on the other computer,
+including each club's `club.cf` and `photos/` folder if present. ClubFlow
+loads `default` at startup; use `switchClub n/CLUB_ID` to access other clubs.
 
 ## Command Summary
 
 * Show commands and aliases `help` or `help c/COMMAND`
+* Create club `createClub n/CLUB_ID`
+* Switch club `switchClub n/CLUB_ID`
+* List saved clubs `listClubs`
+* Check the active club `currentClub`
 * Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ce`)
 * Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ee`)
 * View event `viewEvent e/TAG` or view all events `viewEvent all` (alias `ve`)
