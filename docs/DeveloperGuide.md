@@ -20,20 +20,30 @@ command examples are also available in the [User Guide](UserGuide.md).
 
 ## Acknowledgements
 
-* The organisation of this guide follows the
-  [AddressBook Level 3 Developer Guide](https://se-education.org/addressbook-level3/DeveloperGuide.html) structure.
-* [JUnit 5](https://junit.org/junit5/) provides the automated test framework.
-* [Gradle](https://gradle.org/), [Shadow](https://gradleup.com/shadow/), and
-  [Checkstyle](https://checkstyle.org/) support building, packaging, and style checks.
-* [PlantUML](https://plantuml.com/) is used for UML diagrams.
-* This repository began with the [CS2113 Java project template](https://github.com/NUS-CS2113-AY2627-S1/tp).
-  Its Gradle wrapper, build and CI scaffolding, and initial documentation templates
-  were retained and adapted for ClubFlow; the event and member features described
-  here were developed for this project.
-* [ChatGPT](https://chatgpt.com/) was used to suggest edge cases and help generate
-  JUnit tests for photo management, as recorded in the
-  [photo feature contributor's portfolio](team/czfray.md). Those suggestions
-  informed the project's photo tests.
+* [CS2113 Java project template](https://github.com/NUS-CS2113-AY2627-S1/tp):
+  provided the initial project structure, Gradle wrapper, build and CI configuration,
+  Checkstyle configuration, and documentation templates, which were adapted for ClubFlow.
+* [AddressBook Level 3 Developer Guide](https://se-education.org/addressbook-level3/DeveloperGuide.html):
+  provided the organisational structure adapted for this guide, including design,
+  implementation, requirements, and manual testing sections.
+* [SE-EDU Java coding standard](https://se-education.org/guides/conventions/java/basic.html):
+  provides the coding conventions enforced by the project's Checkstyle configuration.
+* [JUnit](https://github.com/junit-team/junit-framework): the project uses JUnit 5's
+  Jupiter API and engine, together with the JUnit Platform launcher, for automated tests.
+* [Gradle](https://gradle.org/): used for build automation and dependency management.
+* [Shadow Gradle plugin](https://gradleup.com/shadow/): used to package the application
+  as an executable JAR.
+* [Checkstyle](https://checkstyle.org/): used to check Java source and test code
+  against the configured coding conventions.
+* [PlantUML](https://plantuml.com/): used to generate UML diagrams from textual sources.
+* [Checkout](https://github.com/actions/checkout),
+  [Setup Java](https://github.com/actions/setup-java), and
+  [Gradle Wrapper Validation](https://github.com/gradle/actions/tree/main/wrapper-validation):
+  reusable GitHub Actions used to check out the repository, provision Java, and validate
+  the Gradle wrapper in CI.
+* [ChatGPT](https://chatgpt.com/): assisted with event feature implementation,
+  edge-case identification and JUnit test generation for event and photo management,
+  User Guide and Developer Guide content, and PlantUML diagram sources.
 
 ## Setting up, getting started
 
