@@ -1,4 +1,6 @@
-package clubflow.command;
+package clubflow.command.event;
+
+import clubflow.command.EventArgumentIds;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;

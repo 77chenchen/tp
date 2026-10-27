@@ -246,6 +246,11 @@ point for commands. Its argument declarations and syntax strings serve different
 consumers: the parser enforces the declarations, while help displays the syntax.
 Keep both consistent when changing a command.
 
+Feature commands are grouped under `clubflow.command.event`, `.member`, `.club`,
+and `.photo`. The parent `clubflow.command` package keeps the base class, parser,
+shared argument IDs, and general commands such as help, exit, load, and completion
+dispatch. Command keywords and aliases are unchanged by this package structure.
+
 [`CommandParser`](../src/main/java/clubflow/command/CommandParser.java) handles
 input structure, required/allowed arguments, and repetition rules before calling
 the command's `validateArgs()`. Keep field values and cross-field rules in the
@@ -257,12 +262,15 @@ unsaved flag.
 #### Shared event validation
 
 [`EventArgumentIds`](../src/main/java/clubflow/command/EventArgumentIds.java) and
-[`EventArgumentValidator`](../src/main/java/clubflow/command/EventArgumentValidator.java)
+[`EventArgumentValidator`](../src/main/java/clubflow/command/event/EventArgumentValidator.java)
 keep creation and editing aligned. The validator checks supplied event fields
 before mutation, including rejecting the save format's `|` separator. When a
 field rule changes, review both commands and the domain object's invariants.
 Search has a different input contract (for example, no required event tag), so its
 filter validation stays in `FindEventCommand` rather than reusing this validator.
+
+`EventArgumentIds` stays in the parent package because photo commands also use
+these prefixes. The event validator remains package-private within `command.event`.
 
 <div style="overflow-x: auto;">
   <a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="width: 22.3125em; max-width: none; height: auto;"></a>
@@ -299,11 +307,11 @@ user-visible rules belong in the [User Guide](UserGuide.md).
 
 | Feature | Start here |
 | --- | --- |
-| Create | [CreateEventCommand](../src/main/java/clubflow/command/CreateEventCommand.java) |
-| Delete | [DeleteEventCommand](../src/main/java/clubflow/command/DeleteEventCommand.java) |
-| View | [ViewEventCommand](../src/main/java/clubflow/command/ViewEventCommand.java) |
-| Edit | [EditEventCommand](../src/main/java/clubflow/command/EditEventCommand.java) |
-| Find | [FindEventCommand](../src/main/java/clubflow/command/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
+| Create | [CreateEventCommand](../src/main/java/clubflow/command/event/CreateEventCommand.java) |
+| Delete | [DeleteEventCommand](../src/main/java/clubflow/command/event/DeleteEventCommand.java) |
+| View | [ViewEventCommand](../src/main/java/clubflow/command/event/ViewEventCommand.java) |
+| Edit | [EditEventCommand](../src/main/java/clubflow/command/event/EditEventCommand.java) |
+| Find | [FindEventCommand](../src/main/java/clubflow/command/event/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
 | Completed/pending | [CompletionCommand](../src/main/java/clubflow/command/CompletionCommand.java), [EventCompletion](../src/main/java/clubflow/completion/EventCompletion.java) |
 
 Commands share a long-lived [Club](../src/main/java/clubflow/Club.java). Look up
@@ -442,10 +450,10 @@ would leave those commands pointing at the previous club's data.
 
 The relevant classes are
 [`ClubManager`](../src/main/java/clubflow/ClubManager.java),
-[`CreateClubCommand`](../src/main/java/clubflow/command/CreateClubCommand.java),
-[`SwitchClubCommand`](../src/main/java/clubflow/command/SwitchClubCommand.java),
-[`ListClubsCommand`](../src/main/java/clubflow/command/ListClubsCommand.java), and
-[`CurrentClubCommand`](../src/main/java/clubflow/command/CurrentClubCommand.java).
+[`CreateClubCommand`](../src/main/java/clubflow/command/club/CreateClubCommand.java),
+[`SwitchClubCommand`](../src/main/java/clubflow/command/club/SwitchClubCommand.java),
+[`ListClubsCommand`](../src/main/java/clubflow/command/club/ListClubsCommand.java), and
+[`CurrentClubCommand`](../src/main/java/clubflow/command/club/CurrentClubCommand.java).
 
 **Club creation and selection:**
 
@@ -501,11 +509,11 @@ ClubFlow supports importing, listing, opening, and deleting photos associated wi
 
 | Feature           | Start here                                                                                               |
 |-------------------|----------------------------------------------------------------------------------------------------------|
-| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/AddPhotoCommand.java)                                |
-| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/AddAllPhotoCommand.java)                          |
-| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/ListPhotoCommand.java)                              |
-| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/OpenPhotoCommand.java)                              |
-| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/DeletePhotoCommand.java)                          |
+| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/photo/AddPhotoCommand.java)                                |
+| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/photo/AddAllPhotoCommand.java)                          |
+| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/photo/ListPhotoCommand.java)                              |
+| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/photo/OpenPhotoCommand.java)                              |
+| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/photo/DeletePhotoCommand.java)                          |
 | Photo operations  | [Photo](../src/main/java/clubflow/photo/Photo.java), [Event](../src/main/java/clubflow/event/Event.java) |
 | Photo persistence | [SaveLoadManager](../src/main/java/clubflow/SaveLoadManager.java)                                        |
 

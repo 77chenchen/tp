@@ -1,4 +1,6 @@
-package clubflow.command;
+package clubflow.command.member;
+
+import clubflow.command.Command;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -11,18 +13,17 @@ import clubflow.member.Member;
 //@@author 77chenchen
 
 /**
- * Assigns an existing club member to an existing event with an optional role.
+ * Removes a member's event assignment while preserving both records.
  */
-public class AssignMemberCommand extends Command {
+public class UnassignMemberCommand extends Command {
     private static final String EVENT_TAG = "e";
-    private static final String ROLE = "r";
     private final Club club;
 
-    /** Creates an assignment command using the shared club data. */
-    public AssignMemberCommand(UserInterface ui, Club club) {
+    /** Creates an unassignment command using the shared club data. */
+    public UnassignMemberCommand(UserInterface ui, Club club) {
         super(ui);
         this.club = Objects.requireNonNull(club, "Club data must not be null");
-        addSyntax("e/Tag i/Index [r/Role]");
+        addSyntax("e/Tag i/Index");
     }
 
     @Override
@@ -32,7 +33,7 @@ public class AssignMemberCommand extends Command {
 
     @Override
     public String[] optionalArgIds() {
-        return new String[]{ROLE};
+        return new String[]{};
     }
 
     @Override
@@ -46,10 +47,6 @@ public class AssignMemberCommand extends Command {
             }
         } catch (NumberFormatException e) {
             throw new CommandParseException("Member index must be a positive number.");
-        }
-        String role = args.getOrDefault(ROLE, "");
-        if (role.contains("|") || role.contains("\n") || role.contains("\r")) {
-            throw new CommandParseException("Role must not contain | or a line break.");
         }
     }
 
@@ -70,10 +67,10 @@ public class AssignMemberCommand extends Command {
             return false;
         }
 
-        if (club.assignMemberToEvent(eventTag, member, args.getOrDefault(ROLE, ""))) {
-            ui.print("Assigned member " + member.getName() + " to event " + eventTag + ".");
+        if (club.unassignMemberFromEvent(eventTag, member)) {
+            ui.print("Unassigned member " + member.getName() + " from event " + eventTag + ".");
         } else {
-            ui.print("Member is already assigned to event " + eventTag + ".");
+            ui.print("Member is not assigned to event " + eventTag + ".");
         }
         return false;
     }

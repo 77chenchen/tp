@@ -1,4 +1,6 @@
-package clubflow.command;
+package clubflow.command.member;
+
+import clubflow.command.Command;
 
 import java.util.ArrayList;
 import java.util.Comparator;

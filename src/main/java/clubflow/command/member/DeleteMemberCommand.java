@@ -1,4 +1,6 @@
-package clubflow.command;
+package clubflow.command.member;
+
+import clubflow.command.Command;
 
 import java.util.HashMap;
 import java.util.Objects;

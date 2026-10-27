@@ -1,4 +1,7 @@
-package clubflow.command;
+package clubflow.command.event;
+
+import clubflow.command.Command;
+import clubflow.command.EventArgumentIds;
 
 import java.util.HashMap;
 import java.util.List;

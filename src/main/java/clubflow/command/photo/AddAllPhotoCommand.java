@@ -1,4 +1,7 @@
-package clubflow.command;
+package clubflow.command.photo;
+
+import clubflow.command.Command;
+import clubflow.command.EventArgumentIds;
 
 import clubflow.Club;
 import clubflow.UserInterface;

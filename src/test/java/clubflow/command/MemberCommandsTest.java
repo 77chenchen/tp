@@ -1,5 +1,9 @@
 package clubflow.command;
 
+import clubflow.command.member.CreateMemberCommand;
+import clubflow.command.member.DeleteMemberCommand;
+import clubflow.command.member.ViewMemberCommand;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

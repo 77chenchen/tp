@@ -1,4 +1,4 @@
-package clubflow.command;
+package clubflow.command.member;
 
 //@@author 77chenchen
 

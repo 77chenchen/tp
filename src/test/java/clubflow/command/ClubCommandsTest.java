@@ -1,10 +1,10 @@
 package clubflow;
 
 import clubflow.command.CommandParser;
-import clubflow.command.CreateClubCommand;
-import clubflow.command.CurrentClubCommand;
-import clubflow.command.ListClubsCommand;
-import clubflow.command.SwitchClubCommand;
+import clubflow.command.club.CreateClubCommand;
+import clubflow.command.club.CurrentClubCommand;
+import clubflow.command.club.ListClubsCommand;
+import clubflow.command.club.SwitchClubCommand;
 import clubflow.exception.ClubNotFoundException;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.DuplicateClubException;

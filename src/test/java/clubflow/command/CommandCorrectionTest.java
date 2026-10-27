@@ -1,5 +1,7 @@
 package clubflow.command;
 
+import clubflow.command.event.InviteCommand;
+
 import clubflow.Club;
 import clubflow.UserInterface;
 import org.junit.jupiter.api.BeforeEach;

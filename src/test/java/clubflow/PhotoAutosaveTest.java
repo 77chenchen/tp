@@ -1,8 +1,8 @@
 package clubflow;
 
-import clubflow.command.AddPhotoCommand;
+import clubflow.command.photo.AddPhotoCommand;
 import clubflow.command.CommandParser;
-import clubflow.command.DeletePhotoCommand;
+import clubflow.command.photo.DeletePhotoCommand;
 import clubflow.event.Event;
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
