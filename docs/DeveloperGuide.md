@@ -20,20 +20,32 @@ command examples are also available in the [User Guide](UserGuide.md).
 
 ## Acknowledgements
 
-* The organisation of this guide follows the
-  [AddressBook Level 3 Developer Guide](https://se-education.org/addressbook-level3/DeveloperGuide.html) structure.
-* [JUnit 5](https://junit.org/junit5/) provides the automated test framework.
-* [Gradle](https://gradle.org/), [Shadow](https://gradleup.com/shadow/), and
-  [Checkstyle](https://checkstyle.org/) support building, packaging, and style checks.
-* [PlantUML](https://plantuml.com/) is used for UML diagrams.
-* This repository began with the [CS2113 Java project template](https://github.com/NUS-CS2113-AY2627-S1/tp).
-  Its Gradle wrapper, build and CI scaffolding, and initial documentation templates
-  were retained and adapted for ClubFlow; the event and member features described
-  here were developed for this project.
-* [ChatGPT](https://chatgpt.com/) was used to suggest edge cases and help generate
-  JUnit tests for photo management, as recorded in the
-  [photo feature contributor's portfolio](team/czfray.md). Those suggestions
-  informed the project's photo tests.
+* [CS2113 Java project template](https://github.com/NUS-CS2113-AY2627-S1/tp):
+  provided the initial project structure, Gradle wrapper, build and CI configuration,
+  Checkstyle configuration, and documentation templates, which were adapted for ClubFlow.
+* [AddressBook Level 3 Developer Guide](https://se-education.org/addressbook-level3/DeveloperGuide.html):
+  provided the organisational structure adapted for this guide, including design,
+  implementation, requirements, and manual testing sections.
+* [SE-EDU Java coding standard](https://se-education.org/guides/conventions/java/basic.html):
+  provides the coding conventions enforced by the project's Checkstyle configuration.
+* [JUnit](https://github.com/junit-team/junit-framework): the project uses JUnit 5's
+  Jupiter API and engine, together with the JUnit Platform launcher, for automated tests.
+* [Gradle](https://gradle.org/): used for build automation and dependency management.
+* [Shadow Gradle plugin](https://gradleup.com/shadow/): used to package the application
+  as an executable JAR.
+* [Checkstyle](https://checkstyle.org/): used to check Java source and test code
+  against the configured coding conventions.
+* [PlantUML](https://plantuml.com/): used to generate UML diagrams from textual sources.
+* [Checkout](https://github.com/actions/checkout),
+  [Setup Java](https://github.com/actions/setup-java), and
+  [Gradle Wrapper Validation](https://github.com/gradle/actions/tree/main/wrapper-validation):
+  reusable GitHub Actions used to check out the repository, provision Java, and validate
+  the Gradle wrapper in CI.
+* [ChatGPT](https://chatgpt.com/): assisted with event feature implementation,
+  edge-case identification and JUnit test generation for event and photo management,
+  drafting and reviewing User Guide and Developer Guide documentation (including
+  manual testing instructions for import, invalid save files, and autosave recovery),
+  and PlantUML diagram sources.
 
 ## Setting up, getting started
 
@@ -43,26 +55,19 @@ Run commands below from the repository root. On Windows, use PowerShell:
 
 ```powershell
 java -version
-.\gradlew.bat classes
-java -ea -cp build/classes/java/main clubflow.ClubFlow
+.\gradlew.bat run
 ```
 
-`classes` compiles the application. `-ea` enables assertions that check internal
+`run` compiles and starts ClubFlow with assertions enabled to check internal
 assumptions. On macOS or Linux, replace `.\gradlew.bat` with `./gradlew`.
-Alternatively, run `clubflow.ClubFlow.main()` in the IDE with assertions enabled.
+Alternatively, run `clubflow.ClubFlow.main()` in the IDE with `-ea` enabled.
 
 To build the packaged application:
 
 ```powershell
 .\gradlew.bat shadowJar
-java -ea -cp build/libs/clubflow.jar clubflow.ClubFlow
+java -ea -jar build/libs/clubflow.jar
 ```
-
-**Current build configuration issue:** `build.gradle` sets `application.mainClass`
-to `flow.ClubFlow`, but the actual entry point is `clubflow.ClubFlow`. Until that
-setting is corrected, use the explicit classpath commands above rather than
-`gradlew run` or `java -jar`. The root README also contains starter instructions
-that do not describe the current application.
 
 Paths such as `saves/`, `cache/`, and `clubflow.log` are relative to the process's
 working directory. Launch from a separate folder for manual testing to avoid
@@ -72,12 +77,12 @@ changing development data.
 
 ### Architecture
 
-<!-- Diagram widths use intrinsic pixels / 16 in em to match the body font size. -->
+<!-- shared/UmlStyle.iuml uses 16px text. Intrinsic image width / 16 in em keeps it at body-text size; wide diagrams scroll instead of shrinking. -->
 <div style="overflow-x: auto;">
-  <a href="diagrams/Architecture.png"><img src="diagrams/Architecture.png" alt="ClubFlow architecture: logical view" style="width: 19.0625em; max-width: none; height: auto;"></a>
+  <a href="diagrams/architecture/Architecture.svg"><img src="diagrams/architecture/Architecture.svg" alt="ClubFlow architecture: logical view" style="width: 20.1875em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/Architecture.puml).
+[PlantUML source](diagrams/architecture/Architecture.puml).
 
 The following are logical responsibilities, not separate modules or a set of
 component interfaces. Most core classes are in the `clubflow` package.
@@ -89,6 +94,10 @@ component interfaces. Most core classes are in the `clubflow` package.
 | Command processing | `CommandParser`, `Command`, concrete command classes, search and completion helpers | Resolves keywords and aliases, validates arguments, and executes requests, including event filtering and completion dispatch. |
 | Club data | `Club`, `Event`, `Member`, `EventAssignment`, `Photo` | Holds the active club's data and maintains relationships. |
 | Storage | `ClubManager`, `SaveLoadManager` | Selects club files, migrates legacy data, serializes records, and synchronizes photos. |
+
+The model is not purely in-memory: `Event` and `Photo` handle photo file operations
+directly. Storage separately persists club records and synchronizes saved photo
+snapshots.
 
 `ClubFlow` constructs one `UserInterface`, one `CommandParser`, one shared `Club`,
 and one `ClubManager`. It creates command objects once and registers them with the
@@ -127,9 +136,11 @@ text input and output but does not own or modify club data.
 The following class diagram is intentionally limited to UI interaction. It
 shows that `UserInterface` is shared rather than recreated for every command.
 
-![UI class diagram](diagrams/UiClassDiagram.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="width: 21.6875em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/UiClassDiagram.puml).
+[PlantUML source](diagrams/architecture/UiClassDiagram.puml).
 
 **Design consideration:** keeping input and printing in one small class makes
 terminal formatting consistent. Commands currently print through this class
@@ -148,10 +159,10 @@ full keyword; commands are not rebuilt for each input line. The diagram below
 shows a partial class view of command processing.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/LogicClass.png"><img src="diagrams/LogicClass.png" alt="Partial class diagram of command processing" style="width: 37em; max-width: none; height: auto;"></a>
+  <a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Partial class diagram of command processing" style="width: 58.75em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/LogicClass.puml). `XYZCommand` represents the many
+[PlantUML source](diagrams/architecture/LogicClass.puml). `XYZCommand` represents the many
 concrete commands omitted from the diagram. The `+` and `-` markers denote
 public and private members respectively; only members relevant to command
 processing are shown.
@@ -188,9 +199,11 @@ The Model component represents and manages the data of the currently active club
 
 The following class diagram illustrates the structure of the Model component and the relationships between its classes.
 
-![Structure of the Model Component](diagrams/ModelClassDiagram.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/architecture/ModelClassDiagram.svg"><img src="diagrams/architecture/ModelClassDiagram.svg" alt="Structure of the Model Component" style="width: 38.8125em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/ModelClassDiagram.puml)
+[PlantUML source](diagrams/architecture/ModelClassDiagram.puml)
 
 The Model component:
 
@@ -235,11 +248,65 @@ This allows the application to identify changes requiring persistence without sa
 
 ### Common classes
 
-The `clubflow.exception` package contains application exceptions, including
-`ClubFlowException` and `CommandParseException`. `ClubFlow` displays expected
-command failures and can print the selected command's syntax for parsing errors.
-It also catches unexpected runtime exceptions and records them in the log.
-There is no separate `commons` package.
+There is no separate `commons` package. Shared command infrastructure and helpers
+live alongside the commands; expected application failures use `clubflow.exception`.
+
+#### Command contract
+
+[`Command`](../src/main/java/clubflow/command/Command.java) is the shared extension
+point for commands. Its argument declarations and syntax strings serve different
+consumers: the parser enforces the declarations, while help displays the syntax.
+Keep both consistent when changing a command.
+
+Feature commands are grouped under `clubflow.command.event`, `.member`, `.club`,
+and `.photo`. The parent `clubflow.command` package keeps the base class, parser,
+shared argument IDs, and general commands such as help, exit, load, and completion
+dispatch. Command keywords and aliases are unchanged by this package structure.
+
+[`CommandParser`](../src/main/java/clubflow/command/CommandParser.java) handles
+input structure, required/allowed arguments, and repetition rules before calling
+the command's `validateArgs()`. Keep field values and cross-field rules in the
+command or a focused validator, rather than adding feature-specific branches to
+the parser. The boolean returned by `execute()` requests application exit; it is
+**not** a success or data-changed flag. Autosave instead relies on the shared club's
+unsaved flag.
+
+#### Shared event validation
+
+[`EventArgumentIds`](../src/main/java/clubflow/command/EventArgumentIds.java) and
+[`EventArgumentValidator`](../src/main/java/clubflow/command/event/EventArgumentValidator.java)
+keep creation and editing aligned. The validator checks supplied event fields
+before mutation, including rejecting the save format's `|` separator. When a
+field rule changes, review both commands and the domain object's invariants.
+Search has a different input contract (for example, no required event tag), so its
+filter validation stays in `FindEventCommand` rather than reusing this validator.
+
+`EventArgumentIds` stays in the parent package because photo commands also use
+these prefixes. The event validator remains package-private within `command.event`.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="width: 22.3125em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/common/EventValidationClass.puml).
+
+#### Error handling
+
+* [`ClubFlowException`](../src/main/java/clubflow/exception/ClubFlowException.java)
+  is the checked base type for expected application failures and standardizes
+  their messages. Propagate these failures to the input loop for display instead
+  of printing an error and then throwing it, which would report it twice.
+* [`CommandParseException`](../src/main/java/clubflow/exception/CommandParseException.java)
+  covers invalid command input. Once a command is selected, the parser attaches
+  its keyword so the input loop can also display the correct syntax.
+* [`EventNotFoundException`](../src/main/java/clubflow/exception/EventNotFoundException.java)
+  and [`DuplicateEventException`](../src/main/java/clubflow/exception/DuplicateEventException.java)
+  distinguish failed event lookup from a conflicting tag. These are domain
+  failures, not malformed command syntax.
+
+Programming-contract violations, such as invalid command registration, use
+unchecked exceptions rather than user-input errors. `ClubFlow` catches and logs
+unexpected runtime exceptions at the input-loop boundary.
 
 ## Implementation
 
@@ -252,11 +319,11 @@ user-visible rules belong in the [User Guide](UserGuide.md).
 
 | Feature | Start here |
 | --- | --- |
-| Create | [CreateEventCommand](../src/main/java/clubflow/command/CreateEventCommand.java) |
-| Delete | [DeleteEventCommand](../src/main/java/clubflow/command/DeleteEventCommand.java) |
-| View | [ViewEventCommand](../src/main/java/clubflow/command/ViewEventCommand.java) |
-| Edit | [EditEventCommand](../src/main/java/clubflow/command/EditEventCommand.java) |
-| Find | [FindEventCommand](../src/main/java/clubflow/command/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
+| Create | [CreateEventCommand](../src/main/java/clubflow/command/event/CreateEventCommand.java) |
+| Delete | [DeleteEventCommand](../src/main/java/clubflow/command/event/DeleteEventCommand.java) |
+| View | [ViewEventCommand](../src/main/java/clubflow/command/event/ViewEventCommand.java) |
+| Edit | [EditEventCommand](../src/main/java/clubflow/command/event/EditEventCommand.java) |
+| Find | [FindEventCommand](../src/main/java/clubflow/command/event/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
 | Completed/pending | [CompletionCommand](../src/main/java/clubflow/command/CompletionCommand.java), [EventCompletion](../src/main/java/clubflow/completion/EventCompletion.java) |
 
 Commands share a long-lived [Club](../src/main/java/clubflow/Club.java). Look up
@@ -270,10 +337,10 @@ the event list and the assignment roster.
 The creation flow below ends before the input loop's autosave step.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/CreateEventSequence.png"><img src="diagrams/CreateEventSequence.png" alt="Successful event creation sequence" style="width: 75.5em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/CreateEventSequence.svg"><img src="diagrams/events/CreateEventSequence.svg" alt="Successful event creation sequence" style="width: 75.5625em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/CreateEventSequence.puml).
+[PlantUML source](diagrams/events/CreateEventSequence.puml).
 
 #### Editing and replacement
 
@@ -284,11 +351,20 @@ When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/EditEventSequence.png"><img src="diagrams/EditEventSequence.png" alt="Event editing and replacement sequence" style="width: 39.1875em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/EditEventSequence.svg"><img src="diagrams/events/EditEventSequence.svg" alt="Event editing and replacement sequence" style="width: 39.25em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/EditEventSequence.puml).
+[PlantUML source](diagrams/events/EditEventSequence.puml).
 Autosave follows this flow; the club is marked saved only after persistence succeeds.
+
+An earlier list returned by `getEvents()` still references the previous event;
+the club's current list references the replacement instead.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/events/EventReplacementObject.svg"><img src="diagrams/events/EventReplacementObject.svg" alt="Object diagram showing current and earlier event references after editing" style="width: 29.625em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/events/EventReplacementObject.puml).
 
 #### Search
 
@@ -299,10 +375,16 @@ filter values once per request. Consider indexing only if measured usage justifi
 the additional update logic.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/FindEventSequence.png"><img src="diagrams/FindEventSequence.png" alt="Event search sequence" style="width: 46.6875em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="width: 12.5em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/FindEventSequence.puml).
+[PlantUML source](diagrams/events/EventSearchClass.puml).
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/events/FindEventSequence.svg"><img src="diagrams/events/FindEventSequence.svg" alt="Event search sequence" style="width: 46.75em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/events/FindEventSequence.puml).
 
 #### Completion
 
@@ -312,13 +394,22 @@ independent of event details. Preserve idempotency: repeating a request must kee
 the requested state, not toggle it. Completion uses the same replacement path as
 editing, so both features must preserve unrelated data.
 
-In the diagram, `completed` is `True` for `mark` and `False` for `unmark`.
+Both commands share a method-reference handler bound to the same `EventCompletion`
+object, as shown below.
 
 <div style="overflow-x: auto;">
-  <a href="diagrams/CompletionSequence.png"><img src="diagrams/CompletionSequence.png" alt="Event completion sequence" style="width: 57.5625em; max-width: none; height: auto;"></a>
+  <a href="diagrams/events/CompletionWiringObject.svg"><img src="diagrams/events/CompletionWiringObject.svg" alt="Object diagram of mark and unmark sharing an event completion handler" style="width: 32.75em; max-width: none; height: auto;"></a>
 </div>
 
-[PlantUML source](diagrams/CompletionSequence.puml).
+[PlantUML source](diagrams/events/CompletionWiringObject.puml).
+
+In the sequence diagram, `completed` is `True` for `mark` and `False` for `unmark`.
+
+<div style="overflow-x: auto;">
+  <a href="diagrams/events/CompletionSequence.svg"><img src="diagrams/events/CompletionSequence.svg" alt="Event completion sequence" style="width: 57.625em; max-width: none; height: auto;"></a>
+</div>
+
+[PlantUML source](diagrams/events/CompletionSequence.puml).
 
 #### Event invitations
 
@@ -371,10 +462,10 @@ would leave those commands pointing at the previous club's data.
 
 The relevant classes are
 [`ClubManager`](../src/main/java/clubflow/ClubManager.java),
-[`CreateClubCommand`](../src/main/java/clubflow/command/CreateClubCommand.java),
-[`SwitchClubCommand`](../src/main/java/clubflow/command/SwitchClubCommand.java),
-[`ListClubsCommand`](../src/main/java/clubflow/command/ListClubsCommand.java), and
-[`CurrentClubCommand`](../src/main/java/clubflow/command/CurrentClubCommand.java).
+[`CreateClubCommand`](../src/main/java/clubflow/command/club/CreateClubCommand.java),
+[`SwitchClubCommand`](../src/main/java/clubflow/command/club/SwitchClubCommand.java),
+[`ListClubsCommand`](../src/main/java/clubflow/command/club/ListClubsCommand.java), and
+[`CurrentClubCommand`](../src/main/java/clubflow/command/club/CurrentClubCommand.java).
 
 **Club creation and selection:**
 
@@ -400,9 +491,11 @@ of replacing the shared object itself. The unsaved flag is then cleared.
 `SaveLoadManager` also saves the current club's photos to its own directory and
 loads the target club's photos into the working cache.
 
-![Successful club switch sequence diagram](diagrams/SwitchClubSequence.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/clubs/SwitchClubSequence.svg"><img src="diagrams/clubs/SwitchClubSequence.svg" alt="Successful club switch sequence diagram" style="width: 57.875em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/SwitchClubSequence.puml).
+[PlantUML source](diagrams/clubs/SwitchClubSequence.puml).
 
 **Failure handling:** an unknown club raises `ClubNotFoundException`. Failure
 to save or load displays an I/O error; the active ID is not changed. A
@@ -428,11 +521,11 @@ ClubFlow supports importing, listing, opening, and deleting photos associated wi
 
 | Feature           | Start here                                                                                               |
 |-------------------|----------------------------------------------------------------------------------------------------------|
-| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/AddPhotoCommand.java)                                |
-| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/AddAllPhotoCommand.java)                          |
-| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/ListPhotoCommand.java)                              |
-| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/OpenPhotoCommand.java)                              |
-| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/DeletePhotoCommand.java)                          |
+| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/photo/AddPhotoCommand.java)                                |
+| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/photo/AddAllPhotoCommand.java)                          |
+| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/photo/ListPhotoCommand.java)                              |
+| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/photo/OpenPhotoCommand.java)                              |
+| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/photo/DeletePhotoCommand.java)                          |
 | Photo operations  | [Photo](../src/main/java/clubflow/photo/Photo.java), [Event](../src/main/java/clubflow/event/Event.java) |
 | Photo persistence | [SaveLoadManager](../src/main/java/clubflow/SaveLoadManager.java)                                        |
 
@@ -444,9 +537,11 @@ Photos are imported into the working directory under `cache/photos/<event-tag>/`
 
 The following sequence diagram illustrates the process of importing a single photo.
 
-![Photo Import Sequence Diagram](diagrams/PhotoImportSequence.png)
+<div style="overflow-x: auto;">
+  <a href="diagrams/photos/PhotoImportSequence.svg"><img src="diagrams/photos/PhotoImportSequence.svg" alt="Photo Import Sequence Diagram" style="width: 83.375em; max-width: none; height: auto;"></a>
+</div>
 
-[PlantUML source](diagrams/PhotoImportSequence.puml)
+[PlantUML source](diagrams/photos/PhotoImportSequence.puml)
 
 The import process works as follows:
 
@@ -507,11 +602,32 @@ starter application example still needs updating. When changing a command,
 update its UG entry and this guide's affected diagrams or test steps in the
 same change so that the published instructions describe the code.
 
-The diagrams embedded here are generated from the `.puml` sources in
-[`docs/diagrams`](diagrams/). Keep the source and rendered image together, and
+The SVG diagrams embedded here are generated from the `.puml` sources in
+[`docs/diagrams`](diagrams/), grouped by architecture, common classes, and feature.
+Each source stays beside its SVG; shared settings are in
+[`UmlStyle.iuml`](diagrams/shared/UmlStyle.iuml). See the
+[diagram maintenance notes](diagrams/README.md) for regeneration instructions, and
 prefer a small diagram focused on one question over listing every command class.
 
 ### Logging
+
+[`ClubFlow.configureLogging()`](../src/main/java/clubflow/ClubFlow.java) configures
+Java's `java.util.logging` package for the `clubflow` logger hierarchy. Records
+are appended to `clubflow.log` in the working directory using `SimpleFormatter`.
+Parent console handlers are disabled so diagnostics do not interrupt command output.
+
+* `INFO`: application lifecycle and save/load activity.
+* `FINE`: command registration, execution, data changes, and expected command failures.
+* `WARNING`: file loading/saving and photo I/O failures.
+* `SEVERE`: unexpected runtime failures in the input loop.
+
+New classes should use `Logger.getLogger(MyClass.class.getName())` and inherit
+the package handler rather than install their own handlers. `FINE` diagnostics
+require the logger and handler levels to allow `FINE`; recording a message at
+that level does not itself enable it.
+
+If the log file cannot be opened, package logging is disabled without preventing
+startup. Log files are ignored by Git.
 
 ### Automated testing and style checks
 
@@ -1137,4 +1253,78 @@ The following tests verify photo importing, listing, opening, deletion, persiste
 
 ### Import and invalid save files
 
+Use a **fresh working directory** for this section. In a text editor, create
+`import.cf` there as UTF-8 with exactly these three lines:
+
+```text
+MEMBER|Alice|alice||Logistics
+EVENT|TAG|Imported event|2026-12-25|null|100.0|Main Hall||true
+ASSIGNMENT|TAG|1|Lead
+```
+
+1. **Successful replacement:** Launch ClubFlow and enter `createEvent e/OLD`,
+   then `load p/import.cf`. Expect `Data loaded successfully!`. Enter
+   `currentClub`, `viewEvent all`, `viewEvent e/TAG`, and `viewMember`. The
+   active club remains `default`; `OLD` is absent, and `TAG` is completed with a `$100.00` budget
+   and Alice assigned as `Lead`. Alice also appears at member index 1.
+   Exit and restart: these imported records should remain. The source
+   `import.cf` should be unchanged; autosave writes to
+   `saves/clubs/default/club.cf`.
+2. **Rejected imports:** Create `invalid.cf` containing
+   `EVENT|PARTIAL||null|null|0.0|||false`, followed by `EVENT|BROKEN` on the
+   next line. Enter `load p/invalid.cf`. Expect
+   `Data not loaded! Invalid event record at line 2`. Check `viewEvent all`
+   and `viewMember`, plus `viewEvent e/TAG` for its assignment: the existing
+   records remain and `PARTIAL` is absent. Repeat with the following files/paths:
+
+   | Test input | Expected result |
+   | --- | --- |
+   | `load p/missing.cf` (file does not exist) | `Data not loaded!` followed by an I/O explanation. |
+   | `load p/` | A command syntax error; a path is required. |
+   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path) | A command syntax error stating that the load path must be relative. |
+   | `invalid.cf` with `100.0` changed to `-1`, `NaN`, or `1e309` in the valid event line | `Data not loaded! Invalid event record` with the affected line number. |
+   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes` | The same invalid-event error. |
+   | `invalid.cf` containing the valid event line twice | A duplicate-event-tag error at line 2. |
+   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead` | An invalid-assignment error at line 1. |
+
+   For each file variant, replace `invalid.cf` with the described records and
+   run `load p/invalid.cf`. After each rejection, check
+   that the imported club is unchanged and still accepts commands. Restart
+   once more to confirm that failed imports did not overwrite its saved data.
+3. **Invalid startup file:** Exit ClubFlow. Copy
+   `saves/clubs/default/club.cf` to `club-backup.cf` in the working directory,
+   then replace the original file's contents with `EVENT|BROKEN`. Relaunch.
+   Expect `Could not load saved data: Invalid event record at line 1`, followed
+   by termination without a command prompt. The invalid file should remain
+   unchanged. Restore it from `club-backup.cf` and relaunch; the previously
+   imported records should be available again.
+
 ### Autosave failure and recovery
+
+Use another **fresh working directory**, with no photos. Keep ClubFlow running
+while changing the test files in a separate file manager or terminal.
+
+1. **Force a write failure:** Launch ClubFlow and enter
+   `createEvent e/TAG b/100`. Rename `saves/clubs/default/club.cf` to
+   `club.cf.bak`, then create an **empty directory** named `club.cf` in its
+   place. Enter `editEvent e/TAG b/150`. Expect the edit confirmation followed
+   by `Changes could not be saved:` and an OS-dependent I/O explanation.
+   Enter `viewEvent e/TAG`: the in-memory budget is `$150.00`, and another
+   save warning appears because the retry also fails. The backup still
+   contains the original `100.0` budget.
+2. **Recover without restarting:** Remove only the empty `club.cf` directory
+   and rename `club.cf.bak` back to `club.cf`. Enter `viewEvent e/TAG` again.
+   Expect `$150.00` and no save warning. This read command also retries the
+   pending save; the file should now contain `150.0`. Exit and restart, then
+   view `TAG` to confirm that `$150.00` persisted.
+3. **Exit while saving still fails:** Repeat the file-to-directory replacement,
+   then enter `editEvent e/TAG b/200` and `exit`. Expect save warnings for both
+   commands and normal termination after `Goodbye!`; exiting does not wait
+   for storage to recover. Remove the empty directory and restore the backup
+   before restarting. `TAG` should still have the last successfully saved
+   budget of `$150.00`; the unsaved `$200.00` change is lost.
+
+The working directory's `clubflow.log` should record `Autosave failed` at
+`WARNING` for failed attempts. These cases block the text-file write; photo
+synchronization failures are a separate case because the text file can be
+updated before photo saving fails.

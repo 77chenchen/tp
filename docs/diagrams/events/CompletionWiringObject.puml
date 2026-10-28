@@ -1,0 +1,26 @@
+@startuml
+!include ../shared/UmlStyle.iuml
+!pragma layout smetana
+title Shared event completion wiring
+caption Partial object view - mark/unmark registration
+skinparam shadowing false
+skinparam objectBackgroundColor #F1F6FC
+skinparam objectBorderColor #40566B
+skinparam ArrowColor #40566B
+
+object "<u>mark : CompletionCommand</u>" as Mark {
+  completed = True
+}
+object "<u>unmark : CompletionCommand</u>" as Unmark {
+  completed = False
+}
+object "<u>handler : CompletionHandler</u>" as Handler
+object "<u>eventCompletion : EventCompletion</u>" as EventCompletion
+object "<u>club : Club</u>" as Club
+
+Mark --> Handler : completionHandlers["e"]
+Unmark --> Handler : completionHandlers["e"]
+Handler --> EventCompletion : bound receiver (setCompleted)
+EventCompletion --> Club : club
+Mark -[hidden]right- Unmark
+@enduml

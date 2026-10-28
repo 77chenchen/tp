@@ -1,5 +1,8 @@
 package clubflow.command;
 
+import clubflow.command.event.InviteCommand;
+import clubflow.command.event.DeleteEventCommand;
+
 import clubflow.Club;
 import clubflow.UserInterface;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +43,19 @@ class CommandCorrectionTest {
     void suggestedCorrection_mixedCaseAndQuotedArguments_preservesArgumentText() {
         assertEquals(Optional.of("invite  e/\"Christmas  Party\""),
                 parser.suggestedCorrection("  INVTE  e/\"Christmas  Party\"  "));
+    }
+
+    @Test
+    void suggestedCorrection_camelCaseKeyword_preservesRegisteredSpellingAndArguments() {
+        parser.register("deleteEvent", new DeleteEventCommand(ui, new Club()));
+        parser.registerAlias("deleteEvent", "de");
+
+        assertAll(
+                () -> assertEquals(Optional.of("deleteEvent  e/\"TAG\""),
+                        parser.suggestedCorrection("DELETEEVNT  e/\"TAG\"")),
+                () -> assertTrue(parser.suggestedCorrection("DELETEEVENT e/TAG").isEmpty()),
+                () -> assertTrue(parser.suggestedCorrection("DE e/TAG").isEmpty())
+        );
     }
 
     @Test

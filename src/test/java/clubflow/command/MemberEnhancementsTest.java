@@ -1,5 +1,11 @@
 package clubflow.command;
 
+import clubflow.command.event.ViewEventCommand;
+import clubflow.command.member.AssignMemberCommand;
+import clubflow.command.member.EditMemberCommand;
+import clubflow.command.member.FindMemberCommand;
+import clubflow.command.member.UnassignMemberCommand;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;

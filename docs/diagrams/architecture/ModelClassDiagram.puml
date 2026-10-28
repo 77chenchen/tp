@@ -1,0 +1,57 @@
+
+@startuml
+!include ../shared/UmlStyle.iuml
+skinparam classAttributeIconSize 0
+
+class Club {
+    - members : List<Member>
+    - events : List<Event>
+    - assignments : List<EventAssignment>
+    - unsavedChanges : boolean
+    + getMembers() : List<Member>
+    + getEvents() : List<Event>
+    + getAssignments() : List<EventAssignment>
+    + updateEvent(event : Event) : boolean
+    + replaceWith(loaded : Club) : void
+}
+
+class Event {
+    - tag : String
+    - name : String
+    - completed : boolean
+    - photos : HashMap<String, Photo>
+    + addPhoto(path : String, name : String) : Photo
+    + deletePhoto(name : String) : boolean
+    + withCompleted(completed : boolean) : Event
+}
+
+class Member {
+    - name : String
+    - telegramHandle : String
+    - email : String
+    - functions : ArrayList<String>
+}
+
+class EventAssignment {
+    - role : String
+    + getEvent() : Event
+    + getMember() : Member
+}
+
+class Photo {
+    - relativePath : String
+    + open() : void
+    + delete() : void
+}
+
+' Padding inside multiplicity labels keeps their text clear of the connectors.
+Club "1      " *-- "0..*  " Event
+Club "1  " *-- "0..*  " Member
+Club "1  " *-- "0..*  " EventAssignment
+
+EventAssignment "0..*      " --> "1  " Event
+EventAssignment "0..*  " --> "1      " Member
+
+Event "1  " *-- "0..*  " Photo
+
+@enduml

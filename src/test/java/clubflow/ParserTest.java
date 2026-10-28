@@ -1,7 +1,7 @@
 package clubflow;
 
 import clubflow.command.TestCommand;
-import clubflow.command.ViewEventCommand;
+import clubflow.command.event.ViewEventCommand;
 import clubflow.event.Event;
 import clubflow.exception.CommandParseException;
 import org.junit.jupiter.api.Test;

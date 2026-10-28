@@ -107,7 +107,7 @@ class ClubFlowTest {
         String firstSession = runSession("ce e/MEETING n/Planning\nhelp c/ce\nexit\n");
 
         assertTrue(firstSession.contains("[CF] Created event: MEETING"));
-        assertTrue(firstSession.contains("Syntax of command \"createevent\":"));
+        assertTrue(firstSession.contains("Syntax of command \"createEvent\":"));
         assertFalse(firstSession.contains("Command syntax error"));
 
         String secondSession = runSession("ve e/MEETING\nexit\n");
@@ -201,14 +201,14 @@ class ClubFlowTest {
         assertAll(
                 () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] [XMAS] Party")).count()),
                 () -> assertEquals(2, result.lines()
-                        .filter(line -> line.contains("[CF] Syntax of command \"findevent\":")).count()),
+                        .filter(line -> line.contains("[CF] Syntax of command \"findEvent\":")).count()),
                 () -> assertEquals(2, result.lines()
-                        .filter(line -> line.equals("[CF] > findevent [e/Keyword] [q/Keyword] [n/Name]"
+                        .filter(line -> line.equals("[CF] > findEvent [e/Keyword] [q/Keyword] [n/Name]"
                                 + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]"
                                 + " [b/Budget] [min/Budget] [max/Budget] [s/completed|pending]")).count()),
                 () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] 1. Alice")).count()),
                 () -> assertTrue(result.contains("[CF] Aliases: [fe]")),
-                () -> assertTrue(result.contains("[CF] Syntax of command \"findmember\":")),
+                () -> assertTrue(result.contains("[CF] Syntax of command \"findMember\":")),
                 () -> assertTrue(result.contains("[CF] Aliases: [fm]")),
                 () -> assertFalse(result.contains("Command syntax error"))
         );
@@ -335,7 +335,7 @@ class ClubFlowTest {
                 + "help c/findMember\nexit\n");
 
         assertTrue(firstSession.contains("Assigned member Alice to event PARTY."));
-        assertTrue(firstSession.contains("Syntax of command \"findmember\":"));
+        assertTrue(firstSession.contains("Syntax of command \"findMember\":"));
         Club saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));
         assertEquals("Alicia", saved.getAssignmentsForEvent("PARTY").getFirst().getMember().getName());
         assertEquals("Dinner", saved.getAssignmentsForEvent("PARTY").getFirst().getEvent().getName());
@@ -352,7 +352,7 @@ class ClubFlowTest {
     void run_correctedCommandConfirmed_executesOnceAndAutosaves() throws IOException {
         String result = runSession("creatEvent e/XMAS n/\"Christmas Party\"\n\nexit\n");
 
-        assertTrue(result.contains("Corrected prompt: createevent e/XMAS n/\"Christmas Party\""));
+        assertTrue(result.contains("Corrected prompt: createEvent e/XMAS n/\"Christmas Party\""));
         assertEquals(1, result.lines().filter(line -> line.contains("Created event: XMAS")).count());
         assertFalse(result.contains("Command syntax error"));
         Club saved = new SaveLoadManager().load(testDirectory.resolve("clubs.cf"));

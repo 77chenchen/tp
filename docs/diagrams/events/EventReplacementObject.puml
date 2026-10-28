@@ -1,0 +1,31 @@
+@startuml
+!include ../shared/UmlStyle.iuml
+!pragma layout smetana
+title Event replacement and an earlier snapshot
+caption Partial object view - after editEvent e/TAG b/150, before autosave
+skinparam shadowing false
+skinparam objectBackgroundColor #F1F6FC
+skinparam objectBorderColor #40566B
+skinparam ArrowColor #40566B
+
+object "<u>club : Club</u>" as Club {
+  unsavedChanges = True
+}
+object "<u>snapshot : List<Event></u>" as Snapshot
+object "<u>updated : Event</u>" as Updated {
+  tag = "TAG"
+  budget = 150
+  completed = True
+}
+object "<u>previous : Event</u>" as Previous {
+  tag = "TAG"
+  budget = 100
+  completed = True
+}
+
+Club --> Updated : events[0]
+Snapshot --> Previous : [0]
+Club -[hidden]right- Snapshot
+Updated -[hidden]right- Previous
+
+@enduml
