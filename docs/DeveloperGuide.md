@@ -77,211 +77,119 @@ changing development data.
 
 ### Architecture
 
-<!-- SVGs use their natural dimensions on screen and scale down to page width when exported. -->
+The following diagram illustrates ClubFlow's main architectural responsibilities and their dependencies.
+
 <a href="diagrams/architecture/Architecture.svg"><img src="diagrams/architecture/Architecture.svg" alt="ClubFlow architecture: logical view" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/Architecture.puml).
 
-The diagram shows the application's main responsibilities. `ClubFlow` coordinates commands and the terminal UI,
-while the Model and Storage both access the filesystem for photo operations and
-saved data, respectively.
+These responsibilities are logical groupings rather than separate modules or component interfaces. Most core classes belong to the `clubflow` package.
 
-The following are logical responsibilities, not separate modules or a set of
-component interfaces. Most core classes are in the `clubflow` package.
+| Responsibility           | Main classes                                                                 | Purpose                                                                                   |
+|--------------------------|------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| Application coordination | `ClubFlow`                                                                   | Initialises the application, coordinates commands, handles errors, and triggers autosave. |
+| User interaction         | `UserInterface`                                                              | Handles terminal input, output, and user confirmations.                                   |
+| Command processing       | `CommandParser`, `Command`, concrete commands, search and completion helpers | Parses and validates input, dispatches commands, and executes requests.                   |
+| Club data                | `Club`, `Event`, `Member`, `EventAssignment`, `Photo`                        | Manages club data and maintains relationships between objects.                            |
+| Storage                  | `ClubManager`, `SaveLoadManager`                                             | Manages club files, data persistence, legacy migration, and photo synchronisation.        |
 
-| Responsibility | Main classes | Purpose |
-| --- | --- | --- |
-| Application coordination | `ClubFlow` | Constructs and connects objects, loads startup data, runs the input loop, handles errors, and triggers autosave. |
-| User interaction | `UserInterface` | Reads input and prints prompts, results, confirmation messages, and invitations. |
-| Command processing | `CommandParser`, `Command`, concrete command classes, search and completion helpers | Resolves keywords and aliases, validates arguments, and executes requests, including event filtering and completion dispatch. |
-| Club data | `Club`, `Event`, `Member`, `EventAssignment`, `Photo` | Holds the active club's data and maintains relationships. |
-| Storage | `ClubManager`, `SaveLoadManager` | Selects club files, migrates legacy data, serializes records, and synchronizes photos. |
+`ClubFlow` creates a shared `Club`, `UserInterface`, `CommandParser`, and `ClubManager` at startup. Command objects are registered once with the parser and receive their required dependencies through their constructors.
 
-The model is not purely in-memory: `Event` and `Photo` handle photo file operations
-directly. Storage separately persists club records and synchronizes saved photo
-snapshots.
+After `ClubManager.initialize()` loads the default club, the application enters its input loop. Each iteration reads user input, handles optional command correction, and delegates execution to `CommandParser.parse()`. Following successful parsing, `ClubFlow` attempts to save the active club if it has unsaved changes, then checks whether the command requested application exit.
 
-`ClubFlow` constructs one `UserInterface`, one `CommandParser`, one shared `Club`,
-and one `ClubManager`. It creates command objects once and registers them with the
-parser. Commands receive the objects they need through their constructors.
-
-At startup, `ClubManager.initialize()` loads the default club. Each input-loop
-iteration reads a line with `UserInterface.prompt()`, checks for a suggested
-command spelling, and then calls `CommandParser.parse(input)`. A suggested
-spelling requires confirmation before parsing; cancellation returns to the
-prompt. Commands print their results through the UI and return a boolean
-indicating whether the application should exit. After parsing returns normally,
-`ClubFlow` saves the active club if it has unsaved changes, then checks the exit
-flag.
+`Event` and `Photo` interact directly with the filesystem for photo operations. The Storage component separately manages persistent club records and saved photo directories.
 
 ### UI component
 
-ClubFlow has a **terminal UI**, not a graphical interface. Its concrete UI is
-[`UserInterface`](../src/main/java/clubflow/UserInterface.java), which handles
-text input and output but does not own or modify club data.
+ClubFlow uses a terminal interface implemented by [`UserInterface`](../src/main/java/clubflow/UserInterface.java), which handles user input and output without modifying club data.
 
-* `ClubFlow` creates one `UserInterface` with the output prefix `[CF] ` and the
-  input prompt `> `. It calls `welcome()` once and `prompt()` for each command.
-* `UserInterface` reads a complete line using a `Scanner` over `System.in`.
-  `ClubFlow` may ask the user to confirm a suggested command spelling before
-  passing that line to `CommandParser.parse(...)`.
-* Commands and the parser share that UI object. They call `print(message)` for
-  results, error explanations, and syntax help. `print(message, indentLevel)`
-  adds two spaces per level after `[CF] `; `printWithoutPrefix(text)` is available
-  for content that users need to copy without the prefix.
-* The welcome banner contains ANSI true-colour escape sequences. Its colours
-  depend on terminal support; the prompts and command output remain ordinary text.
-* `ClubFlow` handles expected command exceptions and prints their messages.
-  `CommandParseException` can also cause the correct command syntax to be shown.
-  Unexpected runtime exceptions are logged by `ClubFlow`.
+`ClubFlow` creates a single `UserInterface` instance, shared with `CommandParser` and the registered commands. Its main responsibilities are:
 
-The following class diagram is intentionally limited to UI interaction. It
-shows that `UserInterface` is shared rather than recreated for every command.
+- **Input:** `welcome()` displays the startup message, while `prompt()` reads commands using a `Scanner` over `System.in`. The interface also handles confirmation of suggested command corrections.
+- **Output:** `print()` displays messages with the `[CF]` prefix and supports indentation. `printWithoutPrefix()` is used for copyable content, such as event invitations.
+- **Error messages:** `ClubFlow` displays expected command exceptions through the UI, including command syntax when appropriate, while unexpected runtime exceptions are logged.
+
+The class diagram illustrates how `ClubFlow`, `CommandParser`, and commands interact with the shared `UserInterface` instance.
 
 <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/UiClassDiagram.puml).
 
-**Design consideration:** keeping input and printing in one small class makes
-terminal formatting consistent. Commands currently print through this class
-instead of returning presentation-independent results, however, so replacing
-the terminal with a GUI would require changes in command execution or an
-adapter. Tests that exercise the real input loop redirect `System.in` and
-capture `System.out` for this reason.
+**Design consideration:** Centralising input and output ensures consistent terminal formatting. However, commands print directly through `UserInterface` rather than returning presentation-independent results. Replacing the terminal with a GUI would therefore require changes to command execution or an adapter. Integration tests also need to redirect `System.in` and capture `System.out`.
 
 ### Logic component
 
 Main entry point: [CommandParser.java](../src/main/java/clubflow/command/CommandParser.java).
 
-At startup, `ClubFlow` creates command objects and registers each keyword and
-alias with `CommandParser`. An alias points to the same command object as its
-full keyword; commands are not rebuilt for each input line. The diagram below
-focuses on command registration, dispatch, and execution.
+`ClubFlow` creates and registers command objects with `CommandParser` at startup. Each command keyword and its aliases refer to the same instance, avoiding the need to recreate commands for every input.
+
+The following class diagram illustrates command registration, dispatch, and execution. `XYZCommand` represents the concrete commands omitted from the diagram.
 
 <a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Class diagram of command processing" style="max-width: 100%; height: auto;"></a>
 
-[PlantUML source](diagrams/architecture/LogicClass.puml). `XYZCommand` represents the
-concrete commands omitted from the diagram. The `+` and `-` markers denote
-public and private members respectively; only members relevant to command
-processing are shown.
+[PlantUML source](diagrams/architecture/LogicClass.puml).
 
-How the Logic component processes input:
+#### Command processing
 
-1. The input loop calls `suggestedCorrection(input)`. For an unknown command word
-   of at least four characters, the parser may offer a uniquely closest full
-   keyword within one or two character edits, depending on word length. It
-   preserves the arguments. Exact keywords and aliases need no correction.
-2. `UserInterface.confirmCorrection(...)` asks the user to press Enter to accept
-   the suggestion or `c` to cancel it. A cancelled command is not parsed.
-3. `CommandParser.parse(input)` identifies the keyword, preserves text inside
-   double quotes while splitting arguments, and checks each argument ID against
-   the command's required, optional, flag, and repeatable IDs.
-4. The command validates its own rules in `validateArgs(...)` and then runs
-   `execute(...)`. The [event creation sequence diagram](#event-management)
-   shows this path for one concrete command. A successful execution returns
-   `true` only when the application should exit.
+The Logic component processes input as follows:
 
-An invalid command or argument raises `CommandParseException`. `ClubFlow`
-displays the error and, when appropriate, the command syntax.
+1. **Command correction:** `suggestedCorrection(input)` checks unknown command keywords of at least four characters. It may suggest a uniquely closest keyword within one or two character edits, depending on word length, while preserving the arguments. `UserInterface.confirmCorrection()` allows the user to accept or cancel the suggestion.
+2. **Argument parsing:** `CommandParser.parse(input)` identifies the command, preserves quoted arguments, and checks supplied argument IDs against the command's required, optional, flag, and repeatable arguments.
+3. **Validation and execution:** The selected command applies feature-specific validation through `validateArgs()` before running `execute()`. The returned boolean indicates whether the application should exit, rather than whether execution succeeded.
 
-Each concrete command receives only the collaborators it needs, such as the
-shared `Club`, `ClubManager`, or `UserInterface`. The parser knows the `Command`
-contract, not each feature's data rules. Adding a command therefore requires
-registering it in `ClubFlow` and declaring its arguments in the command class;
-the [extension notes](#extending-commands-and-continuous-integration) describe
-the checks to make when doing so.
+Invalid commands or arguments raise `CommandParseException`, which `ClubFlow` handles by displaying the error and, when
 
 ### Model component
 
-The Model component represents and manages the data of the currently active club. Its main classes are `Club`, `Event`, `Member`, `EventAssignment`, and `Photo`.
+The Model component manages the active club's data through `Club`, `Event`, `Member`, `EventAssignment`, and `Photo`.
 
-The class diagram focuses on object ownership and references. The labels and
-multiplicities show that a `Club` holds events, members, and assignments; each
-assignment references one event and one member, while an event owns its photos.
-Unrelated data fields and methods are omitted.
+The class diagram shows how `Club` maintains events, members, and assignments. Each `EventAssignment` references an `Event` and a `Member`, while each `Event` manages its associated photos.
 
 <a href="diagrams/architecture/ModelClassDiagram.svg"><img src="diagrams/architecture/ModelClassDiagram.svg" alt="Structure of the Model Component" style="max-width: 100%; height: auto;"></a>
 
-[PlantUML source](diagrams/architecture/ModelClassDiagram.puml)
-
-The Model component:
-
-- Stores club members, events, and member-event assignments in a shared `Club` object.
-- Represents each event using an `Event` object containing event details, completion status, and associated photos.
-- Represents each member using a `Member` object containing contact information and club functions.
-- Uses `EventAssignment` objects to associate members with events, optionally specifying their responsibilities.
-- Uses `Photo` objects to manage images associated with events.
-- Maintains consistency between members, events, and assignments when data is modified or deleted.
+[PlantUML source](diagrams/architecture/ModelClassDiagram.puml).
 
 #### Data management
 
-`Club` maintains separate lists of `Member`, `Event`, and `EventAssignment` objects. These lists are private, and their public getters return read-only snapshots using `List.copyOf()`. This prevents callers from modifying the collections directly.
+`Club` stores members, events, and assignments in private lists. Its getters return read-only snapshots using `List.copyOf()`, preventing direct modification of the collections.
 
-Events are identified by unique, case-insensitive tags within a club. Members are accessed using one-based indices, corresponding to their positions in the member list.
-
-An `EventAssignment` holds references to a specific `Event` and `Member`, together with an optional role. Using object references rather than member indices ensures that removing another member does not change the meaning of existing assignments.
+Events have unique, case-insensitive tags within a club, while members are identified by one-based list indices. `EventAssignment` stores references to the actual `Event` and `Member` objects rather than their indices, ensuring assignments remain valid when other members are removed.
 
 #### Maintaining data consistency
 
-The Model maintains consistency when existing objects are replaced or removed.
+When an event is edited, `Club.updateEvent()` replaces the original `Event` while preserving its position and photos. It also recreates affected `EventAssignment` objects to reference the replacement.
 
-When an event is updated, `Club.updateEvent()` replaces the original `Event` object while preserving its position in the event list. It also transfers the original event's photos and recreates affected `EventAssignment` objects so that they reference the replacement event.
+Similarly, `Club.replaceMemberByIndex()` transfers assignments to the replacement member. Deleting an event or member removes its associated assignments to prevent stale references.
 
-Similarly, `Club.replaceMemberByIndex()` transfers existing assignments to the replacement member. Deleting an event or member removes its associated assignments, preventing references to objects that are no longer part of the club.
+#### Shared state and persistence
 
-#### Shared club instance
+Commands share a single `Club` instance. When switching clubs, `ClubManager` loads the selected data and calls `Club.replaceWith()` to update the existing object rather than replacing its reference. This allows registered commands to continue accessing the active club without reconstruction.
 
-Commands operate on a shared `Club` instance rather than maintaining separate copies of club data.
-
-When switching clubs, `ClubManager` loads the selected club and calls `Club.replaceWith()` to replace the shared object's contents. This allows existing command objects to continue using the same `Club` reference without being reconstructed.
-
-#### Tracking unsaved changes
-
-`Club` maintains an `unsavedChanges` flag to indicate whether its data has been modified.
-
-Operations that modify club data set this flag to `true`. After the active club is successfully saved, `ClubManager` calls `markSaved()` to clear the flag.
-
-This allows the application to identify changes requiring persistence without saving after every read-only operation.
+`Club` tracks modifications using an `unsavedChanges` flag. Mutating operations set it to `true`, while `ClubManager` calls `markSaved()` after successful persistence. This avoids unnecessary saves after read-only commands.
 
 ### Storage component
 
 ### Common classes
 
-There is no separate `commons` package. Shared command infrastructure and helpers
-live alongside the commands; expected application failures use `clubflow.exception`.
+Shared command infrastructure and utilities are located in `clubflow.command`, while application exceptions are grouped under `clubflow.exception`.
 
 #### Command contract
 
-[`Command`](../src/main/java/clubflow/command/Command.java) is the shared extension
-point for commands. Its argument declarations and syntax strings serve different
-consumers: the parser enforces the declarations, while help displays the syntax.
-Keep both consistent when changing a command.
+[`Command`](../src/main/java/clubflow/command/Command.java) provides the common interface for command execution. Commands declare their accepted arguments for parser validation and define syntax strings for the help system. Both must remain consistent when modifying a command.
 
-Feature commands are grouped under `clubflow.command.event`, `.member`, `.club`,
-and `.photo`. The parent `clubflow.command` package keeps the base class, parser,
-shared argument IDs, and general commands such as help, exit, load, and completion
-dispatch. Command keywords and aliases are unchanged by this package structure.
+Feature-specific commands are organised under `clubflow.command.event`, `.member`, `.club`, and `.photo`. The parent package contains the parser, base command class, shared argument identifiers, and general commands such as help, exit, load, and completion dispatch.
 
-[`CommandParser`](../src/main/java/clubflow/command/CommandParser.java) handles
-input structure, required/allowed arguments, and repetition rules before calling
-the command's `validateArgs()`. Keep field values and cross-field rules in the
-command or a focused validator, rather than adding feature-specific branches to
-the parser. The boolean returned by `execute()` requests application exit; it is
-**not** a success or data-changed flag. Autosave instead relies on the shared club's
-unsaved flag.
+`CommandParser` validates argument structure before delegating feature-specific rules to each command's `validateArgs()`. The boolean returned by `execute()` indicates whether the application should exit, not whether data was modified. Autosave instead depends on the shared `Club` object's unsaved flag.
 
 #### Shared event validation
 
-[`EventArgumentIds`](../src/main/java/clubflow/command/EventArgumentIds.java) and
-[`EventArgumentValidator`](../src/main/java/clubflow/command/event/EventArgumentValidator.java)
-keep creation and editing aligned. The validator checks supplied event fields
-before mutation, including rejecting the save format's `|` separator. When a
-field rule changes, review both commands and the domain object's invariants.
-Search has a different input contract (for example, no required event tag), so its
-filter validation stays in `FindEventCommand` rather than reusing this validator.
+[`EventArgumentIds`](../src/main/java/clubflow/command/EventArgumentIds.java) defines shared argument identifiers, while [`EventArgumentValidator`](../src/main/java/clubflow/command/event/EventArgumentValidator.java) centralises validation for event creation and editing.
 
-`EventArgumentIds` stays in the parent package because photo commands also use
-these prefixes. The event validator remains package-private within `command.event`.
+The validator checks supplied event fields before mutation, including rejecting the `|` character reserved for the save format. This ensures that both commands enforce consistent input rules.
+
+Event search has different requirements, such as not requiring an event tag, so its filter validation remains in `FindEventCommand`.
+
+The following class diagram shows how event creation and editing reuse the shared validator.
 
 <a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="max-width: 100%; height: auto;"></a>
 
@@ -289,21 +197,15 @@ these prefixes. The event validator remains package-private within `command.even
 
 #### Error handling
 
-* [`ClubFlowException`](../src/main/java/clubflow/exception/ClubFlowException.java)
-  is the checked base type for expected application failures and standardizes
-  their messages. Propagate these failures to the input loop for display instead
-  of printing an error and then throwing it, which would report it twice.
-* [`CommandParseException`](../src/main/java/clubflow/exception/CommandParseException.java)
-  covers invalid command input. Once a command is selected, the parser attaches
-  its keyword so the input loop can also display the correct syntax.
-* [`EventNotFoundException`](../src/main/java/clubflow/exception/EventNotFoundException.java)
-  and [`DuplicateEventException`](../src/main/java/clubflow/exception/DuplicateEventException.java)
-  distinguish failed event lookup from a conflicting tag. These are domain
-  failures, not malformed command syntax.
+ClubFlow distinguishes expected application failures from programming errors:
 
-Programming-contract violations, such as invalid command registration, use
-unchecked exceptions rather than user-input errors. `ClubFlow` catches and logs
-unexpected runtime exceptions at the input-loop boundary.
+- [`ClubFlowException`](../src/main/java/clubflow/exception/ClubFlowException.java) is the checked base exception for expected failures. These propagate to the input loop, where their messages are displayed.
+- [`CommandParseException`](../src/main/java/clubflow/exception/CommandParseException.java) represents invalid command input. The parser associates it with the selected command so that the appropriate syntax can also be displayed.
+- [`EventNotFoundException`](../src/main/java/clubflow/exception/EventNotFoundException.java) and [`DuplicateEventException`](../src/main/java/clubflow/exception/DuplicateEventException.java) distinguish event lookup failures from duplicate tags.
+
+Programming-contract violations, such as invalid command registration, use unchecked exceptions. Unexpected runtime exceptions are caught and logged by `ClubFlow` at the input-loop boundary.
+
+Expected exceptions should be propagated rather than printed and rethrown, avoiding duplicate error messages.
 
 ## Implementation
 
@@ -504,219 +406,151 @@ time.
 
 ### Photo lifecycle and persistence limits
 
-ClubFlow supports importing, listing, opening, and deleting photos associated with events. The following entry points are useful when modifying photo management behaviour. Command syntax and user-visible rules are documented in the [User Guide](UserGuide.md).
+ClubFlow supports importing, listing, opening, and deleting event photos. Photo commands operate through the shared `Club`, which delegates operations to the relevant `Event`. The [`Photo`](../src/main/java/clubflow/photo/Photo.java) class handles file operations, while [`SaveLoadManager`](../src/main/java/clubflow/SaveLoadManager.java) manages photo persistence.
 
-| Feature           | Start here                                                                                               |
-|-------------------|----------------------------------------------------------------------------------------------------------|
-| Import photo      | [AddPhotoCommand](../src/main/java/clubflow/command/photo/AddPhotoCommand.java)                                |
-| Import directory  | [AddAllPhotoCommand](../src/main/java/clubflow/command/photo/AddAllPhotoCommand.java)                          |
-| List photos       | [ListPhotoCommand](../src/main/java/clubflow/command/photo/ListPhotoCommand.java)                              |
-| Open photo        | [OpenPhotoCommand](../src/main/java/clubflow/command/photo/OpenPhotoCommand.java)                              |
-| Delete photos     | [DeletePhotoCommand](../src/main/java/clubflow/command/photo/DeletePhotoCommand.java)                          |
-| Photo operations  | [Photo](../src/main/java/clubflow/photo/Photo.java), [Event](../src/main/java/clubflow/event/Event.java) |
-| Photo persistence | [SaveLoadManager](../src/main/java/clubflow/SaveLoadManager.java)                                        |
-
-Photo commands operate through the shared `Club` object, which delegates photo operations to the corresponding `Event`. The `Photo` class handles image file operations, while `SaveLoadManager` synchronizes photos between the working cache and club-specific save directories.
+| Feature | Main classes |
+| --- | --- |
+| Import | [`AddPhotoCommand`](../src/main/java/clubflow/command/photo/AddPhotoCommand.java), [`AddAllPhotoCommand`](../src/main/java/clubflow/command/photo/AddAllPhotoCommand.java) |
+| List, open, delete | [`ListPhotoCommand`](../src/main/java/clubflow/command/photo/ListPhotoCommand.java), [`OpenPhotoCommand`](../src/main/java/clubflow/command/photo/OpenPhotoCommand.java), [`DeletePhotoCommand`](../src/main/java/clubflow/command/photo/DeletePhotoCommand.java) |
+| Photo management | [`Event`](../src/main/java/clubflow/event/Event.java), [`Photo`](../src/main/java/clubflow/photo/Photo.java) |
 
 #### Photo importing
 
-Photos are imported into the working directory under `cache/photos/<event-tag>/`. Each `Event` maintains a `HashMap<String, Photo>` mapping photo names to their corresponding `Photo` objects.
+Photos are stored under `cache/photos/<event-tag>/`. Each `Event` maintains a `HashMap<String, Photo>` that associates photo names with their corresponding objects.
 
-The sequence diagram shows a successful single-photo import. Source validation,
-image reading, and PNG output are grouped into two filesystem interactions to
-keep the diagram readable in PDF exports.
+The following sequence diagram illustrates a successful single-photo import, including argument validation, event lookup, image conversion, and photo registration.
 
 <a href="diagrams/photos/PhotoImportSequence.svg"><img src="diagrams/photos/PhotoImportSequence.svg" alt="Photo Import Sequence Diagram" style="max-width: 100%; height: auto;"></a>
 
-[PlantUML source](diagrams/photos/PhotoImportSequence.puml)
+[PlantUML source](diagrams/photos/PhotoImportSequence.puml).
 
-The import process works as follows:
+`AddPhotoCommand` validates the arguments before delegating to `Club.addPhoto()`. After locating the event, `Event.addPhoto()` constructs a `Photo` object, which validates the source and destination, reads the image, and saves it as PNG. The event registers the photo, and the club marks its data as unsaved.
 
-1. `AddPhotoCommand` validates the command arguments and calls `Club.addPhoto()`.
-2. `Club` locates the event using its tag and calls `Event.addPhoto()`.
-3. `Event` creates a `Photo` object, which validates the photo name and source file.
-4. The `Photo` constructor reads the image, converts it to PNG format, and saves it in the event's photo directory.
-5. `Event` registers the photo in its collection, and `Club` marks its data as unsaved.
+If no name is provided, the source filename without its extension is used. Duplicate destination filenames are rejected to prevent overwriting existing photos.
 
-If no photo name is specified, the source filename without its extension is used.
-
-Bulk importing follows a similar process through `AddAllPhotoCommand` and `Event.addPhotos()`. Each regular file in the specified directory is processed individually. Failed imports are logged and counted without preventing the remaining files from being processed.
+Bulk importing uses `AddAllPhotoCommand` and `Event.addPhotos()`. Each regular file is processed independently, allowing valid photos to be imported even when others fail. Successes and failures are counted.
 
 #### Photo management
 
-The following operations are supported:
-
-| Operation | Implementation |
-| --- | --- |
-| List | `ListPhotoCommand` retrieves photo names from `Event.getPhotoNames()`. |
-| Open | `OpenPhotoCommand` uses `Event.openPhoto()` or `Event.openPhotoDir()` to open an image or its directory through the operating system. |
-| Delete | `Event.deletePhoto()` deletes the physical image before removing its registration from the event. |
-| Delete all | `Event.deleteAllPhotos()` attempts to delete every registered photo, recording successful and failed deletions. |
-
-Photos are registered by name within each event. Importing another photo with an existing destination filename is rejected to prevent overwriting.
+`Event` provides methods for listing, opening, and deleting registered photos. Opening uses the operating system's default image viewer or file explorer. Deletion removes the physical file before removing its registration, while bulk deletion records successful and failed operations.
 
 #### Photo persistence
 
-`SaveLoadManager` stores photos separately from the club's text-based data file.
+`SaveLoadManager` stores photos separately from the text-based club records.
 
-When saving, `savePhotos()` copies the active club's photo directories from the working cache to the selected club's save directory. When loading, `loadPhotos()` restores the saved directories into the cache and reconstructs the `Photo` objects from the available PNG files.
+When saving, `savePhotos()` copies photos from the working cache into the active club's save directory. When loading, `loadPhotos()` restores the saved photos into the cache and reconstructs their `Photo` objects.
 
-The directory replacement uses a temporary staging directory and a backup of the previous destination, allowing the previous photo directory to be restored if installation of the staged directory fails.
+Photo-directory replacement uses a temporary staging directory and a backup of the previous destination. If installing the staged directory fails, the previous directory can be restored.
 
-This design keeps image files separate from structured club records and allows photos to remain associated with their events across application restarts and club switches.
+This separation allows photos to persist across restarts and club switches but introduces consistency limitations.
 
 #### Error handling and limitations
 
-Invalid photo names, missing source files, unsupported images, duplicate filenames, and file-operation failures are reported through photo-specific exceptions.
+Invalid photo names, missing files, unsupported images, duplicate filenames, and file-operation failures are reported through photo-specific exceptions.
 
-Photo operations also have several limitations:
+Key limitations include:
 
-- Photos are converted to PNG, regardless of their original format.
-- Opening photos depends on the operating system's desktop support.
-- Bulk imports can partially succeed when some files are invalid.
-- Club data and photo files are saved separately. Therefore, a failure during photo synchronization can leave the text save file updated while photo persistence remains incomplete.
-- Removing an event deletes its model entry and assignments, but does not immediately delete its photo directory. Obsolete photo directories are excluded when the next successful photo-directory synchronization replaces the saved photo collection.
+- All imported images are converted to PNG.
+- Opening images depends on operating system desktop support.
+- Bulk imports may partially succeed.
+- Club records and photos are persisted separately, so photo synchronisation may fail after the text save succeeds.
+- Deleting an event does not immediately remove its photo directory. Obsolete directories are excluded during the next successful photo synchronisation.
 
 ## Documentation, logging, testing, dev-ops
 
 ### Documentation
 
-The [User Guide](UserGuide.md) is where command syntax, examples, and
-user-visible behavior belong. This Developer Guide explains responsibilities, data
-flows, design choices, and a short manual test path. The repository
-[README](../README.md) includes Gradle and IDE setup notes, although its
-starter application example still needs updating. When changing a command,
-update its UG entry and this guide's affected diagrams or test steps in the
-same change so that the published instructions describe the code.
+The [User Guide](UserGuide.md) documents command syntax and user-visible behaviour, while this Developer Guide focuses on architecture, implementation, and testing. Developers should update the relevant documentation and diagrams when modifying features.
 
-The SVG diagrams embedded here are generated from the `.puml` sources in
-[`docs/diagrams`](diagrams/), grouped by architecture, common classes, and feature.
-Each source stays beside its SVG; shared settings are in
-[`UmlStyle.iuml`](diagrams/shared/UmlStyle.iuml). See the
-[diagram maintenance notes](diagrams/README.md) for regeneration instructions, and
-prefer a small diagram focused on one question over listing every command class.
+UML diagrams are generated from PlantUML (`.puml`) sources under [`docs/diagrams`](diagrams/). Each source is stored alongside its generated SVG, with shared styling defined in [`UmlStyle.iuml`](diagrams/shared/UmlStyle.iuml). See the [diagram maintenance instructions](diagrams/README.md) for regeneration details.
 
 ### Logging
 
-[`ClubFlow.configureLogging()`](../src/main/java/clubflow/ClubFlow.java) configures
-Java's `java.util.logging` package for the `clubflow` logger hierarchy. Records
-are appended to `clubflow.log` in the working directory using `SimpleFormatter`.
-Parent console handlers are disabled so diagnostics do not interrupt command output.
+[`ClubFlow.configureLogging()`](../src/main/java/clubflow/ClubFlow.java) configures Java's `java.util.logging` framework. Log records are appended to `clubflow.log` in the working directory using `SimpleFormatter`. Parent console handlers are disabled to prevent diagnostic messages from interfering with terminal output.
 
-* `INFO`: application lifecycle and save/load activity.
-* `FINE`: command registration, execution, data changes, and expected command failures.
-* `WARNING`: file loading/saving and photo I/O failures.
-* `SEVERE`: unexpected runtime failures in the input loop.
+ClubFlow uses the following logging levels:
 
-New classes should use `Logger.getLogger(MyClass.class.getName())` and inherit
-the package handler rather than install their own handlers. `FINE` diagnostics
-require the logger and handler levels to allow `FINE`; recording a message at
-that level does not itself enable it.
+| Level     | Usage                                                                |
+|-----------|----------------------------------------------------------------------|
+| `INFO`    | Application lifecycle and save/load operations                       |
+| `FINE`    | Command registration, execution, data changes, and expected failures |
+| `WARNING` | Storage and photo I/O failures                                       |
+| `SEVERE`  | Unexpected runtime failures                                          |
 
-If the log file cannot be opened, package logging is disabled without preventing
-startup. Log files are ignored by Git.
+Classes use `Logger.getLogger(MyClass.class.getName())` and inherit the configured logging hierarchy. `FINE` messages require the logger and handler levels to permit them.
+
+If the log file cannot be opened, package logging is disabled without preventing application startup. Log files are excluded from version control.
 
 ### Automated testing and style checks
 
-ClubFlow uses JUnit 5 with the Gradle `test` task. Test source files live in
-[`src/test/java/clubflow/`](../src/test/java/clubflow) and its `command`
-subdirectory. `build.gradle` enables assertions when running tests, so internal
-invariants are checked as well as externally visible results.
+ClubFlow uses JUnit 5 through Gradle, with tests located under [`src/test/java/clubflow/`](../src/test/java/clubflow). Assertions are enabled in `build.gradle` during test execution.
 
-Testing is performed at different levels:
+Tests cover three main areas:
 
-* **Command and parser tests:**
-  [`ClubCommandsTest`](../src/test/java/clubflow/command/ClubCommandsTest.java)
-  checks club command syntax, duplicate and invalid IDs, active-club output,
-  and failure paths. Other command tests exercise events and members.
-* **Storage/model tests:**
-  [`ClubManagerTest`](../src/test/java/clubflow/ClubManagerTest.java)
-  checks club creation, name normalisation, switching, save files, and legacy
-  migration. [`MultiClubPhotoStorageTest`](../src/test/java/clubflow/MultiClubPhotoStorageTest.java)
-  checks per-club photo snapshots.
-* **End-to-end input-loop tests:**
-  [`ClubFlowMultiClubTest`](../src/test/java/clubflow/ClubFlowMultiClubTest.java)
-  submits lines to a fresh `ClubFlow`, captures terminal output, and starts
-  another instance using the same test directory to check restart persistence
-  and separation between clubs. The test supplies an alternate save path so it
-  does not overwrite a user's real `saves/` directory.
+- **Command and parser tests:** [`ClubCommandsTest`](../src/test/java/clubflow/command/ClubCommandsTest.java) verifies command syntax, invalid or duplicate club IDs, active-club output, and error handling. Other command tests cover event and member operations.
+- **Model and storage tests:** [`ClubManagerTest`](../src/test/java/clubflow/ClubManagerTest.java) covers club creation, switching, persistence, and legacy migration. [`MultiClubPhotoStorageTest`](../src/test/java/clubflow/MultiClubPhotoStorageTest.java) verifies photo isolation between clubs.
+- **Input-loop integration tests:** [`ClubFlowMultiClubTest`](../src/test/java/clubflow/ClubFlowMultiClubTest.java) simulates user commands and application restarts to verify persistence and separation between clubs.
 
-JUnit's `@TempDir` provides disposable save-file locations in tests that
-access the filesystem. UI integration tests temporarily replace `System.in`
-and `System.out` and restore them after each test. This prevents tests from
-requiring manual input and allows success and error messages to be asserted.
+Filesystem tests use JUnit's `@TempDir` to isolate test data. Input-loop tests redirect `System.in` and `System.out` to simulate interaction and check command output, restoring the original streams afterward.
 
-From the project root, run the whole suite and then the project's Checkstyle
-rules (on macOS/Linux, use `./gradlew` in place of `.\gradlew.bat`):
+To run all tests and Checkstyle checks from the repository root:
 
 ```powershell
 .\gradlew.bat test
 .\gradlew.bat check
 ```
 
-To run only the multiple-club regression tests:
+To run the multiple-club regression tests separately:
 
 ```powershell
 .\gradlew.bat test --tests clubflow.ClubManagerTest --tests clubflow.ClubFlowMultiClubTest --tests clubflow.command.ClubCommandsTest
 ```
 
-Automated tests reduce regressions, but do not establish complete path or line
-coverage by themselves. Manual tests are still needed for a real terminal,
-photo viewers, permissions errors, and full release packaging. See
-[Appendix E](#appendix-e-instructions-for-manual-testing).
+On macOS or Linux, replace `.\gradlew.bat` with `./gradlew`.
 
-### Extending commands and continuous integration
+Automated tests are complemented by the [manual testing instructions](#appendix-e-instructions-for-manual-testing), particularly for terminal behaviour, photo viewers, filesystem permissions, and release packaging.
 
-ClubFlow uses an extensible command system consisting of the abstract `Command` class and `CommandParser`. New commands can be added without modifying the parser's core parsing logic.
+### Extending commands
+
+ClubFlow uses an extensible command system based on the abstract `Command` class and `CommandParser`. New commands can be added without modifying the parser's core logic.
 
 #### Adding a new command
 
-To implement a new command:
+To implement a command, create a subclass of `Command` and pass the shared `UserInterface` to its constructor.
 
-1. Create a class extending `Command` and pass the shared `UserInterface` to its superclass constructor.
-2. Override `requiredArgIds()` and `optionalArgIds()` to declare accepted arguments.
-3. Override `execute()` to implement the command's behaviour.
-4. Override `validateArgs()` if additional command-specific validation is required.
-5. Register the command in `ClubFlow` using `CommandParser.register()`.
+Each command must:
 
-Commands may also override `flagArgIds()` for standalone flags and `repeatableArgIds()` for arguments that can appear multiple times.
+1. Declare its accepted arguments through `requiredArgIds()` and `optionalArgIds()`. Commands can also override `flagArgIds()` and `repeatableArgIds()` when needed.
+2. Implement `execute()` to perform the requested operation.
+3. Override `validateArgs()` for command-specific validation.
+4. Register itself in `ClubFlow` using `CommandParser.register()`.
 
-The parser validates argument identifiers, required arguments, duplicate arguments, and command-specific rules before execution.
+`CommandParser` validates argument structure, including required, unsupported, and duplicate arguments, before command execution. Feature-specific rules remain within individual commands or their validators.
 
-#### Defining command syntax
+#### Command syntax and aliases
 
-Each command registers its supported syntax using `addSyntax()` in its constructor.
+Each command defines its help syntax through `addSyntax()`. Multiple calls can specify alternative command formats, which are retrieved by `getSyntaxes()` for the help system.
 
-For example, `AddPhotoCommand` declares:
+For example, `AddPhotoCommand` defines:
 
 ```java
 addSyntax("e/Tag [n/Name] p/Path");
 ```
 
-Multiple calls to `addSyntax()` can describe alternative forms of the same command. These descriptions are retrieved through `getSyntaxes()` and displayed by the help system.
-
-#### Registering aliases
-
-`CommandParser.registerAlias()` associates an alternative keyword with an existing command.
-
-For example:
+Commands can also register aliases:
 
 ```java
 parser.register("addPhoto", new AddPhotoCommand(ui, club));
 parser.registerAlias("addPhoto", "ap");
 ```
 
-Both `addphoto` and `ap` execute the same command object.
-
-The parser maintains mappings between aliases and their original keywords, allowing `HelpCommand` to display aliases alongside command syntax.
-
-Command keywords and aliases are case-insensitive. Duplicate registered keywords are rejected.
+Both `addphoto` and `ap` invoke the same command instance. Keywords are case-insensitive, and duplicate registrations are rejected.
 
 #### Testing new commands
 
-Developers should test successful execution, missing required arguments, invalid identifiers, duplicate arguments, and command-specific validation.
+New commands should be tested for successful execution, missing or invalid arguments, duplicate arguments, and command-specific validation failures.
 
-When adding a new command, update its help syntax, relevant automated tests, and the User Guide to keep documentation consistent with the implementation.
+Developers should also update the command's help syntax, relevant automated tests, and User Guide documentation to reflect any changes in behaviour.
 
 ## Appendix A: Product Scope
 
@@ -1135,16 +969,16 @@ report current member indices; obtain a fresh index after deleting a member.
 
 3. Unassigning and deleting a member
 
-   1. Test case: Enter `unassignMember e/CAMP i/1`, then `viewEvent e/CAMP`.
-   2. Expected: Alicia is no longer assigned. Enter `assignMember e/CAMP i/1`
-      to set up the deletion check.
-   3. Test case: Enter `deleteMember i/2`, then enter `n` at its confirmation
-      prompt. Run `viewMember`.
-   4. Expected: Both members remain.
-   5. Test case: Enter `deleteMember i/1 /f`, then `viewMember` and
-      `viewEvent e/CAMP`. Restart from the same working directory and check again.
-   6. Expected: Only Bob remains, now at index 1. The deleted member no longer
-      appears in the event assignment. Both changes persist after restart.
+    1. Test case: Enter `unassignMember e/CAMP i/1`, then `viewEvent e/CAMP`.
+    2. Expected: Alicia is no longer assigned. Enter `assignMember e/CAMP i/1`
+       to set up the deletion check.
+    3. Test case: Enter `deleteMember i/2`, then enter `n` at its confirmation
+       prompt. Run `viewMember`.
+    4. Expected: Both members remain.
+    5. Test case: Enter `deleteMember i/1 /f`, then `viewMember` and
+       `viewEvent e/CAMP`. Restart from the same working directory and check again.
+    6. Expected: Only Bob remains, now at index 1. The deleted member no longer
+       appears in the event assignment. Both changes persist after restart.
 
 ### Multiple clubs and restart persistence
 
@@ -1264,15 +1098,15 @@ ASSIGNMENT|TAG|1|Lead
    and `viewMember`, plus `viewEvent e/TAG` for its assignment: the existing
    records remain and `PARTIAL` is absent. Repeat with the following files/paths:
 
-   | Test input                                                                           | Expected result                                                        |
-   |--------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-   | `load p/missing.cf` (file does not exist)                                            | `Data not loaded!` followed by an I/O explanation.                     |
-   | `load p/`                                                                            | A command syntax error; a path is required.                            |
-   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path)              | A command syntax error stating that the load path must be relative.    |
+   | Test input | Expected result |
+      | --- | --- |
+   | `load p/missing.cf` (file does not exist) | `Data not loaded!` followed by an I/O explanation. |
+   | `load p/` | A command syntax error; a path is required. |
+   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path) | A command syntax error stating that the load path must be relative. |
    | `invalid.cf` with `100.0` changed to `-1`, `NaN`, or `1e309` in the valid event line | `Data not loaded! Invalid event record` with the affected line number. |
-   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes`   | The same invalid-event error.                                          |
-   | `invalid.cf` containing the valid event line twice                                   | A duplicate-event-tag error at line 2.                                 |
-   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead`                          | An invalid-assignment error at line 1.                                 |
+   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes` | The same invalid-event error. |
+   | `invalid.cf` containing the valid event line twice | A duplicate-event-tag error at line 2. |
+   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead` | An invalid-assignment error at line 1. |
 
    For each file variant, replace `invalid.cf` with the described records and
    run `load p/invalid.cf`. After each rejection, check
