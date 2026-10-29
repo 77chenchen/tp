@@ -77,12 +77,14 @@ changing development data.
 
 ### Architecture
 
-<!-- shared/UmlStyle.iuml uses 16px text. Intrinsic image width / 16 in em keeps it at body-text size; wide diagrams scroll instead of shrinking. -->
-<div style="overflow-x: auto;">
-  <a href="diagrams/architecture/Architecture.svg"><img src="diagrams/architecture/Architecture.svg" alt="ClubFlow architecture: logical view" style="width: 20.1875em; max-width: none; height: auto;"></a>
-</div>
+<!-- SVGs use their natural dimensions on screen and scale down to page width when exported. -->
+<a href="diagrams/architecture/Architecture.svg"><img src="diagrams/architecture/Architecture.svg" alt="ClubFlow architecture: logical view" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/Architecture.puml).
+
+The diagram shows the application's main responsibilities. `ClubFlow` coordinates commands and the terminal UI,
+while the Model and Storage both access the filesystem for photo operations and
+saved data, respectively.
 
 The following are logical responsibilities, not separate modules or a set of
 component interfaces. Most core classes are in the `clubflow` package.
@@ -136,9 +138,7 @@ text input and output but does not own or modify club data.
 The following class diagram is intentionally limited to UI interaction. It
 shows that `UserInterface` is shared rather than recreated for every command.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="width: 21.6875em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/UiClassDiagram.puml).
 
@@ -156,13 +156,11 @@ Main entry point: [CommandParser.java](../src/main/java/clubflow/command/Command
 At startup, `ClubFlow` creates command objects and registers each keyword and
 alias with `CommandParser`. An alias points to the same command object as its
 full keyword; commands are not rebuilt for each input line. The diagram below
-shows a partial class view of command processing.
+focuses on command registration, dispatch, and execution.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Partial class diagram of command processing" style="width: 58.75em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Class diagram of command processing" style="max-width: 100%; height: auto;"></a>
 
-[PlantUML source](diagrams/architecture/LogicClass.puml). `XYZCommand` represents the many
+[PlantUML source](diagrams/architecture/LogicClass.puml). `XYZCommand` represents the
 concrete commands omitted from the diagram. The `+` and `-` markers denote
 public and private members respectively; only members relevant to command
 processing are shown.
@@ -197,11 +195,12 @@ the checks to make when doing so.
 
 The Model component represents and manages the data of the currently active club. Its main classes are `Club`, `Event`, `Member`, `EventAssignment`, and `Photo`.
 
-The following class diagram illustrates the structure of the Model component and the relationships between its classes.
+The class diagram focuses on object ownership and references. The labels and
+multiplicities show that a `Club` holds events, members, and assignments; each
+assignment references one event and one member, while an event owns its photos.
+Unrelated data fields and methods are omitted.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/architecture/ModelClassDiagram.svg"><img src="diagrams/architecture/ModelClassDiagram.svg" alt="Structure of the Model Component" style="width: 38.8125em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/architecture/ModelClassDiagram.svg"><img src="diagrams/architecture/ModelClassDiagram.svg" alt="Structure of the Model Component" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/ModelClassDiagram.puml)
 
@@ -284,9 +283,7 @@ filter validation stays in `FindEventCommand` rather than reusing this validator
 `EventArgumentIds` stays in the parent package because photo commands also use
 these prefixes. The event validator remains package-private within `command.event`.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="width: 22.3125em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/common/EventValidationClass.svg"><img src="diagrams/common/EventValidationClass.svg" alt="Class diagram of shared validation for event creation and editing" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/common/EventValidationClass.puml).
 
@@ -336,9 +333,7 @@ the event list and the assignment roster.
 
 The creation flow below ends before the input loop's autosave step.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/CreateEventSequence.svg"><img src="diagrams/events/CreateEventSequence.svg" alt="Successful event creation sequence" style="width: 75.5625em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/CreateEventSequence.svg"><img src="diagrams/events/CreateEventSequence.svg" alt="Successful event creation sequence" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/CreateEventSequence.puml).
 
@@ -350,21 +345,24 @@ photos, and member assignments; this belongs in `Club.updateEvent()`.
 When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/EditEventSequence.svg"><img src="diagrams/events/EditEventSequence.svg" alt="Event editing and replacement sequence" style="width: 39.25em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/EditEventSequence.svg"><img src="diagrams/events/EditEventSequence.svg" alt="Event editing and replacement sequence" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/EditEventSequence.puml).
-Autosave follows this flow; the club is marked saved only after persistence succeeds.
+The sequence expands the operations previously hidden in reference frames.
+`Club.updateEvent()` preserves the existing event position and rebinds affected
+assignments after the replacement has been created. Autosave follows this flow;
+the club is marked saved only after persistence succeeds.
 
 An earlier list returned by `getEvents()` still references the previous event;
 the club's current list references the replacement instead.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/EventReplacementObject.svg"><img src="diagrams/events/EventReplacementObject.svg" alt="Object diagram showing current and earlier event references after editing" style="width: 29.625em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/EventReplacementObject.svg"><img src="diagrams/events/EventReplacementObject.svg" alt="Object diagram showing current and earlier event references after editing" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/EventReplacementObject.puml).
+
+This object diagram highlights why callers must obtain a new event snapshot after
+an edit: the shared `Club` points to the updated event, but an earlier snapshot
+still points to the previous object.
 
 #### Search
 
@@ -374,17 +372,16 @@ filter validation in `FindEventCommand` and matching in `EventSearch`; compile
 filter values once per request. Consider indexing only if measured usage justifies
 the additional update logic.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="width: 12.5em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/EventSearchClass.puml).
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/FindEventSequence.svg"><img src="diagrams/events/FindEventSequence.svg" alt="Event search sequence" style="width: 46.75em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/FindEventSequence.svg"><img src="diagrams/events/FindEventSequence.svg" alt="Event search sequence" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/FindEventSequence.puml).
+
+The sequence shows predicate construction and filtering directly rather than
+pointing to interactions not provided as separate diagrams.
 
 #### Completion
 
@@ -394,20 +391,12 @@ independent of event details. Preserve idempotency: repeating a request must kee
 the requested state, not toggle it. Completion uses the same replacement path as
 editing, so both features must preserve unrelated data.
 
-Both commands share a method-reference handler bound to the same `EventCompletion`
-object, as shown below.
-
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/CompletionWiringObject.svg"><img src="diagrams/events/CompletionWiringObject.svg" alt="Object diagram of mark and unmark sharing an event completion handler" style="width: 32.75em; max-width: none; height: auto;"></a>
-</div>
-
-[PlantUML source](diagrams/events/CompletionWiringObject.puml).
+Both commands share a method-reference handler bound to the same
+`EventCompletion` object. Their only difference is the desired completion state.
 
 In the sequence diagram, `completed` is `True` for `mark` and `False` for `unmark`.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/events/CompletionSequence.svg"><img src="diagrams/events/CompletionSequence.svg" alt="Event completion sequence" style="width: 57.625em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/events/CompletionSequence.svg"><img src="diagrams/events/CompletionSequence.svg" alt="Event completion sequence" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/events/CompletionSequence.puml).
 
@@ -491,9 +480,7 @@ of replacing the shared object itself. The unsaved flag is then cleared.
 `SaveLoadManager` also saves the current club's photos to its own directory and
 loads the target club's photos into the working cache.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/clubs/SwitchClubSequence.svg"><img src="diagrams/clubs/SwitchClubSequence.svg" alt="Successful club switch sequence diagram" style="width: 57.875em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/clubs/SwitchClubSequence.svg"><img src="diagrams/clubs/SwitchClubSequence.svg" alt="Successful club switch sequence diagram" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/clubs/SwitchClubSequence.puml).
 
@@ -535,11 +522,11 @@ Photo commands operate through the shared `Club` object, which delegates photo o
 
 Photos are imported into the working directory under `cache/photos/<event-tag>/`. Each `Event` maintains a `HashMap<String, Photo>` mapping photo names to their corresponding `Photo` objects.
 
-The following sequence diagram illustrates the process of importing a single photo.
+The sequence diagram shows a successful single-photo import. Source validation,
+image reading, and PNG output are grouped into two filesystem interactions to
+keep the diagram readable in PDF exports.
 
-<div style="overflow-x: auto;">
-  <a href="diagrams/photos/PhotoImportSequence.svg"><img src="diagrams/photos/PhotoImportSequence.svg" alt="Photo Import Sequence Diagram" style="width: 83.375em; max-width: none; height: auto;"></a>
-</div>
+<a href="diagrams/photos/PhotoImportSequence.svg"><img src="diagrams/photos/PhotoImportSequence.svg" alt="Photo Import Sequence Diagram" style="max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/photos/PhotoImportSequence.puml)
 
@@ -1277,15 +1264,15 @@ ASSIGNMENT|TAG|1|Lead
    and `viewMember`, plus `viewEvent e/TAG` for its assignment: the existing
    records remain and `PARTIAL` is absent. Repeat with the following files/paths:
 
-   | Test input | Expected result |
-   | --- | --- |
-   | `load p/missing.cf` (file does not exist) | `Data not loaded!` followed by an I/O explanation. |
-   | `load p/` | A command syntax error; a path is required. |
-   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path) | A command syntax error stating that the load path must be relative. |
+   | Test input                                                                           | Expected result                                                        |
+   |--------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+   | `load p/missing.cf` (file does not exist)                                            | `Data not loaded!` followed by an I/O explanation.                     |
+   | `load p/`                                                                            | A command syntax error; a path is required.                            |
+   | `load p/<absolute-path-to-import.cf>` (substitute a real absolute path)              | A command syntax error stating that the load path must be relative.    |
    | `invalid.cf` with `100.0` changed to `-1`, `NaN`, or `1e309` in the valid event line | `Data not loaded! Invalid event record` with the affected line number. |
-   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes` | The same invalid-event error. |
-   | `invalid.cf` containing the valid event line twice | A duplicate-event-tag error at line 2. |
-   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead` | An invalid-assignment error at line 1. |
+   | `invalid.cf` with `2026-12-25` changed to `2026-02-30`, or `true` changed to `yes`   | The same invalid-event error.                                          |
+   | `invalid.cf` containing the valid event line twice                                   | A duplicate-event-tag error at line 2.                                 |
+   | `invalid.cf` containing only `ASSIGNMENT\|UNKNOWN\|1\|Lead`                          | An invalid-assignment error at line 1.                                 |
 
    For each file variant, replace `invalid.cf` with the described records and
    run `load p/invalid.cf`. After each rejection, check
