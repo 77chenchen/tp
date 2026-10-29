@@ -1,8 +1,9 @@
+
 @startuml
 !include ../shared/UmlStyle.iuml
 scale max 760 width
 title Importing a photo into an event
-caption Successful addPhoto e/TAG p/PATH
+caption Successful addPhoto command (before autosave)
 skinparam shadowing false
 skinparam sequenceMessageAlign center
 skinparam ParticipantBackgroundColor #F1F6FC
@@ -10,35 +11,54 @@ skinparam ParticipantBorderColor #40566B
 skinparam ArrowColor #40566B
 hide footbox
 
-actor User
-participant "AddPhotoCommand" as Command
+participant "cmd:AddPhotoCommand" as Command
 participant "club:Club" as Club
 participant "event:Event" as Event
 participant "photo:Photo" as Photo
 participant "File system" as FS
+participant "ui:UserInterface" as UI
 
-User -> Command : addPhoto(...)
+[-> Command : validateArgs(args)
 activate Command
+Command -> Club : findEventByTag(tag)
+activate Club
+Club --> Command : event found
+deactivate Club
+Command -> Command : check path and optional name
+[<-- Command : valid arguments
+deactivate Command
+
+[-> Command : execute(args)
+activate Command
+Command -> Command : derive name if omitted
 Command -> Club : addPhoto(tag, path, name)
 activate Club
 Club -> Club : findEventByTag(tag)
 Club -> Event : addPhoto(path, name)
 activate Event
+
 create Photo
 Event -> Photo : new Photo(source, destination, name)
 activate Photo
-Photo -> FS : validate source and destination
-FS --> Photo : valid
-Photo -> FS : read image; write PNG
+Photo -> Photo : validate photo name and destination
+Photo -> FS : check duplicate and source file
+FS --> Photo : checks passed
+Photo -> FS : read and decode image
+FS --> Photo : image data
+Photo -> FS : create destination directory
+FS --> Photo : directory ready
+Photo -> FS : write PNG
 FS --> Photo : saved
 Photo --> Event : photo
 deactivate Photo
+
 Event -> Event : photos.put(name, photo)
 Event --> Club : photo
 deactivate Event
 Club -> Club : unsavedChanges = true
 Club --> Command : photo
 deactivate Club
-Command --> User : success message
+Command -> UI : print(success message)
+[<-- Command : false
 deactivate Command
 @enduml
