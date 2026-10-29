@@ -1,7 +1,8 @@
 @startuml
 !include ../shared/UmlStyle.iuml
+scale max 760 width
 title Switching clubs
-caption Partial execution view - successful switchClub n/chess
+caption Successful switchClub n/chess
 skinparam shadowing false
 skinparam sequenceMessageAlign center
 skinparam ParticipantBackgroundColor #F1F6FC
@@ -19,32 +20,28 @@ participant "ui:UserInterface" as UI
 activate Command
 Command -> Manager : switchClub("chess")
 activate Manager
-note over Manager
-Target club exists
-end note
+note over Manager : Verify target exists
 Manager -> Manager : saveActiveClub()
 Manager -> Storage : save(activeClub, currentFile)
 activate Storage
 Storage --> Manager
- deactivate Storage
+deactivate Storage
 Manager -> Storage : load(targetFile)
 activate Storage
 Storage --> Manager : loadedClub
- deactivate Storage
+deactivate Storage
 Manager -> Club : replaceWith(loadedClub)
 activate Club
 Club --> Manager
- deactivate Club
+deactivate Club
 Manager -> Club : markSaved()
 activate Club
 Club --> Manager
- deactivate Club
-note over Manager
-activeClubId = "chess"
-end note
+deactivate Club
+Manager -> Manager : activeClubId = "chess"
 Manager --> Command
- deactivate Manager
+deactivate Manager
 Command -> UI : print("Active club: chess")
 [<-- Command : false
- deactivate Command
+deactivate Command
 @enduml

@@ -1,12 +1,13 @@
 @startuml
 !include ../shared/UmlStyle.iuml
 title UI component
-caption Partial class diagram - shared terminal interface
+caption Shared terminal interface
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam ClassBackgroundColor #F1F6FC
 skinparam ClassBorderColor #40566B
 skinparam ArrowColor #40566B
+hide circle
 hide empty members
 
 class ClubFlow {
@@ -28,8 +29,8 @@ class UserInterface {
     + print(message: String): void
 }
 
-ClubFlow --> CommandParser : parses input
-ClubFlow --> UserInterface : prompts
-CommandParser --> Command : dispatches
-Command --> UserInterface : prints
+ClubFlow --> CommandParser : parses input >
+ClubFlow --> UserInterface : prompts via >
+CommandParser --> Command : dispatches >
+Command --> UserInterface : prints via >
 @enduml

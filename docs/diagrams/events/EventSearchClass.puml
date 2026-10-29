@@ -2,7 +2,7 @@
 !include ../shared/UmlStyle.iuml
 !pragma layout smetana
 title Event search structure
-caption Partial class view
+caption Validation, matching, and current club data
 skinparam shadowing false
 skinparam classBackgroundColor #F1F6FC
 skinparam classBorderColor #40566B
@@ -21,9 +21,8 @@ class EventSearch {
 class Club
 class Event
 
-FindEventCommand --> EventSearch : eventSearch
-EventSearch --> Club : club
-' Trailing spaces offset the end multiplicity from the curved connector.
-Club --> "0..*    " Event : events
-EventSearch ..> Event : filters
+FindEventCommand --> EventSearch : delegates search >
+EventSearch --> Club : obtains snapshot >
+Club --> "0..*" Event : contains >
+EventSearch ..> Event : tests predicates >
 @enduml
