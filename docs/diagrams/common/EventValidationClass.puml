@@ -2,7 +2,7 @@
 !include ../shared/UmlStyle.iuml
 !pragma layout smetana
 title Shared event command validation
-caption Partial class view
+caption Both commands use the same field rules
 skinparam shadowing false
 skinparam classBackgroundColor #F1F6FC
 skinparam classBorderColor #40566B
@@ -17,10 +17,9 @@ class CreateEventCommand
 class EditEventCommand
 class EventArgumentValidator
 
-CommandParser --> "0..*  " Command : registered commands
+CommandParser --> "0..*" Command : dispatches >
 Command <|-- CreateEventCommand
 Command <|-- EditEventCommand
-CreateEventCommand ..> EventArgumentValidator : validates with
-EditEventCommand ..> EventArgumentValidator : validates with
-
+CreateEventCommand ..> EventArgumentValidator : validates with >
+EditEventCommand ..> EventArgumentValidator : validates with >
 @enduml

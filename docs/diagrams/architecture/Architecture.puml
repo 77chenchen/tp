@@ -2,15 +2,15 @@
 !include ../shared/UmlStyle.iuml
 !pragma layout smetana
 title ClubFlow Architecture
-caption Logical view
+caption Logical responsibilities and dependencies
 top to bottom direction
 skinparam shadowing false
 skinparam componentStyle rectangle
 skinparam ArrowColor #40566B
 skinparam componentBackgroundColor #F1F6FC
 skinparam componentBorderColor #40566B
-skinparam nodesep 45
-skinparam ranksep 55
+skinparam nodesep 28
+skinparam ranksep 35
 
 component "Application coordination" as App
 component "User interaction" as UI

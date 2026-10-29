@@ -1,59 +1,44 @@
-
 @startuml
 !include ../shared/UmlStyle.iuml
+scale max 760 width
 title Importing a photo into an event
+caption Successful addPhoto e/TAG p/PATH
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #F1F6FC
+skinparam ParticipantBorderColor #40566B
+skinparam ArrowColor #40566B
+hide footbox
 
 actor User
 participant "AddPhotoCommand" as Command
-participant "Club" as Club
-participant "Event" as Event
-participant "Photo" as Photo
-participant "File System" as FS
+participant "club:Club" as Club
+participant "event:Event" as Event
+participant "photo:Photo" as Photo
+participant "File system" as FS
 
-User -> Command : addPhoto e/TAG p/PATH [n/NAME]
+User -> Command : addPhoto(...)
 activate Command
-
-Command -> Club : findEventByTag(tag)
-Club --> Command : Event
-
 Command -> Club : addPhoto(tag, path, name)
 activate Club
-
+Club -> Club : findEventByTag(tag)
 Club -> Event : addPhoto(path, name)
 activate Event
-
 create Photo
-Event -> Photo : new Photo(path, destination, name)
+Event -> Photo : new Photo(source, destination, name)
 activate Photo
-
-Photo -> FS : Check destination and source
-FS --> Photo : File information
-
-Photo -> FS : Read source image
-FS --> Photo : Image data
-
-Photo -> FS : Create directory and write PNG
-FS --> Photo : Success
-
-Photo --> Event : Photo object
+Photo -> FS : validate source and destination
+FS --> Photo : valid
+Photo -> FS : read image; write PNG
+FS --> Photo : saved
+Photo --> Event : photo
 deactivate Photo
-
-note right of Event
-Register photo by name
-in HashMap<String, Photo>
-end note
-
-Event --> Club : Photo object
+Event -> Event : photos.put(name, photo)
+Event --> Club : photo
 deactivate Event
-
-note right of Club
-unsavedChanges = true
-end note
-
-Club --> Command : Photo object
+Club -> Club : unsavedChanges = true
+Club --> Command : photo
 deactivate Club
-
-Command -> User : Display success message
+Command --> User : success message
 deactivate Command
-
 @enduml

@@ -1,7 +1,8 @@
 @startuml
 !include ../shared/UmlStyle.iuml
+scale max 760 width
 title Editing an event
-caption Partial execution view - validated editEvent e/TAG b/150
+caption Successful editEvent e/TAG b/150
 skinparam shadowing false
 skinparam sequenceMessageAlign center
 skinparam ParticipantBackgroundColor #F1F6FC
@@ -11,43 +12,36 @@ hide footbox
 
 participant "command:EditEventCommand" as Command
 participant "club:Club" as Club
-participant "original:Event" as Original
 participant "updated:Event" as Updated
+participant "ui:UserInterface" as UI
 
 [-> Command : execute(args)
 activate Command
 Command -> Club : findEventByTag("TAG")
 activate Club
-Club --> Command : Optional.of(original)
+Club --> Command : original event
 deactivate Club
-
-ref over Command, Original
-Read omitted details and completion state
-end ref
-
+note over Command : Keep omitted fields and original completion state
 create Updated
 Command -> Updated : new Event(...)
 activate Updated
-||25||
-Updated --> Command
+Updated --> Command : updated
 deactivate Updated
-
 Command -> Club : updateEvent(updated)
 activate Club
+Club -> Club : findEventByTag("TAG")
 Club -> Updated : copyPhotosFrom(original)
 activate Updated
-||15||
 Updated --> Club
 deactivate Updated
-
-ref over Club, Updated
-Reconnect assignments to updated;
-keep the event's list position;
-mark the club as unsaved
-end ref
-
-Club --> Command : True
+loop each existing assignment
+    Club -> Club : recreate with updated event if affected
+end
+Club -> Club : replace event at same index
+Club -> Club : update assignments; set unsavedChanges
+Club --> Command : true
 deactivate Club
-[<-- Command : False
+Command -> UI : print("Updated event: TAG")
+[<-- Command : false
 deactivate Command
 @enduml
