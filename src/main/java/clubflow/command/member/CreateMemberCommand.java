@@ -87,7 +87,7 @@ public class CreateMemberCommand extends Command {
                 throw new CommandParseException("Function names cannot contain commas.");
             }
         }
-    //@@author 77chenchen
+        //@@author 77chenchen
     }
 
     @Override

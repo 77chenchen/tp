@@ -257,7 +257,7 @@ public class CommandParser {
                     continue;
                 }
                 throw new CommandParseException("Multiple arguments start with \"" + argId + "/\".");
-            //@@author
+                //@@author
             }
             args.put(argId, arg[1]);
             argIds.add(argId);
@@ -491,5 +491,5 @@ public class CommandParser {
 
         return Optional.of(registeredKeywords.get(bestKeyword) + remainder);
     }
-//@@author
+    //@@author
 }

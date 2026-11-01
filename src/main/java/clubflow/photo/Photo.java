@@ -3,6 +3,7 @@ package clubflow.photo;
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
 import clubflow.exception.PhotoOpenException;
+import clubflow.exception.PhotoRenameException;
 
 import javax.imageio.ImageIO;
 import java.awt.Desktop;
@@ -21,6 +22,7 @@ public class Photo {
     public static final String PHOTO_FORMAT = ".png";
 
     private String relativePath;
+    private String name;
 
     /**
      * Creates a photo by loading an image from the specified source path,
@@ -78,6 +80,7 @@ public class Photo {
                 throw new IOException();
             }
             this.relativePath = destFilePath.toString();
+            this.name = name;
         } catch(IOException e){
             throw new PhotoLoadException("Failed to copy image into destination folders.");
         }
@@ -124,6 +127,37 @@ public class Photo {
             Files.delete(Path.of(relativePath));
         } catch (IOException | SecurityException e) {
             throw new PhotoDeleteException("IO Exception occurred.");
+        }
+    }
+
+    /**
+     * Renames the photo while keeping it in the same directory.
+     *
+     * @param newName new name of the photo, excluding the extension
+     * @throws PhotoRenameException if the new name is invalid, already exists,
+     *                              or the photo cannot be renamed
+     */
+    public void rename(String newName) throws PhotoRenameException {
+        if (newName == null || newName.isBlank()
+                || newName.contains("..")
+                || newName.contains("/")
+                || newName.contains("\\")) {
+            throw new PhotoRenameException("Invalid new photo name " + newName);
+        }
+
+        Path oldPath = Path.of(relativePath);
+        Path newPath = oldPath.resolveSibling(newName + PHOTO_FORMAT);
+
+        if (Files.exists(newPath)) {
+            throw new PhotoRenameException("Photo with name \"" + newName + "\" already exists.");
+        }
+
+        try {
+            Files.move(oldPath, newPath);
+            this.relativePath = newPath.toString();
+            this.name = newName;
+        } catch (IOException | SecurityException e) {
+            throw new PhotoRenameException("Failed to rename photo because of IO error.");
         }
     }
 }
