@@ -4,8 +4,6 @@
 
 ClubFlow is a command-line application written in Java that helps student clubs manage events, members, and related information.
 
-Given below are my contributions to the project.
-
 - **New Feature: Command Parsing Framework**
     - What it does: Provides a centralized framework for registering and executing commands, parsing arguments, and validating user input.
     - Justification: Allows developers to implement new commands without duplicating parsing and validation logic.
@@ -23,24 +21,16 @@ Given below are my contributions to the project.
 
 - **Code contributed**: [tP Code Dashboard](https://nus-cs2113-ay2627-s1.github.io/tp-dashboard/?search=czfray&sort=groupTitle&sortWithin=title&timeframe=commit&mergegroup=&groupSelect=groupByRepos&breakdown=true&checkedFileTypes=docs~functional-code~test-code~other&since=2026-09-18T00%3A00%3A00&filteredFileName=&tabOpen=true&tabType=authorship&tabAuthor=czfray&tabRepo=AY2627S1-CS2113-W10-2%2Ftp%5Bmaster%5D&authorshipIsMergeGroup=false&authorshipFileTypes=docs~functional-code~test-code&authorshipIsBinaryFileTypeChecked=false&authorshipIsIgnoredFilesChecked=false)
 
-- **Enhancements to existing features**:
-    - Added JUnit tests for command parsing and photo management.
-    - Fixed parsing edge cases involving empty quoted arguments.
-    - Fixed photo data loss when editing, marking, or unmarking events.
-    - Improved photo persistence to prevent deleted photos from reappearing after loading.
-    - Standardized command error messages and output formatting.
-
 - **Documentation**:
     - **User Guide**:
         - Documented photo management commands, syntax, and usage examples.
         - Added documentation for bulk photo importing and automatic photo naming.
-      - Developer Guide:
-        - Documented the Model component, including class relationships and data consistency, with a UML class diagram.
-        - Explained the photo lifecycle, including importing, deletion, persistence, and error handling, with a UML sequence diagram.
-        - Wrote a guide for extending commands, including syntax definitions and aliases.
+    - **Developer Guide**:
+        - Documented the Model component and photo lifecycle with UML diagrams.
+        - Wrote guides for extending commands, including syntax definitions and aliases.
         - Defined the target user profile and expanded the glossary.
         - Documented use cases for event completion and photo importing.
-        - Added manual testing instructions for launching, help, shutdown, and photo management.
+        - Added manual testing instructions for application operations and photo management.
 
 - **Team-based contributions**:
     - Led and facilitated group meetings to coordinate discussions, track progress, and guide the team's development direction.
@@ -50,6 +40,5 @@ Given below are my contributions to the project.
     - Provided implementation guides for the command parsing, alias, and syntax systems.
 
 - **Review and mentoring contributions**:
-    - Reviewed [PR #46](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/46), providing feedback on command implementations, JUnit tests, and User Guide documentation.
-    - Reviewed [PR #56](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/56) and [PR #57](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/57), providing minor review comments and suggestions for improvement.
+    - Reviewed PRs such as [PR #46](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/46), [PR #56](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/56) and [PR #57](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/57), providing minor review comments and suggestions for improvement.
     - Provided reference implementations and guidance to teammates on using the command parsing, alias, and syntax systems.
