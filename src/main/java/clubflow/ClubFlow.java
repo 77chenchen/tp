@@ -1,5 +1,6 @@
 package clubflow;
 
+import clubflow.command.UserGuideCommand;
 import clubflow.command.photo.AddAllPhotoCommand;
 import clubflow.command.photo.AddPhotoCommand;
 import clubflow.command.member.AssignMemberCommand;
@@ -27,6 +28,7 @@ import clubflow.command.club.CreateClubCommand;
 import clubflow.command.club.SwitchClubCommand;
 import clubflow.command.club.ListClubsCommand;
 import clubflow.command.club.CurrentClubCommand;
+import clubflow.command.photo.RenamePhotoCommand;
 import clubflow.exception.ClubFlowException;
 import clubflow.completion.CompletionHandler;
 import clubflow.completion.EventCompletion;
@@ -158,6 +160,12 @@ public class ClubFlow {
 
         parser.register("listPhoto", new ListPhotoCommand(ui, club));
         parser.registerAlias("listPhoto", "lp");
+
+        parser.register("renamePhoto", new RenamePhotoCommand(ui, club));
+        parser.registerAlias("renamePhoto", "rp");
+
+        parser.register("userGuide", new UserGuideCommand(ui));
+        parser.registerAlias("userGuide", "ug");
 
         parser.register("load", new LoadCommand(ui, club));
         parser.register("exit", new ExitCommand(ui));

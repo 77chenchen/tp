@@ -382,6 +382,22 @@ Format: `openPhoto e/TAG` or `openPhoto e/TAG n/NAME`
 
 Examples: `openPhoto e/XMAS` and `openPhoto e/XMAS n/GroupPhoto`
 
+### Renaming a photo: `renamePhoto`
+
+Renames an existing photo belonging to an event.
+
+Format: `renamePhoto e/TAG n/OLD_NAME new/NEW_NAME`
+
+* The event and photo must already exist.
+* `n/` specifies the current name of the photo.
+* `new/` specifies the new name of the photo, excluding the file extension.
+* The new name cannot be blank, contain `..`, `/`, or `\`.
+* Renaming a photo does not change its directory or file format.
+* If another photo already has the new name, the operation is rejected.
+* Renamed photos are automatically saved.
+
+Example: `renamePhoto e/XMAS n/GroupPhoto new/TeamPhoto`
+
 ### Deleting photos: `deletePhoto`
 
 Deletes a specific photo or all photos belonging to an event.
@@ -464,6 +480,10 @@ saves/
 * To transfer a club to another computer, copy its `club.cf` file **and**
   adjacent `photos/` directory, keeping their relative layout.
 
+### Opening this User Guide: `userGuide`
+
+Opens this User Guide in the system's default web browser.
+
 ### Exiting: `exit`
 
 Closes ClubFlow after attempting to save any outstanding changes.
@@ -508,5 +528,7 @@ club and remember it for future launches.
 * List photos `listPhoto` or `listPhoto e/TAG` (alias `lp`)
 * Open photos `openPhoto e/TAG` or `openPhoto e/TAG n/NAME` (alias `op`)
 * Delete photos `deletePhoto e/TAG n/NAME` or `deletePhoto e/TAG all` (alias `dp`)
+* Rename photo `renamePhoto e/TAG n/OLD_NAME new/NEW_NAME` (alias `rp`)
+* Open User Guide `userGuide` (alias `ug`)
 * Load data `load p/PATH`
 * Exit `exit`

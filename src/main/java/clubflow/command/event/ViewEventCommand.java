@@ -91,7 +91,7 @@ public class ViewEventCommand extends Command {
             printEvent(event);
             //@@author 77chenchen
             printAssignments(event);
-        //@@author
+            //@@author
         }
 
         return false;
@@ -146,5 +146,5 @@ public class ViewEventCommand extends Command {
             ui.print("- " + assignment.getMember().getName() + role);
         }
     }
-//@@author
+    //@@author
 }

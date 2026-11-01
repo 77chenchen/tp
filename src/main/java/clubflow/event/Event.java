@@ -4,6 +4,7 @@ package clubflow.event;
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
 import clubflow.exception.PhotoOpenException;
+import clubflow.exception.PhotoRenameException;
 import clubflow.photo.Photo;
 
 import java.awt.Desktop;
@@ -309,6 +310,25 @@ public class Event {
             LOGGER.log(Level.WARNING, "Failed to open photo directory: " + e.getMessage());
             return false;
         }
+        return true;
+    }
+
+    /**
+     * Renames a photo in the collection.
+     *
+     * @param originalName current name of the photo
+     * @param newName new name of the photo
+     * @return true if the photo was renamed, false if the original photo does not exist
+     * @throws PhotoRenameException if the photo cannot be renamed
+     */
+    public boolean renamePhoto(String originalName, String newName) throws PhotoRenameException {
+        if (!photos.containsKey(originalName)){
+            return false;
+        }
+        Photo p = photos.get(originalName);
+        p.rename(newName);
+        photos.remove(originalName);
+        photos.put(newName, p);
         return true;
     }
 

@@ -107,5 +107,5 @@ class CommandCorrectionTest {
 
         assertEquals(Optional.of("invite e/XMAS"), parser.suggestedCorrection("invate e/XMAS"));
     }
-//@@author
+    //@@author
 }

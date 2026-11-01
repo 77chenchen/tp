@@ -12,16 +12,16 @@ Given below are my contributions to the project.
     - Highlights: Supports required/optional arguments, quoted values, and comprehensive error handling. Designed the `Command`, `CommandParser`, and `UserInterface` classes as the foundation for the application's command system.
 
 - **New Feature: Command Aliases and Help System**
-    - What it does: Allows commands to have multiple aliases and provides a `help` command to display available commands and their syntax.
-    - Justification: Improves usability by helping users discover commands and correct invalid inputs.
-    - Highlights: Implemented `registerAlias()` and `addSyntax()`, supporting case-insensitive aliases, alias conflict detection, and automatic syntax display on invalid inputs. Integrated the syntax system into existing commands.
+  - What it does: Allows commands to have multiple aliases and provides a `help` command to display available commands and their syntax, as well as a `userGuide` command to open the online User Guide.
+  - Justification: Improves usability by helping users discover commands, correct invalid inputs, and access documentation easily.
+  - Highlights: Implemented `registerAlias()` and `addSyntax()`, supporting case-insensitive aliases, alias conflict detection, and automatic syntax display on invalid inputs. Integrated the syntax system into existing commands and added direct browser access to the User Guide.
 
 - **New Feature: Event Photo Management**
-    - What it does: Allows users to import, open, list, and delete event photos, including bulk importing from directories.
-    - Justification: Enables clubs to organize and preserve event-related photos directly within ClubFlow.
-    - Highlights: Implemented automatic PNG conversion, event-specific photo storage, and integration with `SaveLoadManager` and autosave. Required handling filesystem operations, image processing, persistence, and data consistency across event modifications.
+  - What it does: Allows users to import, open, list, rename, and delete event photos, including bulk importing from directories.
+  - Justification: Enables clubs to organize and preserve event-related photos directly within ClubFlow.
+  - Highlights: Implemented automatic PNG conversion, event-specific photo storage, photo renaming, and integration with `SaveLoadManager` and autosave. Required handling filesystem operations, image processing, persistence, and data consistency across event modifications.
 
-- **Code contributed**: [tP Code Dashboard](https://nus-cs2113-ay2627-s1.github.io/tp-dashboard/?search=czfray&sort=groupTitle&sortWithin=title&timeframe=commit&mergegroup=&groupSelect=groupByRepos&breakdown=true&checkedFileTypes=docs~functional-code~test-code~other&since=2026-09-18T00%3A00%3A00&filteredFileName=)
+- **Code contributed**: [tP Code Dashboard](https://nus-cs2113-ay2627-s1.github.io/tp-dashboard/?search=czfray&sort=groupTitle&sortWithin=title&timeframe=commit&mergegroup=&groupSelect=groupByRepos&breakdown=true&checkedFileTypes=docs~functional-code~test-code~other&since=2026-09-18T00%3A00%3A00&filteredFileName=&tabOpen=true&tabType=authorship&tabAuthor=czfray&tabRepo=AY2627S1-CS2113-W10-2%2Ftp%5Bmaster%5D&authorshipIsMergeGroup=false&authorshipFileTypes=docs~functional-code~test-code&authorshipIsBinaryFileTypeChecked=false&authorshipIsIgnoredFilesChecked=false)
 
 - **Enhancements to existing features**:
     - Added JUnit tests for command parsing and photo management.
@@ -41,19 +41,15 @@ Given below are my contributions to the project.
         - Defined the target user profile and expanded the glossary.
         - Documented use cases for event completion and photo importing.
         - Added manual testing instructions for launching, help, shutdown, and photo management.
-        - Updated the setup instructions and Gradle configuration.
 
 - **Team-based contributions**:
+    - Led and facilitated group meetings to coordinate discussions, track progress, and guide the team's development direction.
+    - Provided suggestions and constructive feedback through pull request reviews and face-to-face discussions.
+    - Collaborated with teammates to resolve implementation issues and improve the overall quality of the project.
     - Developed the shared command framework used by teammates to implement their commands.
-    - Integrated command syntax definitions into existing commands.
     - Provided implementation guides for the command parsing, alias, and syntax systems.
-    - Integrated photo management with existing event management and persistence functionality.
 
 - **Review and mentoring contributions**:
     - Reviewed [PR #46](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/46), providing feedback on command implementations, JUnit tests, and User Guide documentation.
     - Reviewed [PR #56](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/56) and [PR #57](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/57), providing minor review comments and suggestions for improvement.
     - Provided reference implementations and guidance to teammates on using the command parsing, alias, and syntax systems.
-
-- **Use of AI tools**:
-    - Used ChatGPT to assist in identifying edge cases and generating JUnit tests for the photo management system. Given the numerous possible failure scenarios involving file operations, image processing, and data persistence, ChatGPT helped improve test coverage and identify potential issues.
-    - Used ChatGPT for assistance in writing and improving parts of the User Guide and Developer Guide, particularly in refining explanations.

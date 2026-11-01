@@ -11,6 +11,7 @@ import clubflow.event.Event;
 import clubflow.event.EventAssignment;
 import clubflow.exception.PhotoDeleteException;
 import clubflow.exception.PhotoLoadException;
+import clubflow.exception.PhotoRenameException;
 import clubflow.member.Member;
 import clubflow.photo.Photo;
 
@@ -462,5 +463,28 @@ public class Club {
             unsavedChanges = true;
         }
         return result;
+    }
+
+
+    /**
+     * Renames a photo in the specified event and marks the club as unsaved if successful.
+     *
+     * @param tag tag of the event containing the photo
+     * @param originalName current name of the photo
+     * @param newName new name of the photo
+     * @return true if the photo was renamed, false if the original photo does not exist
+     * @throws IllegalArgumentException if the event does not exist
+     * @throws PhotoRenameException if the photo cannot be renamed
+     */
+    public boolean renamePhoto(String tag, String originalName, String newName)
+            throws PhotoRenameException {
+        Event event = findEventByTag(tag)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + tag));
+
+        boolean renamed = event.renamePhoto(originalName, newName);
+        if (renamed) {
+            unsavedChanges = true;
+        }
+        return renamed;
     }
 }
