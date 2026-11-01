@@ -1,0 +1,55 @@
+@startuml
+!include ../shared/UmlStyle.iuml
+'@@author 77chenchen
+scale max 760 width
+title Finding unassigned members
+caption findMember /u f/Logistics
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #F1F6FC
+skinparam ParticipantBorderColor #40566B
+skinparam ArrowColor #40566B
+hide footbox
+
+participant "parser:CommandParser" as Parser
+participant "command:FindMemberCommand" as Command
+participant "club:Club" as Club
+participant "ui:UserInterface" as UI
+
+[-> Parser : parse("findMember /u f/Logistics")
+activate Parser
+Parser -> Command : validateArgs(args)
+activate Command
+Command --> Parser
+deactivate Command
+Parser -> Command : execute(args)
+activate Command
+Command -> Club : getMembers()
+activate Club
+Club --> Command : member snapshot
+deactivate Club
+loop each member with its current index
+    Command -> Club : getAssignmentsForMember(member)
+    activate Club
+    Club --> Command : assignment snapshot
+    deactivate Club
+    opt member has no assignments
+        Command -> Command : score every supplied field filter
+    end
+end
+Command -> Command : sort direct and possible matches
+alt no matches
+    alt standalone /u
+        Command -> UI : print("No unassigned members found.")
+    else /u with field filters
+        Command -> UI : print("No unassigned members matched the specified criteria.")
+    end
+else matches found
+    Command -> UI : print matching members and current indices
+end
+Command --> Parser : false
+deactivate Command
+[<-- Parser : false
+deactivate Parser
+'@@author
+@enduml

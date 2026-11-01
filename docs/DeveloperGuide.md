@@ -125,7 +125,7 @@ Main entry point: [CommandParser.java](../src/main/java/clubflow/command/Command
 
 The following class diagram illustrates command registration, dispatch, and execution. `XYZCommand` represents the concrete commands omitted from the diagram.
 
-<a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Class diagram of command processing" style="max-width: 100%; height: auto;"></a>
+<a href="diagrams/architecture/LogicClass.svg"><img src="diagrams/architecture/LogicClass.svg" alt="Class diagram of command processing" style="width: 58.875em; max-width: 100%; height: auto;"></a>
 
 [PlantUML source](diagrams/architecture/LogicClass.puml).
 
@@ -370,6 +370,23 @@ email, and functions; `n/`, `t/`, `e/`, and `f/` restrict matching to their name
 fields. Matching ignores case and surrounding whitespace. The command also
 accepts a leading `@` in Telegram searches.
 
+The optional `/u` flag limits the candidate set to members for whom
+`Club.getAssignmentsForMember(...)` returns an empty list. It is itself a valid
+search condition, so `findMember /u` lists all unassigned members. When combined
+with text or function filters, both the unassigned condition and every supplied
+filter must match. The command queries the shared `Club` on every execution, so
+assignment changes, event deletion, member editing, and club switching are
+reflected without maintaining a separate index.
+
+If `/u` has no result, the command distinguishes two cases. A standalone `/u`
+reports that no unassigned members exist, while `/u` combined with field filters
+reports that no unassigned member matched those criteria. This avoids suggesting
+that the club has fully allocated work when the filter alone caused the empty result.
+
+<a href="diagrams/members/FindUnassignedMembersSequence.svg"><img src="diagrams/members/FindUnassignedMembersSequence.svg" alt="Sequence diagram for finding unassigned members" style="width: 47.5em; max-width: 100%; height: auto;"></a>
+
+[PlantUML source](diagrams/members/FindUnassignedMembersSequence.puml).
+
 Direct matches receive scores of 300 for exact, 200 for prefix, and 100 for
 substring matches. Scores from multiple filters are added; ties keep member-list
 order through the stored index. If a name or Telegram handle has no direct match,
@@ -383,6 +400,32 @@ This design favors understandable, current results over a search index that woul
 have to be maintained after every edit and club switch. Possible matches are
 never selected automatically: the user checks the displayed contact details and
 index before issuing a command that changes data.
+
+### Viewing a member's assigned events
+
+`ViewMemberEventsCommand` implements `viewMemberEvents i/INDEX`, with `vme` as
+its alias. It validates a positive one-based index and retrieves the current
+member from the shared `Club`. `Club.getAssignmentsForMember(...)` verifies that
+the exact member object belongs to that club and returns a read-only assignment
+list, preserving the model's identity-based relationship semantics.
+
+The command copies and sorts the returned assignments without modifying model
+state. Events with dates are ordered chronologically, undated events appear last,
+and equal dates are ordered by case-insensitive tag. Each result includes the
+event tag, name, date, the selected member's role, and a responsibility status.
+The status is `COMPLETED` when the event is complete, `NO DATE` when an incomplete
+event is undated, `OVERDUE` when its date has passed, and `UPCOMING` otherwise.
+The command classifies every assignment against one captured current date, then
+prints a four-category summary before the details. Completion takes precedence
+over date so completed past events are not counted as overdue. Missing optional
+values use visible placeholders. Because the command performs a fresh model query
+and never caches `Member` or `Event` references, edits, deletions, unassignments,
+and club switches are visible immediately. The query is read-only and therefore
+does not mark the club for autosave.
+
+<a href="diagrams/members/ViewMemberEventsSequence.svg"><img src="diagrams/members/ViewMemberEventsSequence.svg" alt="Sequence diagram for viewing a member's assigned events" style="width: 47.5em; max-width: 100%; height: auto;"></a>
+
+[PlantUML source](diagrams/members/ViewMemberEventsSequence.puml).
 
 ### Switching clubs without rebuilding commands
 
@@ -774,6 +817,8 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low
 | `* * *` | first-time user | see available commands and the syntax of a chosen command in the help menu | use ClubFlow without opening the User Guide |
 | `* *` | regular user | search events by keyword or other event details | locate an event without reading the whole list |
 | `* *` | regular user | search members by name, contact, or function | locate the intended member without inspecting the whole roster |
+| `* *` | club member | view all events assigned to me | check my responsibilities |
+| `* *` | club manager | find members who are not assigned to any event | distribute work more evenly |
 | `* *` | club manager | mark events as completed and find completed events later | refer to past plans when organising new events |
 | `* *` | manager of several clubs | create, list, and switch between separate club records | manage each club's information in one application |
 | `* *` | event organiser | add, view, and remove event photos stored locally | keep visual records with their events |
@@ -880,7 +925,37 @@ assignment. An already-assigned member is not assigned twice. An invalid index
 or role is rejected. If autosave fails, ClubFlow warns the organiser and keeps
 the change in memory for another save attempt.
 
-#### UC5: Switch clubs
+#### UC5: View a member's assigned events
+
+**MSS (main success scenario)**
+
+1. The organiser obtains a member's current index using `viewMember` or `findMember`.
+2. The organiser enters `viewMemberEvents i/INDEX`.
+3. ClubFlow verifies that the member exists in the active club.
+4. ClubFlow finds all assignments for that member and orders their events by date.
+5. ClubFlow classifies the assignments as upcoming, overdue, completed, or undated.
+6. ClubFlow displays the category summary and each event with the member's role and status.
+
+**Extensions:** an invalid index is rejected. An index not present in the active
+club is reported without displaying another member. If the member has no
+assignments, ClubFlow reports this without changing data.
+
+#### UC6: Find unassigned members
+
+**MSS (main success scenario)**
+
+1. The organiser enters `findMember /u`, optionally with member field filters.
+2. ClubFlow checks current assignments in the active club.
+3. ClubFlow applies every additional supplied filter to the unassigned members.
+4. ClubFlow displays matching members with their current indices and details.
+
+**Extensions:** a blank or invalid field filter is rejected. If every member has
+an assignment, ClubFlow reports that no unassigned members exist. If unassigned
+members exist but none satisfy the additional filters, it reports that none
+matched the specified criteria. The query does not change members, events,
+assignments, or saved data.
+
+#### UC7: Switch clubs
 
 **MSS (main success scenario)**
 
@@ -900,7 +975,7 @@ selected club when available, falling back to `default` if the preference or
 remembered club cannot be loaded. Preference failures are logged; the active
 club is displayed at startup.
 
-#### UC6: Set an event's completion state
+#### UC8: Set an event's completion state
 
 **MSS**
 
@@ -930,7 +1005,7 @@ Use case ends.
     - 4a2. The updated state remains in memory.
     - Use case ends.
 
-#### UC7: Import photos into an event
+#### UC9: Import photos into an event
 
 **MSS**
 
@@ -1154,11 +1229,26 @@ report current member indices; obtain a fresh index after deleting a member.
       and `viewMember`.
    4. Expected: The same assignment shows Alicia, still at member index 1.
 
-3. Unassigning and deleting a member
+3. Viewing responsibilities and finding unassigned members
+
+   1. Test case: Enter `viewMemberEvents i/1` and `findMember /u`.
+   2. Expected: Alicia's result lists `CAMP` with role `Lead Host`, its event
+      date, status, and a one-event category summary. The unassigned search lists
+      Bob at index 2 but not Alicia.
+   3. Test case: Enter `findMember /u f/Finance` and `findMember /u f/Logistics`.
+   4. Expected: The first search finds Bob. The second reports no matching
+      unassigned members because Alicia is assigned to `CAMP`.
+   5. Test case: Assign Bob to `CAMP`, run `findMember /u`, then run
+      `findMember /u f/Unknown` after unassigning Bob.
+   6. Expected: The first query reports that no unassigned members exist. The
+      filtered query reports that no unassigned member matched the criteria.
+
+4. Unassigning and deleting a member
 
     1. Test case: Enter `unassignMember e/CAMP i/1`, then `viewEvent e/CAMP`.
-    2. Expected: Alicia is no longer assigned. Enter `assignMember e/CAMP i/1`
-       to set up the deletion check.
+    2. Expected: Alicia is no longer assigned. `viewMemberEvents i/1` reports
+       no assigned events, and `findMember /u` now lists both members. Enter
+       `assignMember e/CAMP i/1` to set up the deletion check.
     3. Test case: Enter `deleteMember i/2`, then enter `n` at its confirmation
        prompt. Run `viewMember`.
     4. Expected: Both members remain.

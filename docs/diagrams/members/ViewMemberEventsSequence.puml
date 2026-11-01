@@ -1,0 +1,50 @@
+@startuml
+!include ../shared/UmlStyle.iuml
+'@@author 77chenchen
+scale max 760 width
+title Viewing a member's assigned events
+caption viewMemberEvents i/2
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam ParticipantBackgroundColor #F1F6FC
+skinparam ParticipantBorderColor #40566B
+skinparam ArrowColor #40566B
+hide footbox
+
+participant "parser:CommandParser" as Parser
+participant "command:ViewMemberEventsCommand" as Command
+participant "club:Club" as Club
+participant "ui:UserInterface" as UI
+
+[-> Parser : parse("viewMemberEvents i/2")
+activate Parser
+Parser -> Command : validateArgs(args)
+activate Command
+Command --> Parser
+deactivate Command
+Parser -> Command : execute(args)
+activate Command
+Command -> Club : findMemberByIndex(2)
+activate Club
+Club --> Command : member
+deactivate Club
+Command -> Club : getAssignmentsForMember(member)
+activate Club
+Club --> Command : assignment snapshot
+deactivate Club
+Command -> Command : copy and sort by date, then tag
+alt no assignments
+    Command -> UI : print("No events assigned to NAME.")
+else assignments found
+    Command -> Command : classify and count statuses using one current date
+    Command -> UI : print(member heading and category summary)
+    loop each assignment
+        Command -> UI : print(event, date, role, status)
+    end
+end
+Command --> Parser : false
+deactivate Command
+[<-- Parser : false
+deactivate Parser
+'@@author
+@enduml

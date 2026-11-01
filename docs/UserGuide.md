@@ -285,11 +285,13 @@ Example: `editMember i/2 n/"Bob Tan" f/Logistics f/Treasurer`
 
 ### Finding members: `findMember`
 
-Searches names, Telegram handles, email addresses, and club functions. Supply at least one filter.
+Searches names, Telegram handles, email addresses, and club functions. It can also restrict results to
+members who are not assigned to any event. Supply at least one field filter or `/u`.
 
-Format: `findMember q/KEYWORD [q/KEYWORD]... [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...`
+Format: `findMember [/u] [q/KEYWORD]... [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...`
 
-You may also search using only `n/`, `t/`, `e/`, or `f/`, for example `findMember e/example.com`.
+You may search using one field filter, for example `findMember e/example.com`, or use only
+`findMember /u` to list every unassigned member.
 
 * `q/` searches across all member fields. `n/`, `t/`, `e/`, and `f/` restrict the search to one field.
   Repeat `q/` or `f/` to narrow results; every supplied filter must match.
@@ -299,10 +301,17 @@ You may also search using only `n/`, `t/`, `e/`, or `f/`, for example `findMembe
   Four- or five-character queries allow one spelling edit; queries of six to 64 characters allow two.
   Shorter queries, email addresses, and functions do not use spelling suggestions.
 * You may include `@` when searching for a Telegram handle. Put multi-word values in double quotes.
+* `/u` includes only members who have no assignments in the active club. Combine it with any field
+  filters to find unassigned members with particular details, such as `findMember /u f/Logistics`.
+  Assigning, unassigning, editing, or deleting records is reflected in the next search.
+* If every member has an assignment, `/u` reports `No unassigned members found.` If unassigned
+  members exist but none satisfy the additional field filters, it reports
+  `No unassigned members matched the specified criteria.`
 * Each result shows the member's current index, contact details, and functions.
   A possible match is only a suggestion; no member is selected or changed automatically.
 
-Examples: `findMember q/alce`, `findMember n/"Alice Tan" f/Logistics`, `findMember t/@alice`
+Examples: `findMember q/alce`, `findMember n/"Alice Tan" f/Logistics`,
+`findMember t/@alice`, `findMember /u f/Logistics`
 
 ### Assigning a member to an event: `assignMember`
 
@@ -326,6 +335,29 @@ Removes an event assignment without deleting the member or the event.
 Format: `unassignMember e/TAG i/INDEX`
 
 Example: `unassignMember e/XMAS i/2`
+
+### Viewing a member's assigned events: `viewMemberEvents`
+
+Displays every event assigned to one member together with that member's role, the event date,
+and its completion status.
+
+Format: `viewMemberEvents i/INDEX`
+
+Alias: `vme`
+
+* Use the member's current positive index from `viewMember` or `findMember`.
+* Dated events are shown from earliest to latest. Events without dates appear last; events with
+  the same date are ordered by tag.
+* A summary reports the number of upcoming, overdue, completed, and undated assigned events.
+  An incomplete event before the current date is `OVERDUE`; an incomplete event on or after the
+  current date is `UPCOMING`. Completion takes precedence over the date, and an incomplete event
+  without a date is `NO DATE`.
+* A missing event name, date, or assignment role is displayed as `Not set`.
+* The command reads the active club only and does not modify or save data. Assignment changes and
+  club switches are reflected the next time it runs.
+* If the member exists but has no assignments, ClubFlow displays `No events assigned to NAME.`
+
+Example: `viewMemberEvents i/2`
 
 ### Deleting a member: `deleteMember`
 
@@ -534,10 +566,11 @@ club and remember it for future launches.
 * Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (aliases `cm`, `addMember`)
 * View members `viewMember` (alias `vm`)
 * Edit member `editMember i/INDEX [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (alias `em`)
-* Find members `findMember q/KEYWORD [q/KEYWORD]... [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...`
-  (alias `fm`; at least one filter is required)
+* Find members `findMember [/u] [q/KEYWORD]... [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...`
+  (alias `fm`; at least one field filter or `/u` is required)
 * Assign member `assignMember e/TAG i/INDEX [r/ROLE]` (alias `am`)
 * Unassign member `unassignMember e/TAG i/INDEX` (alias `um`)
+* View a member's assigned events `viewMemberEvents i/INDEX` (alias `vme`)
 * Delete member `deleteMember i/INDEX [/f]` (alias `dm`)
 * Add photo `addPhoto e/TAG [n/NAME] p/PATH` (alias `ap`)
 * Add photo directory `addAllPhoto e/TAG p/PATH` (alias `aap`, `addPhotos`, `addAllPhotos`)

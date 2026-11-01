@@ -7,6 +7,7 @@ Keep each PlantUML source beside its generated SVG.
 | `architecture/` | Logical architecture and UI, logic, and model class views. |
 | `common/` | Shared command infrastructure and validation. |
 | `events/` | Event creation, editing, search, and completion views. |
+| `members/` | Member search and assignment-query flows. |
 | `clubs/` | Club switching. |
 | `photos/` | Photo management. |
 | `shared/` | Shared typography and opaque reference-frame styling. |
