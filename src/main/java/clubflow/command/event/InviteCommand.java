@@ -118,8 +118,7 @@ public class InviteCommand extends Command {
                                 break;
                             }
                         }
-                    }
-                    else if (missing.equals("event venue")) {
+                    } else if (missing.equals("event venue")) {
                         while (true) {
                             ui.print("Enter event venue: ");
                             venue = ui.prompt().strip();
@@ -132,8 +131,7 @@ public class InviteCommand extends Command {
                                 break;
                             }
                         }
-                    }
-                    else if (missing.equals("event date")) {
+                    } else if (missing.equals("event date")) {
                         while (true) {
                             ui.print("Enter event date (YYYY-MM_DD): ");
                             try {

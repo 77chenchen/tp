@@ -347,6 +347,51 @@ class ClubFlowTest {
         assertTrue(new SaveLoadManager().load(testDirectory.resolve("clubs.cf")).getAssignments().isEmpty());
     }
 
+    @Test
+    void run_memberAssignmentQueries_useAliasesAndCurrentAssignments() {
+        String result = runSession("ce e/LATE n/Late d/2999-12-31\n"
+                + "ce e/EARLY n/Early d/2000-01-05\n"
+                + "cm n/Alice t/alice\ncm n/Bob t/bob\n"
+                + "am e/LATE i/1 r/Logistics\nam e/EARLY i/1 r/Host\n"
+                + "vme i/1\nfm /u\num e/EARLY i/1\num e/LATE i/1\n"
+                + "fm /u\nhelp c/vme\nexit\n");
+
+        assertTrue(result.contains("Events assigned to Alice (member 1):"));
+        assertTrue(result.contains("Summary: 1 upcoming | 1 overdue | 0 completed | 0 without date"));
+        assertTrue(result.contains("Status: UPCOMING"));
+        assertTrue(result.contains("Status: OVERDUE"));
+        assertTrue(result.indexOf("[EARLY] Early") < result.indexOf("[LATE] Late"));
+        assertEquals(2, result.lines()
+                .filter(line -> line.contains("Matching unassigned members:"))
+                .count());
+        assertTrue(result.contains("Syntax of command \"viewMemberEvents\":"));
+        assertTrue(result.contains("Aliases: [vme]"));
+        assertFalse(result.contains("does not exist"));
+    }
+
+    @Test
+    void run_assignmentQueries_respectClubSwitch() {
+        String result = runSession("createEvent e/DEFAULT n/DefaultEvent d/2999-01-01\n"
+                + "createMember n/DefaultMember t/default\n"
+                + "assignMember e/DEFAULT i/1\n"
+                + "createClub n/chess\n"
+                + "switchClub n/chess\n"
+                + "createMember n/ChessMember t/chess\n"
+                + "findMember /u n/ChessMember\n"
+                + "viewMemberEvents i/1\n"
+                + "switchClub n/default\n"
+                + "findMember /u n/ChessMember\n"
+                + "viewMemberEvents i/1\n"
+                + "exit\n");
+
+        assertTrue(result.contains("Matching unassigned members:"), result);
+        assertTrue(result.contains("1. ChessMember"), result);
+        assertTrue(result.contains("No events assigned to ChessMember."), result);
+        assertTrue(result.contains("No unassigned members matched the specified criteria."), result);
+        assertTrue(result.contains("Events assigned to DefaultMember (member 1): 1"), result);
+        assertTrue(result.contains("Summary: 1 upcoming | 0 overdue | 0 completed | 0 without date"), result);
+    }
+
     //@@author Bryan-chua
     @Test
     void run_correctedCommandConfirmed_executesOnceAndAutosaves() throws IOException {

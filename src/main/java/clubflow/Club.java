@@ -348,6 +348,26 @@ public class Club {
                 .toList();
     }
 
+    //@@author 77chenchen
+    /**
+     * Returns assignments for one member in assignment order.
+     * Object identity is used because assignments refer to the member objects held by this club.
+     *
+     * @param member member belonging to this club
+     * @return a read-only list of the member's assignments
+     * @throws IllegalArgumentException if the member does not belong to this club
+     */
+    public List<EventAssignment> getAssignmentsForMember(Member member) {
+        Objects.requireNonNull(member, "Member must not be null");
+        if (members.stream().noneMatch(existing -> existing == member)) {
+            throw new IllegalArgumentException("Member does not belong to this club");
+        }
+        return assignments.stream()
+                .filter(assignment -> assignment.getMember() == member)
+                .toList();
+    }
+    //@@author
+
     /** Returns a read-only snapshot for persistence. */
     public List<EventAssignment> getAssignments() {
         return List.copyOf(assignments);

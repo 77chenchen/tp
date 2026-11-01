@@ -24,6 +24,7 @@ import clubflow.command.photo.OpenPhotoCommand;
 import clubflow.command.member.UnassignMemberCommand;
 import clubflow.command.event.ViewEventCommand;
 import clubflow.command.member.ViewMemberCommand;
+import clubflow.command.member.ViewMemberEventsCommand;
 import clubflow.command.club.CreateClubCommand;
 import clubflow.command.club.SwitchClubCommand;
 import clubflow.command.club.ListClubsCommand;
@@ -141,6 +142,8 @@ public class ClubFlow {
         parser.registerAlias("assignMember", "am");
         parser.register("unassignMember", new UnassignMemberCommand(ui, club));
         parser.registerAlias("unassignMember", "um");
+        parser.register("viewMemberEvents", new ViewMemberEventsCommand(ui, club));
+        parser.registerAlias("viewMemberEvents", "vme");
 
         //@@author
         parser.register("addPhoto", new AddPhotoCommand(ui, club));

@@ -22,6 +22,7 @@ import clubflow.member.Member;
  */
 public class FindMemberCommand extends Command {
     private static final String QUERY = "q";
+    private static final String UNASSIGNED = "u";
     private static final int EXACT_SCORE = 300;
     private static final int PREFIX_SCORE = 200;
     private static final int SUBSTRING_SCORE = 100;
@@ -39,6 +40,7 @@ public class FindMemberCommand extends Command {
         addSyntax("t/TeleHandle");
         addSyntax("e/Email");
         addSyntax("f/Function [f/Function]...");
+        addSyntax("/u [q/Keyword]... [n/Name] [t/TeleHandle] [e/Email] [f/Function]...");
     }
 
     @Override
@@ -53,6 +55,11 @@ public class FindMemberCommand extends Command {
     }
 
     @Override
+    public String[] flagArgIds() {
+        return new String[]{UNASSIGNED};
+    }
+
+    @Override
     public String[] repeatableArgIds() {
         return new String[]{QUERY, MemberArgumentIds.FUNCTION};
     }
@@ -61,7 +68,7 @@ public class FindMemberCommand extends Command {
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
         Objects.requireNonNull(args, "Arguments must not be null");
         if (args.isEmpty()) {
-            throw new CommandParseException("Provide a search filter: q/, n/, t/, e/, or f/.");
+            throw new CommandParseException("Provide a search filter: q/, n/, t/, e/, f/, or /u.");
         }
         for (String argId : optionalArgIds()) {
             for (String value : getArgumentValues(args, argId)) {
@@ -80,9 +87,13 @@ public class FindMemberCommand extends Command {
             throw new IllegalArgumentException("At least one search filter is required");
         }
         List<Member> members = club.getMembers();
+        boolean unassignedOnly = args.containsKey(UNASSIGNED);
         List<SearchResult> directMatches = new ArrayList<>();
         List<SearchResult> possibleMatches = new ArrayList<>();
         for (int i = 0; i < members.size(); i++) {
+            if (unassignedOnly && !club.getAssignmentsForMember(members.get(i)).isEmpty()) {
+                continue;
+            }
             SearchResult result = searchMember(i + 1, members.get(i), args);
             if (result != null) {
                 (result.fuzzy() ? possibleMatches : directMatches).add(result);
@@ -95,19 +106,38 @@ public class FindMemberCommand extends Command {
         possibleMatches.sort(byRelevance);
 
         if (directMatches.isEmpty() && possibleMatches.isEmpty()) {
-            ui.print("No matching members found.");
+            ui.print(noMatchesMessage(args, unassignedOnly));
             return false;
         }
         if (!directMatches.isEmpty()) {
-            ui.print("Matching members:");
+            ui.print(unassignedOnly ? "Matching unassigned members:" : "Matching members:");
             directMatches.forEach(result -> printMember(result.index(), result.member()));
         }
         if (!possibleMatches.isEmpty()) {
-            ui.print("Possible matches (check details before using a member index):");
+            ui.print(unassignedOnly
+                    ? "Possible unassigned matches (check details before using a member index):"
+                    : "Possible matches (check details before using a member index):");
             possibleMatches.stream().limit(MAX_SUGGESTIONS)
                     .forEach(result -> printMember(result.index(), result.member()));
         }
         return false;
+    }
+
+    /** Returns a no-result message that distinguishes an empty unassigned list from filtered misses. */
+    private String noMatchesMessage(HashMap<String, String> args, boolean unassignedOnly) {
+        if (!unassignedOnly) {
+            return "No matching members found.";
+        }
+        boolean hasFieldFilter = false;
+        for (String argId : optionalArgIds()) {
+            if (!getArgumentValues(args, argId).isEmpty()) {
+                hasFieldFilter = true;
+                break;
+            }
+        }
+        return hasFieldFilter
+                ? "No unassigned members matched the specified criteria."
+                : "No unassigned members found.";
     }
 
     /**
