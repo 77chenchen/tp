@@ -11,12 +11,12 @@ Given below are my contributions to the project.
   - Justification: Club organisers need an up-to-date roster before they can coordinate people and events in the same application.
   - Highlights: Implemented validation for optional and repeatable fields, one-based member indices, aliases, confirmation before deletion, and atomic editing so invalid input does not partially modify a member. Editing a member also preserves existing event assignments.
 
-- **New Feature: Added ranked and typo-tolerant member search.** ([PR #52](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/52))
+- **New Feature: Added ranked and typo-tolerant member search.** ([PR #52](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/52), [PR #74](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/74))
   - What it does: Searches across names, Telegram handles, email addresses, and club functions using combinable general or field-specific filters. The `/u` filter can also find members who are not assigned to any event.
   - Justification: A growing club roster is difficult to scan manually, while small spelling mistakes should not prevent an organiser from finding a member. Finding unassigned members helps managers distribute work more evenly.
   - Highlights: Ranked exact, prefix, and substring matches; implemented bounded Levenshtein-distance suggestions; and separated possible matches from direct matches. The `/u` predicate is evaluated from the current assignment graph, so results remain correct after assignment changes, event deletion, edits, and club switches. Search results always report current member indices.
 
-- **New Feature: Added member-event assignments and responsibility views.** ([PR #52](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/52))
+- **New Feature: Added member-event assignments and responsibility views.** ([PR #52](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/52), [PR #74](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/74))
   - What it does: Assigns and unassigns members from events with optional roles, displays an event's roster, and lets a member view all events assigned to them using `viewMemberEvents` (`vme`). Assignments are saved across sessions.
   - Justification: Event records are more useful when managers can allocate work and each member can check their own responsibilities from one place.
   - Highlights: Modelled assignments using object references so index changes cannot silently redirect an assignment. The responsibility view combines member, event, and assignment data; displays tag, date, role, and responsibility status; summarizes upcoming, overdue, completed, and undated work; sorts dated events chronologically with undated events last; and remains read-only. Editing preserves relationships, while deletion removes related assignments. The extended save format remains compatible with older files.
