@@ -201,6 +201,7 @@ public class ClubFlow {
             if (clubManager.initialize()) {
                 ui.print("Saved data loaded.");
             }
+            ui.print("Active club: " + clubManager.getActiveClubId());
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Could not load club data", e);
             ui.print("Could not load saved data: " + e.getMessage());

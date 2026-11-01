@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Stream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Manages separate save files for clubs while keeping
@@ -27,11 +29,14 @@ public class ClubManager {
 
     private static final String SAVE_FILENAME = "club.cf";
 
+    private static final Logger LOGGER = Logger.getLogger(ClubManager.class.getName());
+
     private final Club activeClub;
     private final SaveLoadManager saveLoadManager;
     private final Path clubsRoot;
     private final Path defaultFile;
     private final Path legacyFile;
+    private final Path lastUsedClubFile;
 
     private String activeClubId = "default";
 
@@ -49,6 +54,7 @@ public class ClubManager {
         this.clubsRoot = Objects.requireNonNull(clubsRoot);
         this.defaultFile = Objects.requireNonNull(defaultFile);
         this.legacyFile = legacyFile;
+        this.lastUsedClubFile = this.clubsRoot.resolve("last-active.txt");
     }
 
     public String getActiveClubId() {
@@ -70,7 +76,7 @@ public class ClubManager {
     }
 
     /**
-     * Loads the default club at startup.
+     * Loads the last used club at startup if available, else will load the default club.
      * Migrates the old save file if necessary.
      */
     public boolean initialize() throws IOException {
@@ -99,6 +105,7 @@ public class ClubManager {
         Club loaded = saveLoadManager.load(defaultFile);
         activeClub.replaceWith(loaded);
         activeClub.markSaved();
+        restoreLastActiveClub();
 
         return existed;
     }
@@ -222,6 +229,11 @@ public class ClubManager {
 
         // Update the active ID only after successful loading.
         activeClubId = targetId;
+        try {
+            Files.writeString(lastUsedClubFile, activeClubId);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Club switched, but the startup preference could not be saved.", e);
+        }
     }
 
     /**
@@ -260,5 +272,34 @@ public class ClubManager {
         }
 
         return clubId;
+    }
+
+    /**
+     * Restores the last active club on launch.
+     */
+    private void restoreLastActiveClub() {
+        if (!Files.exists(lastUsedClubFile)) {
+            return;
+        }
+        try {
+            String rememberedID = normalizeClubId(Files.readString(lastUsedClubFile).strip());
+
+            if (rememberedID.equals(activeClubId)) {
+                return;
+            }
+
+            Path rememberedFile = getClubFile(rememberedID);
+            if (!Files.isRegularFile(rememberedFile)) {
+                LOGGER.log(Level.WARNING, "Remembered club save is missing or not a regular file. Using default.");
+                return;
+            }
+
+            Club loaded = saveLoadManager.load(rememberedFile);
+            activeClub.replaceWith(loaded);
+            activeClub.markSaved();
+            activeClubId = rememberedID;
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "Could not restore the last active club. Using default.", e);
+        }
     }
 }
