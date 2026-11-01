@@ -13,9 +13,12 @@ import java.awt.HeadlessException;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
 
 //@@author Bryan-chua
 /**
@@ -79,6 +82,80 @@ public class InviteCommand extends Command {
         String name = event.getName();
         LocalDate date = event.getDate();
         String venue = event.getVenue();
+        List<String> missingFields = new ArrayList<>();
+        
+        if (name.isBlank()) {
+            missingFields.add("event name");
+        }
+        if (date == null) {
+            missingFields.add("event date");
+        }
+        if (venue.isBlank()) {
+            missingFields.add("event venue");
+        }
+
+        if (!missingFields.isEmpty()) {
+            ui.print("Warning: invitation is missing " + String.join(", ", missingFields) + ".");
+            ui.print("Would you like to fill them in? (Y/N)");
+            String response = ui.prompt().strip();
+            while (!response.equalsIgnoreCase("y") && !response.equalsIgnoreCase("n")) {
+                ui.print("Please enter Y or N.");
+                response = ui.prompt().strip();
+            }
+
+            if (response.equalsIgnoreCase("y")) {
+                for (String missing : missingFields) {
+                    if (missing.equals("event name")) {
+                        while (true) {
+                            ui.print("Enter event name: ");
+                            name = ui.prompt().strip();
+
+                            if (name.isBlank()) {
+                                ui.print("Event name cannot be blank.");
+                            } else if (name.contains("|")) {
+                                ui.print("Event name cannot contain |.");
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    else if (missing.equals("event venue")) {
+                        while (true) {
+                            ui.print("Enter event venue: ");
+                            venue = ui.prompt().strip();
+
+                            if (venue.isBlank()) {
+                                ui.print("Event venue cannot be blank.");
+                            } else if (venue.contains("|")) {
+                                ui.print("Event venue cannot contain |.");
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    else if (missing.equals("event date")) {
+                        while (true) {
+                            ui.print("Enter event date (YYYY-MM_DD): ");
+                            try {
+                                date = LocalDate.parse(ui.prompt().strip());
+                                break;
+                            } catch (DateTimeParseException e) {
+                                ui.print("Please enter a valid date in YYYY-MM-DD format.");
+                            }
+                        }
+                    }
+                }
+                Event updated = new Event(
+                    event.getTag(), name, date, event.getDeadline(),
+                    event.getBudget(), venue, event.getLogistics(),
+                    event.isCompleted()
+                );
+                boolean updatedSuccessfully = club.updateEvent(updated);
+                assert updatedSuccessfully : "The selected event must still exist";
+                ui.print("Updated event: " + updated.getTag());
+            }
+        }
+        
         String invitation = """
             You're invited to: %s!
 
