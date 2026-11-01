@@ -47,9 +47,11 @@ Press <enter> if correct. Press 'c' and <enter> to cancel.
 
 ### Managing multiple clubs
 
-Each club has its own events, members, assignments, and photos. On every launch,
-ClubFlow starts in the `default` club. To manage another club, create it and
-switch to it. Creating a club does not switch to it automatically.
+Each club has its own events, members, assignments, and photos. ClubFlow remembers
+the last club you successfully switched to and reopens it on the next launch.
+On first launch, it opens `default`. The active club is displayed at startup.
+To manage another club, create it and switch to it. Creating a club does not
+switch to it or change the remembered club automatically.
 
 Club IDs use letters (`a` to `z`), digits (`0` to `9`), underscores (`_`), or
 hyphens (`-`) only, with **no spaces**. Club IDs are case-insensitive and are
@@ -396,11 +398,25 @@ Examples: `deletePhoto e/XMAS n/GroupPhoto` and `deletePhoto e/XMAS all`
 
 Changes to the active club are saved automatically in that club's own directory.
 The default club is stored at `saves/clubs/default/club.cf`; a club with ID
-`chess` is stored at `saves/clubs/chess/club.cf`. At startup, ClubFlow always
-loads the default club. If its save file is missing, ClubFlow creates an empty
-one. If an existing default save file cannot be loaded, it displays an error
-and stops. Existing data in the legacy `saves/clubs.cf` location is migrated
-to the default club when the new default file has not yet been created.
+`chess` is stored at `saves/clubs/chess/club.cf`.
+
+At startup, ClubFlow first prepares and loads the default club, then restores
+the last active club recorded in `saves/clubs/last-active.txt`. If the preference
+file is missing, it keeps `default` active. If the preference cannot be read,
+contains an invalid club ID, or refers to a missing or unloadable club, ClubFlow
+keeps `default` active and records a warning in `clubflow.log`. The active club
+is displayed before the first command prompt.
+
+* A successful switch updates the remembered club, including a switch back to
+  `default`. A failed switch leaves the preference unchanged.
+* If the preference cannot be saved after a successful switch, the switch still
+  takes effect, but ClubFlow records a warning in `clubflow.log`. The next launch
+  may reopen the previously remembered club.
+* If the default save file is missing, ClubFlow creates an empty one. If an
+  existing default save file cannot be loaded, it displays an error and stops
+  before attempting to restore the remembered club.
+* Existing data in the legacy `saves/clubs.cf` location is migrated to the default
+  club when the new default file has not yet been created.
 
 To import another saved file into the **currently active club**, use
 `load p/PATH`. Importing replaces that club's in-memory events, members,
@@ -458,8 +474,10 @@ Closes ClubFlow after attempting to save any outstanding changes.
 
 **A**: Close ClubFlow after checking for save errors. Copy the entire
 `saves/clubs/` directory to the same relative location on the other computer,
-including each club's `club.cf` and `photos/` folder if present. ClubFlow
-loads `default` at startup; use `switchClub n/CLUB_ID` to access other clubs.
+including each club's `club.cf` and `photos/` folder if present. Copying
+`last-active.txt` in that directory also preserves your startup club preference.
+Without it, ClubFlow opens `default`; use `switchClub n/CLUB_ID` to select another
+club and remember it for future launches.
 
 ## Command Summary
 

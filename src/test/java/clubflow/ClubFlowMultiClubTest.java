@@ -105,4 +105,20 @@ class ClubFlowMultiClubTest {
         assertEquals(1, new SaveLoadManager().load(testDirectory.resolve("clubs/chess/club.cf"))
                 .getEvents().size());
     }
+
+    @Test
+    void run_restart_displaysRememberedClubBeforeFirstCommandAndLoadsItsEvents() {
+        runSession("createClub n/chess\nswitchClub n/chess\n"
+                + "createEvent e/AGM n/ChessMeeting\nexit\n");
+
+        // No currentClub or switchClub command: the message must come from startup.
+        String output = runSession("viewEvent e/AGM\nexit\n");
+
+        int activeClubMessage = output.indexOf("Active club: chess");
+        int eventDetails = output.indexOf("ChessMeeting");
+        assertTrue(activeClubMessage >= 0, output);
+        assertTrue(eventDetails > activeClubMessage, output);
+        assertFalse(output.contains("Active club: default"), output);
+        assertFalse(output.contains("Event not found"), output);
+    }
 }
