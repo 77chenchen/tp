@@ -154,7 +154,8 @@ Example: `viewEvent e/XMAS`
 
 ### Generating an event invitation: `invite`
 
-Generates a copyable text invitation using an event's name, date, and venue.
+Generates a text invitation using an event's name, date, and venue, displays it,
+and automatically copies it to your clipboard.
 The event must exist in the active club. Event tag matching ignores case.
 
 Format: `invite e/TAG`
@@ -172,12 +173,27 @@ Location: Main Hall
 Join us and have some fun!
 ```
 
-* The invitation is printed without the `[CF]` prefix so you can copy and share it.
-* Missing details appear as `[Add event name]`, `[Add date]`, or `[Add venue]`.
-  You can fill these in after copying the text, or edit the event and generate it again.
+* The invitation is printed without the `[CF]` prefix. Successful copying displays
+  `Invitation copied to clipboard!`. Only the invitation text is copied; warnings
+  and prompts are excluded.
+* If the name, date, or venue is missing, ClubFlow lists the missing details and
+  asks `Would you like to fill them in? (Y/N)` before generating the invitation.
+  Responses ignore case and surrounding whitespace; other answers repeat the prompt.
+* Enter `Y` to supply only the missing details, in name, date, then venue order.
+  Names and venues must not be blank or contain `|`. Dates must be valid dates in
+  `YYYY-MM-DD` format. Invalid answers repeat the relevant prompt.
+* After all answers are valid, ClubFlow updates the event, displays `Updated event: TAG`,
+  and generates and copies the invitation using the new details. Other event
+  details, completion status, photos, and assignments are preserved. Changes are
+  saved automatically using the usual autosave process.
+* Enter `N` to keep the event unchanged and generate and copy an invitation with
+  `[Add event name]`, `[Add date]`, or `[Add venue]` placeholders for missing details.
+* If clipboard access fails, ClubFlow displays
+  `Could not access the clipboard. Please copy the invitation above manually.`
+  The invitation remains visible, and any completed event edits remain applied.
 * An unknown tag displays `Event not found: TAG` and produces no invitation.
-* Generating an invitation leaves the event unchanged. Copy the text into your
-  preferred messaging application to send it; ClubFlow does not send it automatically.
+* Paste the invitation into your preferred messaging application to share it;
+  ClubFlow does not send it automatically.
 
 ### Marking and unmarking completion: `mark` and `unmark`
 

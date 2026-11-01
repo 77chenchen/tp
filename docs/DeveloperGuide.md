@@ -95,7 +95,7 @@ These responsibilities are logical groupings rather than separate modules or com
 
 `ClubFlow` creates a shared `Club`, `UserInterface`, `CommandParser`, and `ClubManager` at startup. Command objects are registered once with the parser and receive their required dependencies through their constructors.
 
-After `ClubManager.initialize()` loads the default club, the application enters its input loop. Each iteration reads user input, handles optional command correction, and delegates execution to `CommandParser.parse()`. Following successful parsing, `ClubFlow` attempts to save the active club if it has unsaved changes, then checks whether the command requested application exit.
+After `ClubManager.initialize()` loads the default club and attempts to restore the last active club, the application displays the active club ID and enters its input loop. Each iteration reads user input, handles optional command correction, and delegates execution to `CommandParser.parse()`. Following successful parsing, `ClubFlow` attempts to save the active club if it has unsaved changes, then checks whether the command requested application exit.
 
 `Event` and `Photo` interact directly with the filesystem for photo operations. The Storage component separately manages persistent club records and saved photo directories.
 
@@ -176,7 +176,7 @@ Storage connects the shared in-memory `Club` to local files. Its main classes ar
 | Class | Responsibility |
 | --- | --- |
 | `SaveLoadManager` | Serialises club records, validates and reconstructs loaded data, and synchronises photo directories. |
-| `ClubManager` | Selects each club's save path, initialises the default club, migrates legacy data, and coordinates saving and switching clubs. |
+| `ClubManager` | Selects each club's save path, initialises the default club, restores the startup preference, migrates legacy data, and coordinates saving and switching clubs. |
 | `LoadCommand` | Imports a user-selected file into the active club without changing the active club ID. |
 
 `ClubFlow` triggers automatic saving through `ClubManager`, while `LoadCommand`
@@ -327,13 +327,32 @@ In the sequence diagram, `completed` is `True` for `mark` and `False` for `unmar
 #### Event invitations
 
 `InviteCommand` implements `invite e/TAG`. It looks up the event in the active
-club and formats its name, date, and venue as a copyable text invitation.
-Missing optional details become visible placeholders so the organiser can
-complete the message before sharing it. `UserInterface.printWithoutPrefix(...)`
-prints the invitation block without the usual `[CF]` prefix on every line.
-This command only reads event data; an unknown tag raises
-`EventNotFoundException` and produces no invitation. The invitation is for an
-event and contains text only; it does not attach event photos or send messages.
+club and collects blank names, unset dates, and blank venues as missing fields.
+If any are missing, it prints a warning and asks for Y/N confirmation through
+the shared `UserInterface.prompt()`. Responses are stripped and matched ignoring
+case; invalid confirmation responses repeat the question.
+
+On Y, the command prompts only for missing fields, in name, date, then venue
+order. Text values must be nonblank and exclude `|`; dates are parsed using
+`LocalDate.parse()`, with `DateTimeParseException` caught to repeat the prompt.
+Answers remain in local variables until all are valid. The command then creates
+a replacement `Event`, preserving its tag, deadline, budget, logistics, and
+completion state, and calls `Club.updateEvent()`. That method preserves photos
+and assignments and marks the club dirty for the input loop's autosave. If input
+ends before editing finishes, no replacement or clipboard write has occurred;
+the existing end-of-input handling stops the application. N skips editing and
+uses placeholders for missing details. Complete events require no prompts.
+
+The invitation is formatted after the interaction and printed through
+`UserInterface.printWithoutPrefix(...)`. A constructor-injected `Consumer<String>`
+copies only that invitation text. The public constructor uses AWT's system
+clipboard with `StringSelection`; tests inject a recording or failing consumer.
+Success prints `Invitation copied to clipboard!`. `HeadlessException` or
+`IllegalStateException` produces a manual-copy fallback while retaining the
+printed invitation and any completed edits. Warnings and prompts are never
+included in clipboard text. An unknown tag raises `EventNotFoundException`
+before prompting or copying. Invitations contain text only; they do not attach
+photos or send messages.
 
 ### Searching members
 
@@ -390,8 +409,10 @@ The relevant classes are
 3. `listClubs` lists club directories containing a `club.cf` file; the default
    club is first, followed by other IDs in case-insensitive sorted order.
    `currentClub` reads the active ID from `ClubManager`.
-4. The application starts in `default` on every launch. The last selected
-   non-default club is **not** restored as the active club at the next launch.
+4. A successful switch records the normalised active ID in
+   `saves/clubs/last-active.txt`, including switches back to `default`.
+   Startup restores that club when possible and displays its ID. Creating a
+   club alone does not change the preference.
 
 **Switching:** `SwitchClubCommand.execute(...)` delegates to
 `ClubManager.switchClub(targetId)`. The manager checks that the target file
@@ -403,6 +424,11 @@ replaces the shared object's member, event, and assignment collections instead
 of replacing the shared object itself. The unsaved flag is then cleared.
 `SaveLoadManager` also saves the current club's photos to its own directory and
 loads the target club's photos into the working cache.
+
+After the active ID changes, `Files.writeString()` creates or overwrites the
+preference file. Its path is derived from the manager's `clubsRoot` constructor
+parameter, allowing tests to use temporary directories. A preference-write
+failure is logged separately and does not undo an otherwise successful switch.
 
 <a href="diagrams/clubs/SwitchClubSequence.svg"><img src="diagrams/clubs/SwitchClubSequence.svg" alt="Successful club switch sequence diagram" style="max-width: 100%; height: auto;"></a>
 
@@ -447,6 +473,15 @@ legacy `saves/clubs.cf` file and its photos when the new default save is absent;
 otherwise, a missing default save is created as an empty file. An unreadable or
 invalid startup save causes `ClubFlow` to report the error and stop before the
 command loop, rather than overwrite it with empty data.
+
+Once default loading succeeds, `restoreLastActiveClub()` reads
+`last-active.txt`, strips whitespace, and validates and normalises its ID with
+`normalizeClubId()`. It loads the remembered club before replacing the shared
+contents and changing `activeClubId`; a remembered `default` needs no second
+load. A missing preference keeps `default` active. An unreadable or invalid
+preference, missing club save, or unloadable remembered club logs a warning and
+keeps the default data. The preference is separate from club records and is
+written when switching clubs, independently of the dirty-data autosave flag.
 
 #### Importing a saved club
 
@@ -610,6 +645,19 @@ Tests cover three main areas:
 - **Model and storage tests:** [`ClubManagerTest`](../src/test/java/clubflow/ClubManagerTest.java) covers club creation, switching, persistence, and legacy migration. [`MultiClubPhotoStorageTest`](../src/test/java/clubflow/MultiClubPhotoStorageTest.java) verifies photo isolation between clubs.
 - **Input-loop integration tests:** [`ClubFlowMultiClubTest`](../src/test/java/clubflow/ClubFlowMultiClubTest.java) simulates user commands and application restarts to verify persistence and separation between clubs.
 
+The startup preference is covered by
+[`ClubManagerLastActiveClubTest`](../src/test/java/clubflow/ClubManagerLastActiveClubTest.java),
+including normalisation, restoration, fallback, failed switches, and failed
+preference writes. `ClubFlowMultiClubTest` also checks the restored club's startup
+message and event data.
+[`InviteCommandTest`](../src/test/java/clubflow/command/event/InviteCommandTest.java)
+scripts prompt responses and replaces clipboard access to verify Y/N handling,
+field validation, preservation of existing details, copied text, interrupted
+input, and clipboard failures.
+[`InvitationPersistenceTest`](../src/test/java/clubflow/InvitationPersistenceTest.java)
+uses separate headless JVM sessions and temporary working directories to verify
+autosaving and restoration of invitation edits without accessing the system clipboard.
+
 Filesystem tests use JUnit's `@TempDir` to isolate test data. Input-loop tests redirect `System.in` and `System.out` to simulate interaction and check command output, restoring the original streams afterward.
 
 To run all tests and Checkstyle checks from the repository root:
@@ -732,6 +780,9 @@ Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low
 | `* *` | regular user | use short command aliases | enter frequent commands more quickly |
 | `* *` | regular user | confirm a suggested correction for a misspelled command | recover from a typo without re-entering its arguments |
 | `* *` | event organiser | generate a copyable invitation using an event's saved details | share its name, date, and venue without retyping them |
+| `* *` | club manager | have generated invitations copied automatically to my clipboard | paste them into my messaging application immediately |
+| `* *` | club manager | be warned about missing invitation details and optionally fill them in before copying | share a complete invitation and save the corrected event details |
+| `* *` | manager of several clubs | reopen the last active club on startup | continue managing it without switching clubs each time |
 | `* *` | regular user | see clear prompts and visually distinct command results | read the command-line interface more easily |
 
 ### Use cases
@@ -844,8 +895,10 @@ the change in memory for another save attempt.
 **Extensions:** an invalid ID is rejected by the parser; an unknown ID is
 reported without switching. If saving the current club or loading the target
 fails, the active club does not change. Switching to the already active club
-simply reports that club. On restart, ClubFlow loads `default`, not the club
-that was last active.
+simply reports that club. On restart, ClubFlow restores the last successfully
+selected club when available, falling back to `default` if the preference or
+remembered club cannot be loaded. Preference failures are logged; the active
+club is displayed at startup.
 
 #### UC6: Set an event's completion state
 
@@ -924,7 +977,8 @@ in terms that a tester or maintainer can check:
 4. **Persistent local data:** club records must be stored in distinct local
    club directories and must remain available after closing and restarting
    the application, provided the save succeeded. On startup the app must
-   select `default`.
+   restore the last successfully selected club when its preference and save file
+   are usable, otherwise retaining `default`.
 5. **Data integrity:** rejecting an invalid target save file must not replace
    the currently loaded member, event, or assignment records. Duplicate club
    IDs differing only in case must not create a second club.
@@ -1021,9 +1075,23 @@ command examples; automated tests cover input boundaries.
 
    1. Test case: Enter `invite e/CAMP`.
    2. Expected: A copyable text invitation names `Welcome Camp` and contains
-      `Date: 2026-12-25` and `Location: Main Hall`.
+      `Date: 2026-12-25` and `Location: Main Hall`. When clipboard access is
+      available, ClubFlow reports successful copying; paste into a text editor
+      and verify that only invitation text appears. Otherwise, expect the
+      manual-copy fallback and check the displayed invitation.
    3. Test case: Enter `invite e/UNKNOWN`.
    4. Expected: ClubFlow reports that the event is not found and prints no invitation.
+   5. Test case: Enter `invite e/TEMP`, respond `maybe`, then `n`.
+   6. Expected: The invalid confirmation repeats the prompt. N generates an
+      invitation with all three placeholders and leaves `TEMP` unchanged.
+   7. Test case: Enter `invite e/TEMP`, respond `y`, then enter a blank name,
+      `Bad|Name`, and `Planning Meeting`. For the date, enter `2026-02-30`,
+      then `2026-12-20`. For the venue, enter a blank value, `Bad|Venue`,
+      then `Room 2`.
+   8. Expected: Each invalid value repeats its field prompt. After valid values,
+      one update confirmation appears and the invitation uses all three new
+      details. Check `viewEvent e/TEMP`, exit and restart, then check again:
+      the edits persist. Pasted invitation text excludes warnings and prompts.
 
 3. Correcting a command keyword
 
@@ -1124,10 +1192,15 @@ club data is not affected. Commands use exact formats from the User Guide.
    missing` and the active club to remain `chess`. Enter
    `switchClub n/../invalid`; expect an invalid-ID explanation.
 10. Enter `exit` and relaunch ClubFlow from the same working directory.
-    `currentClub` should display `default`. Check that `DefaultMeeting` and
-    `Alice` remain, then switch to `chess` and check that `ChessMeeting`
-    and `Bob` remain. The distinct save files should exist at
+    Startup and `currentClub` should display `chess`. Check that `ChessMeeting`
+    and `Bob` remain, then switch to `default` and check that `DefaultMeeting`
+    and `Alice` remain. The distinct save files should exist at
     `saves/clubs/default/club.cf` and `saves/clubs/chess/club.cf`.
+11. Exit and restart again; `default` should now be active. While the app is
+    closed, inspect `saves/clubs/last-active.txt`: it should contain `default`.
+    Replace it with `missing`, restart, and expect `default` plus a warning in
+    `clubflow.log`. Repeat with a blank value and `../invalid`. Removing the
+    preference file should also open `default`, without a preference warning.
 
 ### Photo import and isolation
 
