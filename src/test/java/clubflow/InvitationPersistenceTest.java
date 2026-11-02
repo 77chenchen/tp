@@ -84,7 +84,6 @@ class InvitationPersistenceTest {
             try (var inputStream = process.getOutputStream()) {
                 inputStream.write(input.getBytes(StandardCharsets.UTF_8));
             }
-
             boolean finished = process.waitFor(15, TimeUnit.SECONDS);
 
             String output = java.nio.file.Files.readString(
