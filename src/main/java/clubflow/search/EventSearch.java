@@ -82,6 +82,16 @@ public class EventSearch {
             LocalDate date = LocalDate.parse(keyword);
             yield event -> date.equals(event.getDate());
         }
+        //@@author camimaigrot
+        case "from" -> {
+            LocalDate from = LocalDate.parse(keyword);
+            yield event -> event.getDate() != null && !event.getDate().isBefore(from);
+        }
+        case "to" -> {
+            LocalDate to = LocalDate.parse(keyword);
+            yield event -> event.getDate() != null && !event.getDate().isAfter(to);
+        }
+        //@@author
         case "by" -> {
             LocalDate deadline = LocalDate.parse(keyword);
             yield event -> deadline.equals(event.getDeadline());

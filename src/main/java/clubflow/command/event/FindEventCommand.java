@@ -24,6 +24,10 @@ public class FindEventCommand extends Command {
     private static final String MIN_BUDGET = "min";
     private static final String MAX_BUDGET = "max";
     private static final String STATUS = "s";
+    //@@author camimaigrot
+    private static final String FROM_DATE = "from";
+    private static final String TO_DATE = "to";
+    //@@author
     /** Searches the shared club so results reflect its current events. */
     private final EventSearch eventSearch;
 
@@ -37,6 +41,7 @@ public class FindEventCommand extends Command {
         super(ui);
         this.eventSearch = new EventSearch(ui, club);
         addSyntax("[e/Keyword] [q/Keyword] [n/Name] [v/Venue] [l/Logistics] [d/Date] [by/Deadline]"
+                + " [from/StartDate] [to/EndDate]"
                 + " [b/Budget] [min/Budget] [max/Budget] [s/completed|pending]");
     }
 
@@ -49,7 +54,7 @@ public class FindEventCommand extends Command {
     public String[] optionalArgIds() {
         return new String[]{EventArgumentIds.TAG, QUERY, EventArgumentIds.NAME, EventArgumentIds.VENUE,
             EventArgumentIds.LOGISTICS, EventArgumentIds.DATE, EventArgumentIds.DEADLINE,
-            EventArgumentIds.BUDGET, MIN_BUDGET, MAX_BUDGET, STATUS};
+            EventArgumentIds.BUDGET, MIN_BUDGET, MAX_BUDGET, STATUS, FROM_DATE, TO_DATE};
     }
 
     @Override
@@ -57,7 +62,7 @@ public class FindEventCommand extends Command {
         Objects.requireNonNull(args, "Arguments must not be null");
         if (args.isEmpty()) {
             throw new CommandParseException("Provide at least one search filter: "
-                    + "e/, q/, n/, v/, l/, d/, by/, b/, min/, max/, or s/.");
+                    + "e/, q/, n/, v/, l/, d/, by/, from/, to/, b/, min/, max/, or s/.");
         }
         Set<String> supportedIds = Set.of(optionalArgIds());
         for (var filter : args.entrySet()) {
@@ -72,6 +77,11 @@ public class FindEventCommand extends Command {
         }
         validateDate(args, EventArgumentIds.DATE);
         validateDate(args, EventArgumentIds.DEADLINE);
+        //@@author camimaigrot
+        validateDate(args, FROM_DATE);
+        validateDate(args, TO_DATE);
+        validateDateRange(args);
+        //@@author
         validateBudgets(args);
         if (args.containsKey(STATUS)) {
             String status = args.get(STATUS).strip().toLowerCase(Locale.ROOT);
@@ -80,6 +90,23 @@ public class FindEventCommand extends Command {
             }
         }
     }
+
+    //@@author camimaigrot
+    /** Rejects inverted date ranges and exact dates outside a supplied range. */
+    private void validateDateRange(HashMap<String, String> args) throws CommandParseException {
+        LocalDate from = args.containsKey(FROM_DATE) ? LocalDate.parse(args.get(FROM_DATE).strip()) : null;
+        LocalDate to = args.containsKey(TO_DATE) ? LocalDate.parse(args.get(TO_DATE).strip()) : null;
+        LocalDate exact = args.containsKey(EventArgumentIds.DATE)
+                ? LocalDate.parse(args.get(EventArgumentIds.DATE).strip()) : null;
+
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new CommandParseException("Start date must not be after end date.");
+        }
+        if (exact != null && (from != null && exact.isBefore(from) || to != null && exact.isAfter(to))) {
+            throw new CommandParseException("Exact date must be within the supplied date range.");
+        }
+    }
+    //@@author
 
     /** Rejects impossible budget ranges and exact budgets that conflict with supplied bounds. */
     private void validateBudgets(HashMap<String, String> args) throws CommandParseException {

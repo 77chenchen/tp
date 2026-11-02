@@ -64,26 +64,41 @@ class InvitationPersistenceTest {
     /** Runs with isolated save/cache files and a time limit to catch stuck input loops. */
     private String runSession(String input) throws Exception {
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
-        Path classes = Path.of(ClubFlow.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        Path outputFile = Files.createTempFile(testDirectory, "session-", ".log");
-        Process process = new ProcessBuilder(javaExecutable.toString(), "-ea", "-Djava.awt.headless=true",
-                "-cp", classes.toString(), "clubflow.ClubFlow")
+        Path classes = Path.of(ClubFlow.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI());
+
+        Path outputFile = testDirectory.resolve("session-output.txt");
+
+        Process process = new ProcessBuilder(
+                javaExecutable.toString(),
+                "-ea",
+                "-Djava.awt.headless=true",
+                "-cp",
+                classes.toString(),
+                "clubflow.ClubFlow")
                 .directory(testDirectory.toFile())
                 .redirectErrorStream(true)
-                // A file avoids filling the output pipe while this test waits for the app to exit.
                 .redirectOutput(outputFile.toFile())
                 .start();
+
         try {
             try (var inputStream = process.getOutputStream()) {
                 inputStream.write(input.getBytes(StandardCharsets.UTF_8));
             }
-            boolean exited = process.waitFor(15, TimeUnit.SECONDS);
-            String output = Files.readString(outputFile, StandardCharsets.UTF_8);
-            assertTrue(exited, "Application session timed out:\n" + output);
+            boolean finished = process.waitFor(15, TimeUnit.SECONDS);
+
+            String output = java.nio.file.Files.readString(
+                    outputFile, StandardCharsets.UTF_8);
+
+            assertTrue(finished, "Application session timed out:\n" + output);
             assertEquals(0, process.exitValue(), output);
+
             return output;
         } finally {
-            process.destroyForcibly();
+            if (process.isAlive()) {
+                process.destroyForcibly();
+                process.waitFor();
+            }
         }
     }
 }

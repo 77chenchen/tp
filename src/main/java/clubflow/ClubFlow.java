@@ -16,6 +16,7 @@ import clubflow.command.event.EditEventCommand;
 import clubflow.command.member.EditMemberCommand;
 import clubflow.command.ExitCommand;
 import clubflow.command.event.FindEventCommand;
+import clubflow.command.event.UpcomingEventsCommand;
 import clubflow.command.member.FindMemberCommand;
 import clubflow.command.HelpCommand;
 import clubflow.command.event.InviteCommand;
@@ -121,6 +122,10 @@ public class ClubFlow {
 
         parser.register("findEvent", new FindEventCommand(ui, club));
         parser.registerAlias("findEvent", "fe");
+        //@@author camimaigrot
+        parser.register("upcomingEvents", new UpcomingEventsCommand(ui, club));
+        parser.registerAlias("upcomingEvents", "ue");
+        //@@author
         EventCompletion eventCompletion = new EventCompletion(ui, club);
         Map<String, CompletionHandler> completionHandlers = Map.of("e", eventCompletion::setCompleted);
         parser.register("mark", new CompletionCommand(ui, completionHandlers, true));
