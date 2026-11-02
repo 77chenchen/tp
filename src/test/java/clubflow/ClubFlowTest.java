@@ -248,6 +248,69 @@ class ClubFlowTest {
     }
 
     @Test
+    void run_invalidClearEvent_printsErrorsAndSyntaxAndContinuesWithoutChangingEvent() {
+        String result = runSession("createEvent e/XMAS n/Party d/2026-12-25 "
+                + "by/2026-12-20 b/500 v/Hall l/Chairs\nmark e/XMAS\n"
+                + "clearEvent\nclearEvent e/\nclearEvent e/\"   \"\n"
+                + "clearEvent e/XMAS e/XMAS\nclearEvent e/XMAS n/New\nclearEvent all\n"
+                + "clearEvent e/UNKNOWN\nviewEvent e/XMAS\ncreateEvent e/NEXT\nexit\n");
+
+        List<String> expectedErrors = List.of(
+                "[CF] Command syntax error: Argument(s) starting with e are required but missing.",
+                "[CF] Command syntax error: An event tag must be provided after e/.",
+                "[CF] Command syntax error: An event tag must be provided after e/.",
+                "[CF] Command syntax error: Multiple arguments start with \"e/\".",
+                "[CF] Command syntax error: Argument(s) starting with n are invalid.",
+                "[CF] Command syntax error: Argument \"all\" has no \"/\".");
+        assertEquals(expectedErrors,
+                result.lines().filter(line -> line.contains("[CF] Command syntax error:"))
+                        // Scripted input is not echoed, so the prompt precedes each error on the same line.
+                        .map(line -> line.substring(line.indexOf("[CF]"))).toList());
+        assertEquals(6, result.lines().filter(line -> line.equals("[CF] Syntax of command \"clearEvent\":"))
+                .count());
+        assertEquals(6, result.lines().filter(line -> line.equals("[CF] > clearEvent e/Tag")).count());
+        assertAll(
+                () -> assertTrue(result.contains("[CF] Event not found: UNKNOWN")),
+                () -> assertTrue(result.contains("[CF] [XMAS] Party")),
+                () -> assertTrue(result.contains("[CF]   Status:    Completed")),
+                () -> assertTrue(result.contains("[CF]   Date:      2026-12-25")),
+                () -> assertTrue(result.contains("[CF]   Deadline:  2026-12-20")),
+                () -> assertTrue(result.contains("[CF]   Budget:    $500.00")),
+                () -> assertTrue(result.contains("[CF]   Venue:     Hall")),
+                () -> assertTrue(result.contains("[CF]   Logistics: Chairs")),
+                () -> assertFalse(result.contains("Cleared event details:")),
+                () -> assertTrue(result.contains("[CF] Created event: NEXT")),
+                () -> assertTrue(result.contains("[CF] Goodbye!"))
+        );
+    }
+
+    @Test
+    void run_clearEvent_clearsDetailsResetsStatusAndAutosavesAcrossSessions() {
+        String firstSession = runSession("createEvent e/XMAS n/Party d/2026-12-25 "
+                + "by/2026-12-20 b/500 v/Hall l/Chairs\nmark e/XMAS\n"
+                + "clearEvent e/xmas\nhelp c/clearEvent\nexit\n");
+
+        assertTrue(firstSession.contains("[CF] Marked event as completed: XMAS"));
+        assertTrue(firstSession.contains("[CF] Cleared event details: XMAS"));
+        assertTrue(firstSession.contains("Syntax of command \"clearEvent\":"));
+        assertFalse(firstSession.contains("Command syntax error"));
+
+        String loadedSession = runSession("viewEvent e/XMAS\nexit\n");
+
+        assertAll(
+                () -> assertTrue(loadedSession.contains("[CF] Saved data loaded.")),
+                () -> assertTrue(loadedSession.contains("[CF] [XMAS] Not set")),
+                () -> assertTrue(loadedSession.contains("[CF]   Status:    Not completed")),
+                () -> assertTrue(loadedSession.contains("[CF]   Date:      Not set")),
+                () -> assertTrue(loadedSession.contains("[CF]   Deadline:  Not set")),
+                () -> assertTrue(loadedSession.contains("[CF]   Budget:    $0.00")),
+                () -> assertTrue(loadedSession.contains("[CF]   Venue:     Not set")),
+                () -> assertTrue(loadedSession.contains("[CF]   Logistics: Not set")),
+                () -> assertFalse(loadedSession.contains("Event not found"))
+        );
+    }
+
+    @Test
     void run_markAndUnmark_updatesStatusAndPreservesEdits() {
         String result = runSession("createEvent e/XMAS n/Party\nmark e/xmas\n"
                 + "editEvent e/XMAS n/Dinner\nviewEvent e/XMAS\n"

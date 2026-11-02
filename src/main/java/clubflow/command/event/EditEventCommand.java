@@ -15,7 +15,7 @@ import clubflow.exception.EventNotFoundException;
 
 //@@author Eugene3129
 /**
- * Updates supplied details of an event selected by its tag, preserving omitted fields.
+ * Updates supplied details of an event selected by its tag, clearing blank fields and preserving omitted fields.
  */
 public class EditEventCommand extends Command {
     /** Shared store containing the events that can be edited. */
@@ -50,9 +50,19 @@ public class EditEventCommand extends Command {
         };
     }
 
+    /**
+     * Validates nonblank edits while allowing blank optional values to clear their fields.
+     *
+     * @param args supplied arguments, including any explicit blank values
+     * @throws CommandParseException if the tag or an edit is invalid, or no detail was supplied
+     */
     @Override
     public void validateArgs(HashMap<String, String> args) throws CommandParseException {
-        EventArgumentValidator.validate(args);
+        // Keep blanks in the original map so execution can distinguish clearing from omission.
+        HashMap<String, String> nonblankArgs = new HashMap<>(args);
+        nonblankArgs.entrySet().removeIf(entry -> !entry.getKey().equals(EventArgumentIds.TAG)
+                && entry.getValue().isBlank());
+        EventArgumentValidator.validate(nonblankArgs);
         if (args.size() == 1) {
             throw new CommandParseException("Provide at least one event detail to edit: n/, d/, by/, b/, v/, or l/.");
         }
@@ -68,11 +78,14 @@ public class EditEventCommand extends Command {
         // Use supplied values where present, keeping the original values for omitted fields.
         String name = args.getOrDefault(EventArgumentIds.NAME, original.getName());
         LocalDate date = args.containsKey(EventArgumentIds.DATE)
-                ? LocalDate.parse(args.get(EventArgumentIds.DATE)) : original.getDate();
+                ? parseDateOrClear(args.get(EventArgumentIds.DATE)) : original.getDate();
         LocalDate deadline = args.containsKey(EventArgumentIds.DEADLINE)
-                ? LocalDate.parse(args.get(EventArgumentIds.DEADLINE)) : original.getDeadline();
-        double budget = args.containsKey(EventArgumentIds.BUDGET)
-                ? Double.parseDouble(args.get(EventArgumentIds.BUDGET)) : original.getBudget();
+                ? parseDateOrClear(args.get(EventArgumentIds.DEADLINE)) : original.getDeadline();
+        double budget = original.getBudget();
+        if (args.containsKey(EventArgumentIds.BUDGET)) {
+            String value = args.get(EventArgumentIds.BUDGET);
+            budget = value.isBlank() ? 0.0 : Double.parseDouble(value);
+        }
         String venue = args.getOrDefault(EventArgumentIds.VENUE, original.getVenue());
         String logistics = args.getOrDefault(EventArgumentIds.LOGISTICS, original.getLogistics());
 
@@ -83,5 +96,15 @@ public class EditEventCommand extends Command {
         assert updatedSuccessfully : "The selected event must still exist when editing occurs";
         ui.print("Updated event: " + updated.getTag());
         return false;
+    }
+
+    /**
+     * Converts a validated date edit to a date, or clears it when the value is blank.
+     *
+     * @param value explicit value supplied for a date field
+     * @return the date, or null for an unset date
+     */
+    private static LocalDate parseDateOrClear(String value) {
+        return value.isBlank() ? null : LocalDate.parse(value);
     }
 }

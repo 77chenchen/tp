@@ -244,6 +244,7 @@ user-visible rules belong in the [User Guide](UserGuide.md).
 | Delete | [DeleteEventCommand](../src/main/java/clubflow/command/event/DeleteEventCommand.java) |
 | View | [ViewEventCommand](../src/main/java/clubflow/command/event/ViewEventCommand.java) |
 | Edit | [EditEventCommand](../src/main/java/clubflow/command/event/EditEventCommand.java) |
+| Clear details | [ClearEventCommand](../src/main/java/clubflow/command/event/ClearEventCommand.java) |
 | Find | [FindEventCommand](../src/main/java/clubflow/command/event/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
 | Upcoming | [UpcomingEventsCommand](../src/main/java/clubflow/command/event/UpcomingEventsCommand.java) |
 | Completed/pending | [CompletionCommand](../src/main/java/clubflow/command/CompletionCommand.java), [EventCompletion](../src/main/java/clubflow/completion/EventCompletion.java) |
@@ -267,6 +268,14 @@ The creation flow below ends before the input loop's autosave step.
 Edits validate a replacement before installing it, avoiding partially applied
 changes. The tradeoff is that replacing an event must preserve its position,
 photos, and member assignments; this belongs in `Club.updateEvent()`.
+Omitted edit arguments preserve existing values, while explicit blank values clear
+text, unset dates, or reset the budget to zero. `EditEventCommand` validates a copy
+with blank optional arguments removed, keeping the original arguments for execution
+so clearing and omission remain distinct. Creation retains its existing validation.
+`ClearEventCommand` implements `clearEvent e/TAG` by constructing a replacement
+with empty text, null dates, a zero budget, and completion set to false (pending),
+preserving the original tag. It uses the same `Club.updateEvent()` path to retain photos,
+assignments, and list position and mark the club for autosave.
 When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
