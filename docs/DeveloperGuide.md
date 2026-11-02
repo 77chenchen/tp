@@ -116,6 +116,11 @@ check browser support before calling `Desktop.getDesktop()`, so environments
 without desktop support can also raise an unchecked runtime exception. This
 feature opens a web page rather than a bundled offline document.
 
+The public constructor supplies the desktop browser operation. A package-private
+constructor accepts a `BrowserOpener`, allowing tests to record the requested URL
+or throw an `IOException` without opening a browser. This keeps success output,
+error conversion, and alias handling testable without desktop support.
+
 The class diagram illustrates how `ClubFlow`, `CommandParser`, and commands interact with the shared `UserInterface` instance.
 
 <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="max-width: 100%; height: auto;"></a>
@@ -702,7 +707,17 @@ name is also reported without modifying the photo collection.
 
 When saving, `savePhotos()` copies photos from the working cache into the active club's save directory. When loading, `loadPhotos()` restores the saved photos into the cache and reconstructs their `Photo` objects.
 
-Photo-directory replacement uses a temporary staging directory and a backup of the previous destination. If installing the staged directory fails, the previous directory can be restored.
+Photo-directory replacement uses a temporary staging directory and a backup of
+the previous destination. If installing the staged directory fails, the handler
+attempts to restore the backup and removes the staging directory. If restoration
+also fails, that failure is attached to the installation exception as a
+suppressed exception, and the backup is retained for recovery. A successful
+replacement removes the backup.
+
+The public `SaveLoadManager` constructor uses `Files.move()` for directory moves.
+A package-private constructor accepts a `DirectoryMover` so tests can fail the
+backup, installation, or restoration step deterministically. The remaining file
+operations still use the real filesystem in temporary test directories.
 
 This separation allows photos to persist across restarts and club switches but introduces consistency limitations.
 
@@ -749,9 +764,36 @@ ClubFlow uses JUnit 5 through Gradle, with tests located under [`src/test/java/c
 
 Tests cover three main areas:
 
-- **Command and parser tests:** [`ClubCommandsTest`](../src/test/java/clubflow/command/ClubCommandsTest.java) verifies command syntax, invalid or duplicate club IDs, active-club output, and error handling. Other command tests cover event and member operations.
-- **Model and storage tests:** [`ClubManagerTest`](../src/test/java/clubflow/ClubManagerTest.java) covers club creation, switching, persistence, and legacy migration. [`MultiClubPhotoStorageTest`](../src/test/java/clubflow/MultiClubPhotoStorageTest.java) verifies photo isolation between clubs.
-- **Input-loop integration tests:** [`ClubFlowMultiClubTest`](../src/test/java/clubflow/ClubFlowMultiClubTest.java) simulates user commands and application restarts to verify persistence and separation between clubs.
+- **Command and parser tests:**
+  [`ClubCommandsTest`](../src/test/java/clubflow/command/ClubCommandsTest.java)
+  verifies command syntax, invalid or duplicate club IDs, active-club output,
+  and error handling.
+  [`LoadCommandTest`](../src/test/java/clubflow/command/LoadCommandTest.java)
+  checks successful imports and preservation of existing data after rejected
+  imports.
+  [`PhotoCommandsTest`](../src/test/java/clubflow/command/photo/PhotoCommandsTest.java)
+  covers photo renaming, persistence, listing, and opening requests.
+  [`UserGuideCommandTest`](../src/test/java/clubflow/command/UserGuideCommandTest.java)
+  checks browser requests, aliases, and I/O failures without launching a browser.
+  Other command tests cover event and member operations.
+- **Model and storage tests:**
+  [`ClubManagerTest`](../src/test/java/clubflow/ClubManagerTest.java)
+  covers club creation, switching, persistence, and legacy migration.
+  [`MultiClubPhotoStorageTest`](../src/test/java/clubflow/MultiClubPhotoStorageTest.java)
+  verifies photo isolation between clubs.
+  [`SaveLoadManagerFailureTest`](../src/test/java/clubflow/SaveLoadManagerFailureTest.java)
+  checks rejected assignment records, dangling assignment references, photo
+  replacement rollback, staging cleanup, and preservation of a backup when
+  rollback also fails.
+  [`PhotoFileTest`](../src/test/java/clubflow/photo/PhotoFileTest.java)
+  checks image conversion and file-operation failures.
+- **Input-loop integration tests:**
+  [`ClubFlowMultiClubTest`](../src/test/java/clubflow/ClubFlowMultiClubTest.java)
+  simulates user commands and application restarts to verify persistence and
+  separation between clubs.
+  [`ClubFlowRecoveryTest`](../src/test/java/clubflow/ClubFlowRecoveryTest.java)
+  covers startup load failures, failed autosaves, retries, and recovery from an
+  unexpected input error.
 
 The startup preference is covered by
 [`ClubManagerLastActiveClubTest`](../src/test/java/clubflow/ClubManagerLastActiveClubTest.java),
@@ -771,6 +813,13 @@ upcoming-event ordering, exclusions, and read-only behaviour.
 
 Filesystem tests use JUnit's `@TempDir` to isolate test data. Input-loop tests redirect `System.in` and `System.out` to simulate interaction and check command output, restoring the original streams afterward.
 
+Tests that require relative paths use
+[`ProjectTempDirectory`](../src/test/java/clubflow/ProjectTempDirectory.java) as
+their `@TempDir` factory. It creates JUnit-managed fixtures under `build/test-temp/`,
+keeping them on the project drive when Windows uses a different drive for system
+temporary files. Photo tests that write to the shared cache use dedicated event
+directories and remove their fixtures afterward.
+
 To run all tests and Checkstyle checks from the repository root:
 
 ```powershell
@@ -785,6 +834,25 @@ To run the multiple-club regression tests separately:
 ```
 
 On macOS or Linux, replace `.\gradlew.bat` with `./gradlew`.
+
+To run the storage failure and user-guide regression tests separately:
+
+```powershell
+.\gradlew.bat test --tests clubflow.SaveLoadManagerFailureTest --tests clubflow.command.UserGuideCommandTest
+```
+
+#### Interpreting coverage
+
+Scope production coverage reports to `src/main/java/` and distinguish class,
+line, and branch coverage. Executing a class does not mean every line or failure
+path has been tested. Coverage records execution; assertions checking results
+and preserved state are still needed to verify behaviour.
+
+Production Java `assert` statements contribute to the coverage report and are
+enabled during Gradle test runs. An uncovered assertion-failure branch can
+represent an internal invariant violation; review it separately from an
+untested command or I/O outcome. JUnit assertions such as `assertEquals()` belong
+to `src/test/java/` and are excluded from production coverage totals.
 
 Automated tests are complemented by the [manual testing instructions](#appendix-e-instructions-for-manual-testing), particularly for terminal behaviour, photo viewers, filesystem permissions, and release packaging.
 

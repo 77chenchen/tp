@@ -25,6 +25,19 @@ import clubflow.member.Member;
  */
 class MemberAssignmentStorageTest {
     @Test
+    void assignment_invalidRole_rejectsSeparatorsAndLineBreaks() {
+        Event event = new Event("AGM", "", null, null, 0, "", "");
+        Member member = new Member("Alice", "alice", "", List.of());
+
+        for (String role : List.of("Host|Guest", "Host\nGuest", "Host\rGuest")) {
+            assertThrows(IllegalArgumentException.class, () -> new EventAssignment(event, member, role));
+        }
+        assertThrows(NullPointerException.class, () -> new EventAssignment(event, member, null));
+        assertThrows(NullPointerException.class, () -> new EventAssignment(null, member, "Host"));
+        assertThrows(NullPointerException.class, () -> new EventAssignment(event, null, "Host"));
+    }
+
+    @Test
     void saveAndLoad_assignmentsSurviveMemberIndexChanges(@TempDir Path tempDir) throws IOException {
         Club data = new Club();
         Member first = new Member("Alice", "alice", "", List.of());
