@@ -7,6 +7,7 @@ import clubflow.command.member.AssignMemberCommand;
 import clubflow.command.CommandParser;
 import clubflow.command.CompletionCommand;
 import clubflow.command.event.CreateEventCommand;
+import clubflow.command.event.ClearEventCommand;
 import clubflow.command.member.CreateMemberCommand;
 import clubflow.command.event.DeleteEventCommand;
 import clubflow.command.member.DeleteMemberCommand;
@@ -109,6 +110,8 @@ public class ClubFlow {
 
         parser.register("editEvent", new EditEventCommand(ui, club));
         parser.registerAlias("editEvent", "ee");
+
+        parser.register("clearEvent", new ClearEventCommand(ui, club));
 
         parser.register("deleteEvent", new DeleteEventCommand(ui, club));
         parser.registerAlias("deleteEvent", "de");

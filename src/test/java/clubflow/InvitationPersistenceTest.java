@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
@@ -64,17 +65,21 @@ class InvitationPersistenceTest {
     private String runSession(String input) throws Exception {
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         Path classes = Path.of(ClubFlow.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Path outputFile = Files.createTempFile(testDirectory, "session-", ".log");
         Process process = new ProcessBuilder(javaExecutable.toString(), "-ea", "-Djava.awt.headless=true",
                 "-cp", classes.toString(), "clubflow.ClubFlow")
                 .directory(testDirectory.toFile())
                 .redirectErrorStream(true)
+                // A file avoids filling the output pipe while this test waits for the app to exit.
+                .redirectOutput(outputFile.toFile())
                 .start();
         try {
             try (var inputStream = process.getOutputStream()) {
                 inputStream.write(input.getBytes(StandardCharsets.UTF_8));
             }
-            assertTrue(process.waitFor(15, TimeUnit.SECONDS), "Application session timed out");
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            boolean exited = process.waitFor(15, TimeUnit.SECONDS);
+            String output = Files.readString(outputFile, StandardCharsets.UTF_8);
+            assertTrue(exited, "Application session timed out:\n" + output);
             assertEquals(0, process.exitValue(), output);
             return output;
         } finally {

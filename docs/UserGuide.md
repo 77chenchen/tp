@@ -132,14 +132,33 @@ Format: `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l
 
 * Tag matching ignores case. The tag identifies the event and is not changed by editing.
 * Omitted fields keep their existing values. The event stays in the same list position.
-* Editing preserves the event's completion state.
+* Editing preserves the event's completion state, photos, and member assignments.
 * Dates and deadlines use `YYYY-MM-DD`; the budget must be a finite, non-negative number.
-* Use an empty quoted value to clear a name, venue, or logistics field, such as `v/""`.
-  Dates and deadlines require valid dates; they cannot be cleared with empty values.
+* Leave a supplied field empty to clear it, such as `by/` to remove the deadline or `v/` to clear the venue.
+  Empty quoted values such as `by/""` also work. Clearing `d/` or `by/` unsets the date;
+  clearing `b/` resets the budget to zero.
 * Invalid input leaves the event unchanged. An unknown tag displays `Event not found: TAG`.
 * Edited details are saved automatically.
 
 Example: `editEvent e/XMAS v/"New Hall" b/600`
+
+Clear the deadline: `editEvent e/XMAS by/`
+
+Clear all editable details without deleting the event: `editEvent e/XMAS n/ d/ by/ b/ v/ l/`
+
+### Clearing an event's details: `clearEvent`
+
+Clears all six editable details of an existing event and resets its status to pending in one command.
+
+Format: `clearEvent e/TAG`
+
+* Clears the name, venue, and logistics, unsets the date and deadline, and resets the budget to zero.
+* Resets the completion status to pending (displayed as `Not completed`).
+* Preserves the event's tag, list position, photos, and member assignments.
+* Tag matching ignores case. An unknown tag displays `Event not found: TAG`.
+* Clearing an already cleared event is allowed. Changes are saved automatically.
+
+Example: `clearEvent e/XMAS`
 
 ### Viewing events: `viewEvent`
 
@@ -556,6 +575,7 @@ club and remember it for future launches.
 * Check the active club `currentClub`
 * Create event `createEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ce`)
 * Edit event `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l/LOGISTICS]` (alias `ee`)
+* Clear all editable event details and reset status to pending `clearEvent e/TAG`
 * View event `viewEvent e/TAG` or view all events `viewEvent all` (alias `ve`)
 * Generate an event invitation `invite e/TAG`
 * Mark event completed `mark e/TAG`

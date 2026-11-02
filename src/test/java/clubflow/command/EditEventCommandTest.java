@@ -26,6 +26,7 @@ import clubflow.Club;
 import clubflow.SaveLoadManager;
 import clubflow.UserInterface;
 import clubflow.event.Event;
+import clubflow.member.Member;
 import clubflow.exception.ClubFlowException;
 import clubflow.exception.CommandParseException;
 import clubflow.exception.EventNotFoundException;
@@ -121,6 +122,85 @@ class EditEventCommandTest {
     }
 
     @Test
+    void editEvent_blankDeadline_clearsOnlyDeadline() throws ClubFlowException {
+        for (String field : List.of("by/", "by/\"\"", "by/\"   \"")) {
+            club.updateEvent(originalEvent);
+
+            assertFalse(parser.parse("editEvent e/XMAS " + field));
+
+            Event updated = club.findEventByTag("XMAS").orElseThrow();
+            assertNull(updated.getDeadline());
+            assertEquals(originalEvent.getName(), updated.getName());
+            assertEquals(originalEvent.getDate(), updated.getDate());
+            assertEquals(originalEvent.getBudget(), updated.getBudget());
+            assertEquals(originalEvent.getVenue(), updated.getVenue());
+            assertEquals(originalEvent.getLogistics(), updated.getLogistics());
+        }
+    }
+
+    @Test
+    void editEvent_blankDateAndBudget_clearsAlongsideOtherEdits() throws ClubFlowException {
+        for (String fields : List.of("d/ b/", "d/\"\" b/\"\"")) {
+            club.updateEvent(originalEvent);
+
+            parser.parse("editEvent e/XMAS n/Dinner " + fields);
+
+            Event updated = club.findEventByTag("XMAS").orElseThrow();
+            assertEquals("Dinner", updated.getName());
+            assertNull(updated.getDate());
+            assertEquals(0, updated.getBudget());
+            assertEquals(originalEvent.getDeadline(), updated.getDeadline());
+            assertEquals(originalEvent.getVenue(), updated.getVenue());
+            assertEquals(originalEvent.getLogistics(), updated.getLogistics());
+        }
+    }
+
+    @Test
+    void editEvent_clearAllDetails_preservesEventAndSavesClearedValues(@TempDir Path directory)
+            throws ClubFlowException, IOException {
+        Member member = new Member("Alice", "alice", "", List.of());
+        club.addMember(member);
+        originalEvent.loadPhoto("poster");
+        club.updateEvent(originalEvent.withCompleted(true));
+        club.assignMemberToEvent("XMAS", member, "Host");
+        Event other = new Event("OTHER", "Meeting", null, null, 0, "", "");
+        club.addEvent(other);
+        club.markSaved();
+
+        assertFalse(parser.parse("editEvent e/xmas n/ d/ by/ b/ v/ l/"));
+
+        Event updated = club.findEventByTag("XMAS").orElseThrow();
+        assertEquals("XMAS", updated.getTag());
+        assertEquals("", updated.getName());
+        assertNull(updated.getDate());
+        assertNull(updated.getDeadline());
+        assertEquals(0, updated.getBudget());
+        assertEquals("", updated.getVenue());
+        assertEquals("", updated.getLogistics());
+        assertTrue(updated.isCompleted());
+        assertEquals(List.of(updated, other), club.getEvents());
+        assertEquals(List.of("poster"), updated.getPhotoNames());
+        assertSame(updated, club.getAssignmentsForEvent("XMAS").getFirst().getEvent());
+        assertSame(member, club.getAssignmentsForEvent("XMAS").getFirst().getMember());
+        assertEquals("Host", club.getAssignmentsForEvent("XMAS").getFirst().getRole());
+        assertTrue(club.hasUnsavedChanges());
+
+        SaveLoadManager storage = new SaveLoadManager();
+        Path saveFile = directory.resolve("cleared.cf");
+        storage.save(club, saveFile);
+        Club loadedClub = storage.load(saveFile);
+        Event loaded = loadedClub.findEventByTag("XMAS").orElseThrow();
+        assertEquals("", loaded.getName());
+        assertNull(loaded.getDate());
+        assertNull(loaded.getDeadline());
+        assertEquals(0, loaded.getBudget());
+        assertEquals("", loaded.getVenue());
+        assertEquals("", loaded.getLogistics());
+        assertTrue(loaded.isCompleted());
+        assertSame(loaded, loadedClub.getAssignmentsForEvent("XMAS").getFirst().getEvent());
+    }
+
+    @Test
     void editEvent_unknownTag_throwsWithoutAddingAnEventOrPrintingErrors() {
         EventNotFoundException error = assertThrows(EventNotFoundException.class,
                 () -> parser.parse("editEvent e/UNKNOWN n/New"));
@@ -132,9 +212,9 @@ class EditEventCommandTest {
 
     @Test
     void editEvent_invalidField_doesNotApplyOtherChanges() {
-        for (String field : List.of("d/2026-02-30", "d/\"\"", "by/tomorrow", "by/\"\"",
-                "b/free", "b/-1", "b/NaN", "b/Infinity", "b/1e309", "b/\"\"",
-                "v/Bad|Venue", "l/Bad|Notes")) {
+        for (String field : List.of("d/2026-02-30", "by/tomorrow",
+                "b/free", "b/-1", "b/NaN", "b/Infinity", "b/1e309",
+                "v/Bad|Venue", "l/Bad|Notes", "by/ b/-1", "d/ by/tomorrow")) {
             String input = "editEvent e/XMAS n/Changed " + field;
 
             assertThrows(CommandParseException.class, () -> parser.parse(input), input);
