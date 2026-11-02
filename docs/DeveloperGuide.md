@@ -109,6 +109,13 @@ ClubFlow uses a terminal interface implemented by [`UserInterface`](../src/main/
 - **Output:** `print()` displays messages with the `[CF]` prefix and supports indentation. `printWithoutPrefix()` is used for copyable content, such as event invitations.
 - **Error messages:** `ClubFlow` displays expected command exceptions through the UI, including command syntax when appropriate, while unexpected runtime exceptions are logged.
 
+`UserGuideCommand` implements `userGuide` (alias `ug`) without modifying club
+state. It uses `Desktop.getDesktop().browse(...)` with a fixed published User Guide
+URL. An `IOException` is converted to `UGOpenException`. The command does not
+check browser support before calling `Desktop.getDesktop()`, so environments
+without desktop support can also raise an unchecked runtime exception. This
+feature opens a web page rather than a bundled offline document.
+
 The class diagram illustrates how `ClubFlow`, `CommandParser`, and commands interact with the shared `UserInterface` instance.
 
 <a href="diagrams/architecture/UiClassDiagram.svg"><img src="diagrams/architecture/UiClassDiagram.svg" alt="UI class diagram" style="max-width: 100%; height: auto;"></a>
@@ -173,11 +180,11 @@ Storage connects the shared in-memory `Club` to local files. Its main classes ar
 [`SaveLoadManager`](../src/main/java/clubflow/SaveLoadManager.java) and
 [`ClubManager`](../src/main/java/clubflow/ClubManager.java).
 
-| Class | Responsibility |
-| --- | --- |
-| `SaveLoadManager` | Serialises club records, validates and reconstructs loaded data, and synchronises photo directories. |
-| `ClubManager` | Selects each club's save path, initialises the default club, restores the startup preference, migrates legacy data, and coordinates saving and switching clubs. |
-| `LoadCommand` | Imports a user-selected file into the active club without changing the active club ID. |
+| Class             | Responsibility                                                                                                                                                  |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `SaveLoadManager` | Serialises club records, validates and reconstructs loaded data, and synchronises photo directories.                                                            |
+| `ClubManager`     | Selects each club's save path, initialises the default club, restores the startup preference, migrates legacy data, and coordinates saving and switching clubs. |
+| `LoadCommand`     | Imports a user-selected file into the active club without changing the active club ID.                                                                          |
 
 `ClubFlow` triggers automatic saving through `ClubManager`, while `LoadCommand`
 uses `SaveLoadManager` to read an import. Loaded records are assembled in a
@@ -231,7 +238,9 @@ Expected exceptions should be propagated rather than printed and rethrown, avoid
 
 ## Implementation
 
-This section describes noteworthy details of selected implemented features.
+This section describes noteworthy details of selected implemented features,
+including the v2.1 changes to searching, upcoming-event listings, event clearing,
+photo renaming, invitations, member assignment queries, and club restoration.
 
 ### Event management
 
@@ -265,17 +274,28 @@ The creation flow below ends before the input loop's autosave step.
 
 #### Editing and replacement
 
+`EditEventCommand` distinguishes omitted arguments from explicitly blank
+values. The former leave the corresponding event properties unchanged, while
+the latter clear them, including `d/` and `by/` for optional dates. The
+command removes blank optional values from a validation copy of the argument
+map, leaving supplied empty values intact for the replacement step.
+
 Edits validate a replacement before installing it, avoiding partially applied
 changes. The tradeoff is that replacing an event must preserve its position,
 photos, and member assignments; this belongs in `Club.updateEvent()`.
-Omitted edit arguments preserve existing values, while explicit blank values clear
-text, unset dates, or reset the budget to zero. `EditEventCommand` validates a copy
-with blank optional arguments removed, keeping the original arguments for execution
-so clearing and omission remain distinct. Creation retains its existing validation.
+Blank text fields become empty strings, blank dates become `null`, and a blank
+budget becomes zero. Creation retains its existing validation.
 `ClearEventCommand` implements `clearEvent e/TAG` by constructing a replacement
 with empty text, null dates, a zero budget, and completion set to false (pending),
 preserving the original tag. It uses the same `Club.updateEvent()` path to retain photos,
-assignments, and list position and mark the club for autosave.
+assignments, and list position and mark the club for autosave. Unlike an `editEvent`
+request clearing every field, `clearEvent` also resets the completion state.
+
+The distinction between an omitted and an explicitly blank argument is important:
+`editEvent e/TAG by/` sets the deadline to `null`, whereas `editEvent e/TAG v/Room`
+leaves its existing deadline unchanged. Creating an event still uses normal
+validation and does not treat blank values as an editing operation.
+
 When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
@@ -304,12 +324,18 @@ Search combines predicates over the current event snapshot. A linear scan keeps
 ordering predictable and avoids maintaining indexes as events change. Keep
 filter validation in `FindEventCommand` and matching in `EventSearch`; compile
 filter values once per request. Date range filters (`from/` and `to/`)
-include their endpoints and reject ranges with the start after the end.
+include their endpoints; either bound can be omitted. `FindEventCommand`
+validates ISO dates, rejects a start later than the end, and rejects `d/` values
+outside a supplied range. `EventSearch` excludes undated events from date-range
+matches and combines all supplied predicates with AND semantics.
 Consider indexing only if measured usage justifies the additional update logic.
 
-`UpcomingEventsCommand` queries the current club snapshot at execution time,
-excludes completed, undated, and past events, and sorts the remaining events
-chronologically. This read-only operation does not trigger autosave.
+`UpcomingEventsCommand` captures `LocalDate.now()` once, queries the current
+club snapshot at execution time, and excludes completed, undated, and past
+events. It sorts the remaining events by date, then case-insensitive tag,
+and uses `UserInterface.print(..., 1)` to indent each result below its heading.
+It has no fixed one-month horizon. This read-only operation does not trigger
+autosave and never reorders the club's stored event list.
 
 <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="max-width: 100%; height: auto;"></a>
 
@@ -618,12 +644,13 @@ failures; [autosave recovery tests](#autosave-failure-and-recovery) cover retrie
 
 ### Photo lifecycle and persistence limits
 
-ClubFlow supports importing, listing, opening, and deleting event photos. Photo commands operate through the shared `Club`, which delegates operations to the relevant `Event`. The [`Photo`](../src/main/java/clubflow/photo/Photo.java) class handles file operations, while [`SaveLoadManager`](../src/main/java/clubflow/SaveLoadManager.java) manages photo persistence.
+ClubFlow supports importing, listing, opening, renaming, and deleting event photos. Photo commands operate through the shared `Club`, which delegates operations to the relevant `Event`. The [`Photo`](../src/main/java/clubflow/photo/Photo.java) class handles file operations, while [`SaveLoadManager`](../src/main/java/clubflow/SaveLoadManager.java) manages photo persistence.
 
 | Feature | Main classes |
 | --- | --- |
 | Import | [`AddPhotoCommand`](../src/main/java/clubflow/command/photo/AddPhotoCommand.java), [`AddAllPhotoCommand`](../src/main/java/clubflow/command/photo/AddAllPhotoCommand.java) |
 | List, open, delete | [`ListPhotoCommand`](../src/main/java/clubflow/command/photo/ListPhotoCommand.java), [`OpenPhotoCommand`](../src/main/java/clubflow/command/photo/OpenPhotoCommand.java), [`DeletePhotoCommand`](../src/main/java/clubflow/command/photo/DeletePhotoCommand.java) |
+| Rename | [`RenamePhotoCommand`](../src/main/java/clubflow/command/photo/RenamePhotoCommand.java), [`Event`](../src/main/java/clubflow/event/Event.java), [`Photo`](../src/main/java/clubflow/photo/Photo.java) |
 | Photo management | [`Event`](../src/main/java/clubflow/event/Event.java), [`Photo`](../src/main/java/clubflow/photo/Photo.java) |
 
 #### Photo importing
@@ -640,11 +667,34 @@ The following sequence diagram illustrates a successful single-photo import, inc
 
 If no name is provided, the source filename without its extension is used. Duplicate destination filenames are rejected to prevent overwriting existing photos.
 
-Bulk importing uses `AddAllPhotoCommand` and `Event.addPhotos()`. Each regular file is processed independently, allowing valid photos to be imported even when others fail. Successes and failures are counted.
+Bulk importing uses `AddAllPhotoCommand`, `Club.addPhotos()`, and `Event.addPhotos()`.
+The event checks that the source is a directory, then iterates over its direct
+children. Non-file entries are skipped. Each regular file is attempted with
+its extension-stripped filename as the photo name; unsupported formats,
+duplicate names, and invalid files count as failures. Processing continues
+after a `PhotoLoadException` for an individual file. An invalid/unreadable
+directory instead raises `PhotoLoadException` before importing. The command
+reports both counters, and `Club.addPhotos()` marks the club for autosave after
+a directory has been processed.
 
 #### Photo management
 
 `Event` provides methods for listing, opening, and deleting registered photos. Opening uses the operating system's default image viewer or file explorer. Deletion removes the physical file before removing its registration, while bulk deletion records successful and failed operations.
+
+#### Renaming a photo
+
+`RenamePhotoCommand` implements `renamePhoto e/TAG n/OLD_NAME new/NEW_NAME`
+(alias `rp`). It validates the event tag and delegates to `Club.renamePhoto()`,
+which looks up the event and calls `Event.renamePhoto()`. The event obtains the
+`Photo` object, calls `Photo.rename()` to move its PNG file to a new filename in
+the same directory, then updates the name-to-photo map. The club marks itself
+unsaved after a successful rename, so the normal autosave path persists the
+change. The photo's event and PNG format are unchanged.
+
+`Photo.rename()` rejects blank names, path separators, `..`, and a destination
+file that already exists. A failed file move raises `PhotoRenameException`; the
+event's photo map is updated only after the move succeeds. An unknown old photo
+name is also reported without modifying the photo collection.
 
 #### Photo persistence
 
@@ -715,6 +765,9 @@ input, and clipboard failures.
 [`InvitationPersistenceTest`](../src/test/java/clubflow/InvitationPersistenceTest.java)
 uses separate headless JVM sessions and temporary working directories to verify
 autosaving and restoration of invitation edits without accessing the system clipboard.
+[`EventDateFeaturesTest`](../src/test/java/clubflow/command/event/EventDateFeaturesTest.java)
+checks inclusive date ranges, conflicting and invalid bounds, one-sided filters,
+upcoming-event ordering, exclusions, and read-only behaviour.
 
 Filesystem tests use JUnit's `@TempDir` to isolate test data. Input-loop tests redirect `System.in` and `System.out` to simulate interaction and check command output, restoring the original streams afterward.
 
@@ -811,39 +864,49 @@ organisers coordinating across devices must transfer their files themselves.
 
 ## Appendix B: User Stories
 
-These MVP stories are based on the team's brainstorming list. Overlapping ideas
-about editing events and saving data have been combined. The stories below
-describe features available in the current implementation.
+The original user stories and the ten v2.1 MVP additions are retained in the
+same table. Some overlap because the v2.1 stories restate earlier goals more
+specifically. The listed behaviours are implemented in the current codebase.
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low
 (unlikely to have) - `*`.
 
-| Priority | As a ... | I want to ... | So that I can ... |
-| --- | --- | --- | --- |
-| `* * *` | interest group head | create an event with its name, date, venue, deadline, budget, and logistics | give the team a shared plan for its work |
-| `* * *` | club organiser | view all events or one event's details and budget | check plans before changing them |
-| `* * *` | event organiser | edit an event's date, deadline, budget, venue, logistics, or name | keep its record accurate when plans change |
-| `* * *` | club organiser | delete an outdated event | remove plans that are no longer relevant |
-| `* * *` | club manager | add and view members with their contact details and functions | keep an up-to-date membership record |
-| `* * *` | club manager | edit a member's details | keep contact information and functions accurate |
-| `* * *` | club manager | delete a former member | keep the roster current |
-| `* * *` | event organiser | assign or unassign members and record their event roles | see who is responsible for an event |
-| `* * *` | regular user | have club data load and save automatically | resume work after restarting without saving each change manually |
-| `* * *` | first-time user | see available commands and the syntax of a chosen command in the help menu | use ClubFlow without opening the User Guide |
-| `* *` | regular user | search events by keyword or other event details | locate an event without reading the whole list |
-| `* *` | regular user | search members by name, contact, or function | locate the intended member without inspecting the whole roster |
-| `* *` | club member | view all events assigned to me | check my responsibilities |
-| `* *` | club manager | find members who are not assigned to any event | distribute work more evenly |
-| `* *` | club manager | mark events as completed and find completed events later | refer to past plans when organising new events |
-| `* *` | manager of several clubs | create, list, and switch between separate club records | manage each club's information in one application |
-| `* *` | event organiser | add, view, and remove event photos stored locally | keep visual records with their events |
-| `* *` | regular user | use short command aliases | enter frequent commands more quickly |
-| `* *` | regular user | confirm a suggested correction for a misspelled command | recover from a typo without re-entering its arguments |
-| `* *` | event organiser | generate a copyable invitation using an event's saved details | share its name, date, and venue without retyping them |
-| `* *` | club manager | have generated invitations copied automatically to my clipboard | paste them into my messaging application immediately |
-| `* *` | club manager | be warned about missing invitation details and optionally fill them in before copying | share a complete invitation and save the corrected event details |
-| `* *` | manager of several clubs | reopen the last active club on startup | continue managing it without switching clubs each time |
-| `* *` | regular user | see clear prompts and visually distinct command results | read the command-line interface more easily |
+| Priority | As a ...                                                                            | I want to ...                                                                         | So that I can ...                                                |
+|----------|-------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| `* * *`  | interest group head                                                                 | create an event with its name, date, venue, deadline, budget, and logistics           | give the team a shared plan for its work                         |
+| `* * *`  | club organiser                                                                      | view all events or one event's details and budget                                     | check plans before changing them                                 |
+| `* * *`  | event organiser                                                                     | edit an event's date, deadline, budget, venue, logistics, or name                     | keep its record accurate when plans change                       |
+| `* * *`  | club organiser                                                                      | delete an outdated event                                                              | remove plans that are no longer relevant                         |
+| `* * *`  | club manager                                                                        | add and view members with their contact details and functions                         | keep an up-to-date membership record                             |
+| `* * *`  | club manager                                                                        | edit a member's details                                                               | keep contact information and functions accurate                  |
+| `* * *`  | club manager                                                                        | delete a former member                                                                | keep the roster current                                          |
+| `* * *`  | event organiser                                                                     | assign or unassign members and record their event roles                               | see who is responsible for an event                              |
+| `* * *`  | regular user                                                                        | have club data load and save automatically                                            | resume work after restarting without saving each change manually |
+| `* * *`  | first-time user                                                                     | see available commands and the syntax of a chosen command in the help menu            | use ClubFlow without opening the User Guide                      |
+| `* *`    | regular user                                                                        | search events by keyword or other event details                                       | locate an event without reading the whole list                   |
+| `* *`    | regular user                                                                        | search members by name, contact, or function                                          | locate the intended member without inspecting the whole roster   |
+| `* *`    | club member                                                                         | view all events assigned to me                                                        | check my responsibilities                                        |
+| `* *`    | club manager                                                                        | find members who are not assigned to any event                                        | distribute work more evenly                                      |
+| `* *`    | club manager                                                                        | mark events as completed and find completed events later                              | refer to past plans when organising new events                   |
+| `* *`    | manager of several clubs                                                            | create, list, and switch between separate club records                                | manage each club's information in one application                |
+| `* *`    | event organiser                                                                     | add, view, and remove event photos stored locally                                     | keep visual records with their events                            |
+| `* *`    | regular user                                                                        | use short command aliases                                                             | enter frequent commands more quickly                             |
+| `* *`    | regular user                                                                        | confirm a suggested correction for a misspelled command                               | recover from a typo without re-entering its arguments            |
+| `* *`    | event organiser                                                                     | generate a copyable invitation using an event's saved details                         | share its name, date, and venue without retyping them            |
+| `* *`    | club manager                                                                        | have generated invitations copied automatically to my clipboard                       | paste them into my messaging application immediately             |
+| `* *`    | club manager                                                                        | be warned about missing invitation details and optionally fill them in before copying | share a complete invitation and save the corrected event details |
+| `* *`    | manager of several clubs                                                            | reopen the last active club on startup                                                | continue managing it without switching clubs each time           |
+| `* *`    | regular user                                                                        | see clear prompts and visually distinct command results                               | read the command-line interface more easily                      |
+| `* * *`  | club manager who wants to generate an invitation to invite my friends into the club | have the invitation message automatically copied to my clipboard                      | share the invitation without manually copying it                 |
+| `* * *`  | club manager who stores photos in ClubFlow                                          | rename photos after importing them into the application                               | keep their names meaningful and organised                        |
+| `* * *`  | club manager                                                                        | search for events by date or date range                                               | know which events are happening in the next month                |
+| `* * *`  | regular club member                                                                 | check ClubFlow for upcoming events                                                    | keep myself up to date                                           |
+| `* * *`  | club admin                                                                          | clear an event's deadline, date, or characteristics                                   | remove details that no longer apply                              |
+| `* * *`  | club manager who is new to the app                                                  | open the User Guide link easily from within the app                                   | access usage instructions quickly                                |
+| `* * *`  | manager of multiple clubs                                                           | have ClubFlow reopen the club I last used                                             | avoid switching clubs every time I launch it                     |
+| `* * *`  | club manager                                                                        | be told which invitation details are missing when generating an invitation            | fill them in before sharing it                                   |
+| `* * *`  | club member                                                                         | view all events assigned to me                                                        | check my responsibilities                                        |
+| `* * *`  | club manager                                                                        | search for members who are not assigned to any event                                  | distribute work more evenly                                      |
 
 ### Use cases
 
@@ -1050,6 +1113,65 @@ Use case ends.
     - 4a1. ClubFlow displays an error message.
     - Use case ends.
 
+#### UC10: Search events by date range
+
+**MSS**
+
+1. The organiser enters `findEvent from/START to/END`, using dates in `YYYY-MM-DD` format.
+2. ClubFlow validates the dates and verifies that the start is not later than the end.
+3. `EventSearch` combines the inclusive date predicates with any other supplied filters.
+4. ClubFlow lists matching events from the active club in their existing order.
+
+**Extensions:** either bound may be omitted, and `d/DATE` can request a single
+day. Events without dates do not satisfy a date-range filter. Invalid or
+reversed bounds, or an exact date outside the supplied range, are rejected
+before searching. An empty result is reported without changing club data.
+
+#### UC11: View upcoming events
+
+**MSS**
+
+1. A member enters `upcomingEvents` or `ue`.
+2. ClubFlow takes a snapshot of the active club's events and captures today's date.
+3. It excludes events that are completed, undated, or earlier than today.
+4. It sorts the remaining events by date, then by tag for equal dates, and
+   displays each event's tag, name, and date.
+
+**Extensions:** if none qualify, ClubFlow displays `No upcoming events found.`
+Unexpected command arguments are rejected. The query does not change club data
+or trigger autosave.
+
+#### UC12: Rename an imported photo
+
+**MSS**
+
+1. The organiser enters `renamePhoto e/TAG n/OLD_NAME new/NEW_NAME`.
+2. ClubFlow finds the event and its registered photo.
+3. It validates the new photo name and renames the PNG file within the same directory.
+4. It updates the event's photo-name lookup and confirms the rename.
+5. The change is saved through the usual autosave mechanism.
+
+**Extensions:** an unknown event or photo, invalid name, existing destination
+filename, or file-operation failure is reported. The registration is not changed
+when the filesystem rename fails.
+
+#### UC13: Clear event details
+
+**MSS**
+
+1. The organiser enters `editEvent e/TAG by/` to clear only an event deadline,
+   or `clearEvent e/TAG` to reset the event's editable details.
+2. ClubFlow locates the event by its case-insensitive tag.
+3. For `editEvent`, blank supplied fields become empty text, `null` dates, or a
+   zero budget; omitted fields and the completion state are preserved. For
+   `clearEvent`, all editable fields are cleared and completion becomes pending.
+4. `Club.updateEvent()` replaces the event in its existing position, retaining
+   its photos and re-linking its member assignments to the replacement event.
+5. ClubFlow confirms the change and attempts autosave after the command.
+
+**Extensions:** an unknown tag or invalid nonblank edit is rejected without
+changing the event. Calling `clearEvent` on an already cleared event is allowed.
+
 ## Appendix C: Non-Functional Requirements
 
 The following requirements describe the intended v2.1 release. They are stated
@@ -1057,7 +1179,10 @@ in terms that a tester or maintainer can check:
 
 1. **Operating environment:** ClubFlow must run from a terminal with JDK 25,
    without requiring a GUI framework, a database server, or an internet
-   connection. The release JAR must launch using the documented command.
+   connection for core record management. Opening the hosted User Guide and
+   using system clipboard, image viewer, or browser features additionally
+   depend on the relevant desktop services. The release JAR must launch using
+   the documented command.
 2. **Input and error handling:** an invalid command or an unknown club must
    produce a readable explanation without terminating an otherwise usable
    command session. Recoverable I/O failures must be reported to the user.
@@ -1127,6 +1252,12 @@ The following tests verify application startup, command help, error handling, an
 **Test case:** `help c/unknown`
 
 **Expected:** ClubFlow displays an error indicating that the command does not exist.
+
+**Test case:** `userGuide` and `ug` on a computer with a supported desktop browser.
+
+**Expected:** Both commands open the published User Guide in the default browser.
+They do not change the active club. Browser access is environment-dependent,
+so the test should not be run in a headless terminal session.
 
 #### Invalid commands
 
@@ -1272,6 +1403,39 @@ report current member indices; obtain a fresh index after deleting a member.
     6. Expected: Only Bob remains, now at index 1. The deleted member no longer
        appears in the event assignment. Both changes persist after restart.
 
+### Date searches, upcoming events, and clearing fields
+
+Perform these cases in a new, empty working directory. Choose valid
+`YYYY-MM-DD` dates for **yesterday**, **today**, **tomorrow**, and a **later
+future date** relative to the day of testing. Replace the placeholders below
+with actual ISO dates; do not type `TODAY_DATE` literally.
+
+1. Create `PAST` dated yesterday, `TODAY` dated today, `DONE` dated tomorrow,
+   `FUTURE` dated later, and `UNDATED` without a date. Mark `DONE` completed.
+2. Enter `findEvent from/TODAY_DATE to/LATER_DATE`. Expect `TODAY`, `DONE`,
+   and `FUTURE` in creation order, including both boundaries, but not `PAST`
+   or `UNDATED`. Enter `findEvent d/TODAY_DATE` and expect only `TODAY`.
+3. Enter `findEvent from/LATER_DATE to/TODAY_DATE` and expect a validation
+   error. Test one-sided `from/` and `to/` bounds, an invalid calendar date,
+   and `d/TODAY_DATE from/LATER_DATE`; invalid searches must not modify data.
+4. Enter `upcomingEvents` and `ue`. Expect `TODAY` then `FUTURE`, ordered by
+   date; neither `DONE`, `PAST`, nor `UNDATED` appears. Check that the displayed
+   event lines are indented. Mark `TODAY` and `FUTURE` completed and retry:
+   expect `No upcoming events found.`
+5. Enter `editEvent e/FUTURE v/"Room A"`, then `editEvent e/FUTURE v/ by/ d/`.
+   Confirm with `viewEvent e/FUTURE` that venue, deadline, and event date are
+   unset, but the event remains completed. Restore a future date using
+   `editEvent e/FUTURE d/LATER_DATE` and verify the date appears again.
+6. Create a member with `createMember n/Tester t/tester` and assign them with
+   `assignMember e/FUTURE i/1 r/Host`. Enter `clearEvent e/FUTURE`, then
+   `viewEvent e/FUTURE` and `viewMemberEvents i/1`. Expect all editable event
+   details to be unset (budget zero), completion to be `Not completed`, and
+   the member assignment with role `Host` to remain. The tag is still `FUTURE`.
+   Exit and restart to verify that the cleared details persist.
+7. Repeat `clearEvent e/FUTURE` and confirm the event still exists. Enter
+   `clearEvent e/UNKNOWN` and expect an event-not-found error. No unrelated
+   events should be changed.
+
 ### Multiple clubs and restart persistence
 
 Perform this sequence in a **fresh, empty working directory** so existing
@@ -1327,7 +1491,28 @@ The following tests verify photo importing, listing, opening, deletion, persiste
 4. Run `openphoto e/CAMP n/group`.
     - Expected: The imported photo opens in the default image viewer.
 5. Run `addallphoto e/CAMP p/testimages`.
-    - Expected: Valid images are imported, and the number of successful and failed imports is displayed.
+    - Expected: Supported images are imported, and the number of successful and
+      failed imports is displayed. Nested folders are ignored.
+6. Place a non-image text file inside `testimages` and run `addAllPhoto` again.
+    - Expected: Files already imported fail due to duplicate names, the text
+      file fails because it is not an image, and the command reports these
+      failures without overwriting the original PNGs.
+7. Run `addAllPhoto e/CAMP p/missing-directory`.
+    - Expected: An invalid-directory error is displayed. ClubFlow continues
+      accepting commands without importing anything from that directory.
+
+#### Renaming photos
+
+1. Run `addphoto e/CAMP n/to-rename p/sample.jpg`.
+2. Run `renamePhoto e/CAMP n/to-rename new/renamed`, then `listPhoto e/CAMP`.
+    - Expected: `renamed` appears and `to-rename` no longer appears. The PNG
+      remains in the same event directory with the new filename.
+3. Run `renamePhoto e/CAMP n/renamed new/group` and
+   `renamePhoto e/CAMP n/missing new/other`.
+    - Expected: Both operations fail without losing the existing photos:
+      `group` already exists and `missing` is not a registered photo.
+4. Exit and restart, then run `listPhoto e/CAMP`.
+    - Expected: `renamed` persists. It can be opened or deleted by the new name.
 
 #### Deleting photos
 

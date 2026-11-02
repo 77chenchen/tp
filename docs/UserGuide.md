@@ -15,6 +15,15 @@ organise event photos, and work with multiple independent clubs. Changes are sav
 4. Enter commands at the `>` prompt. For example, enter `createEvent e/XMAS n/"Christmas Party"`.
 5. Enter `exit` to close the application. Changes are saved automatically.
 
+### v2.1 features at a glance
+
+In v2.1, you can search events by date range (`findEvent from/START to/END`), list
+upcoming events (`upcomingEvents`), clear selected event fields (`editEvent`),
+or reset all editable event details (`clearEvent`). You can also rename imported
+photos, open the online User Guide with `userGuide`, generate and copy invitations
+with prompts for missing details, restore the last active club, view a member's
+assigned events, and find unassigned members. The sections below explain each command.
+
 ## Features
 
 Command names and argument prefixes ignore case. Enclose values containing spaces in double quotes.
@@ -134,17 +143,22 @@ Format: `editEvent e/TAG [n/NAME] [d/DATE] [by/DEADLINE] [b/BUDGET] [v/VENUE] [l
 * Omitted fields keep their existing values. The event stays in the same list position.
 * Editing preserves the event's completion state, photos, and member assignments.
 * Dates and deadlines use `YYYY-MM-DD`; the budget must be a finite, non-negative number.
-* Leave a supplied field empty to clear it, such as `by/` to remove the deadline or `v/` to clear the venue.
-  Empty quoted values such as `by/""` also work. Clearing `d/` or `by/` unsets the date;
-  clearing `b/` resets the budget to zero.
+* Leave a supplied field empty to clear only that field, such as `by/` to remove the
+  deadline, `d/` to remove the event date, or `v/` to clear the venue. Empty quoted
+  values such as `by/""` also work. Clearing `b/` resets the budget to zero.
+* Clearing an event date removes that event from date-range search results and
+  `upcomingEvents` until a new date is supplied.
 * Invalid input leaves the event unchanged. An unknown tag displays `Event not found: TAG`.
 * Edited details are saved automatically.
 
 Example: `editEvent e/XMAS v/"New Hall" b/600`
 
-Clear the deadline: `editEvent e/XMAS by/`
+Clear just the deadline: `editEvent e/XMAS by/`
+
+Clear just the date and venue: `editEvent e/XMAS d/ v/`
 
 Clear all editable details without deleting the event: `editEvent e/XMAS n/ d/ by/ b/ v/ l/`
+(The completion status remains unchanged when using `editEvent`.)
 
 ### Clearing an event's details: `clearEvent`
 
@@ -157,8 +171,14 @@ Format: `clearEvent e/TAG`
 * Preserves the event's tag, list position, photos, and member assignments.
 * Tag matching ignores case. An unknown tag displays `Event not found: TAG`.
 * Clearing an already cleared event is allowed. Changes are saved automatically.
+* Unlike `editEvent`, `clearEvent` **also resets a completed event to pending**.
+  Use `editEvent` if you want to remove selected details but retain completion status.
 
 Example: `clearEvent e/XMAS`
+
+After clearing, `viewEvent e/XMAS` shows the original event tag, empty details as
+`Not set`, a zero budget, and `Not completed` status. Associated photos and
+members remain attached to the event.
 
 ### Viewing events: `viewEvent`
 
@@ -245,7 +265,7 @@ Searches events using one or more optional field filters. At least one filter is
 Format: `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE] [from/START_DATE] [to/END_DATE] [b/BUDGET] [min/BUDGET] [max/BUDGET] [s/STATUS]`
 
 Examples: `findEvent e/party`, `fe v/"Main Hall"`, `fe n/Party v/Hall`, `fe d/2026-12-25`,
-`fe from/2026-11-01 to/2026-11-30`
+`fe from/2026-11-01 to/2026-11-30`, `fe from/2026-11-01`, `fe to/2026-11-30`
 
 Budget and status examples: `fe b/100`, `fe min/100 max/500`, `fe s/pending max/500`
 
@@ -283,6 +303,10 @@ Format: `upcomingEvents`
 Alias: `ue`
 
 If there are no upcoming events, ClubFlow displays `No upcoming events found.`
+When dates are equal, tags are sorted alphabetically without regard to case.
+Events are indented beneath the `Upcoming events (N):` heading. Today's pending
+and dated events are included, but there is no automatic one-month cutoff.
+To find events only within a specific month, use `findEvent from/START to/END`.
 
 ### Creating a member: `createMember` or `addMember`
 
@@ -421,28 +445,24 @@ Examples:
 * `addPhoto e/XMAS p/"images/group.jpg"` - Automatically names the photo `group`.
 * `addPhoto e/XMAS n/GroupPhoto p/"images/group.jpg"` - Names the photo `GroupPhoto`.
 
-### Adding All Photos to an Event: `addAllPhoto`
+### Importing a folder of photos: `addAllPhoto`
 
-Imports all photos from a specified directory into an event.
+Attempts to import every regular file in a directory into an existing event.
+Each successfully read image is converted to PNG and named after its source
+filename without the extension.
 
-**Format:**
-`addAllPhoto e/TAG p/PATH`
+Format: `addAllPhoto e/TAG p/PATH`
 
-**Parameters:**
-- `e/TAG`: Tag of the event to add photos to.
-- `p/PATH`: Path to the directory containing the photos.
+Example: `addAllPhoto e/CAMP p/"images/camp photos"`
 
-**Example:**
-`addAllPhoto e/CAMP p/"C:\Users\Ray\Pictures\Camp"`
-
-**Notes:**
-* For convenience, each imported photo is automatically named after its original filename, excluding file extension.
-* All supported images in the specified directory are imported and converted to PNG format.
-* Each photo retains its original filename without the file extension.
-* Subdirectories are ignored.
-* If a photo fails to import, the remaining photos will still be processed.
-* The number of successful and failed imports will be displayed.
-* Imported photos are automatically saved.
+* Only files directly inside the directory are processed; subdirectories are ignored.
+* Unsupported or unreadable files, invalid photo names, and duplicate destination
+  names count as failed imports. Other files are still attempted.
+* ClubFlow reports the counts in the form `(N additions, M failures)`. An empty
+  directory produces zero additions and zero failures.
+* A nonexistent or unreadable directory causes an error instead of a results count.
+* Successfully imported photos are included in the active club's normal autosave.
+* Aliases: `aap`, `addPhotos`, `addAllPhotos`.
 
 ### Listing photos: `listPhoto`
 
@@ -476,11 +496,16 @@ Format: `renamePhoto e/TAG n/OLD_NAME new/NEW_NAME`
 * `n/` specifies the current name of the photo.
 * `new/` specifies the new name of the photo, excluding the file extension.
 * The new name cannot be blank, contain `..`, `/`, or `\`.
-* Renaming a photo does not change its directory or file format.
-* If another photo already has the new name, the operation is rejected.
+* Renaming changes the PNG filename and the name shown by `listPhoto`, but
+  keeps the photo in the same event directory, in PNG format, with unchanged image contents.
+* If the original name does not exist, or the destination filename is already
+  in use, ClubFlow reports an error rather than overwriting an image.
 * Renamed photos are automatically saved.
 
 Example: `renamePhoto e/XMAS n/GroupPhoto new/TeamPhoto`
+
+After renaming, use `openPhoto e/XMAS n/TeamPhoto` or
+`deletePhoto e/XMAS n/TeamPhoto` to refer to the photo.
 
 ### Deleting photos: `deletePhoto`
 
@@ -566,7 +591,14 @@ saves/
 
 ### Opening this User Guide: `userGuide`
 
-Opens this User Guide in the system's default web browser.
+Opens the [published User Guide](https://ay2627s1-cs2113-w10-2.github.io/tp/UserGuide.html)
+in your system's default browser without changing your club data.
+
+Format: `userGuide` (alias `ug`)
+
+* Requires a supported desktop browser and an internet connection to view the hosted page.
+* On an I/O error, ClubFlow displays an error message. On headless systems, the
+  desktop-opening feature may be unavailable; open the link above manually instead.
 
 ### Exiting: `exit`
 
