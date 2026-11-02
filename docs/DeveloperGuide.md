@@ -110,10 +110,11 @@ ClubFlow uses a terminal interface implemented by [`UserInterface`](../src/main/
 - **Error messages:** `ClubFlow` displays expected command exceptions through the UI, including command syntax when appropriate, while unexpected runtime exceptions are logged.
 
 `UserGuideCommand` implements `userGuide` (alias `ug`) without modifying club
-state. It uses `Desktop.getDesktop().browse(...)` to open the published User Guide
-URL in the system browser. An `IOException` is converted to `UGOpenException`;
-this action depends on desktop/browser support and is not available in every
-headless environment.
+state. It uses `Desktop.getDesktop().browse(...)` with a fixed published User Guide
+URL. An `IOException` is converted to `UGOpenException`. The command does not
+check browser support before calling `Desktop.getDesktop()`, so environments
+without desktop support can also raise an unchecked runtime exception. This
+feature opens a web page rather than a bundled offline document.
 
 The class diagram illustrates how `ClubFlow`, `CommandParser`, and commands interact with the shared `UserInterface` instance.
 
@@ -237,7 +238,9 @@ Expected exceptions should be propagated rather than printed and rethrown, avoid
 
 ## Implementation
 
-This section describes noteworthy details of selected implemented features.
+This section describes noteworthy details of selected implemented features,
+including the v2.1 changes to searching, upcoming-event listings, event clearing,
+photo renaming, invitations, member assignment queries, and club restoration.
 
 ### Event management
 
@@ -271,24 +274,28 @@ The creation flow below ends before the input loop's autosave step.
 
 #### Editing and replacement
 
-`EditEventCommand` preserves omitted fields and allows a quoted empty string to
-clear the event name, venue, or logistics. In the uploaded implementation,
-`EventArgumentValidator` still requires valid dates for `d/` and `by/`, so
-clearing a deadline (or event date) is not yet supported. Supporting the
-remaining part of MVP story 5 requires an explicit clearing convention and
-changes to validation, editing, and regression tests.
+`EditEventCommand` distinguishes omitted arguments from explicitly blank
+values. The former leave the corresponding event properties unchanged, while
+the latter clear them, including `d/` and `by/` for optional dates. The
+command removes blank optional values from a validation copy of the argument
+map, leaving supplied empty values intact for the replacement step.
 
 Edits validate a replacement before installing it, avoiding partially applied
 changes. The tradeoff is that replacing an event must preserve its position,
 photos, and member assignments; this belongs in `Club.updateEvent()`.
-Omitted edit arguments preserve existing values, while explicit blank values clear
-text, unset dates, or reset the budget to zero. `EditEventCommand` validates a copy
-with blank optional arguments removed, keeping the original arguments for execution
-so clearing and omission remain distinct. Creation retains its existing validation.
+Blank text fields become empty strings, blank dates become `null`, and a blank
+budget becomes zero. Creation retains its existing validation.
 `ClearEventCommand` implements `clearEvent e/TAG` by constructing a replacement
 with empty text, null dates, a zero budget, and completion set to false (pending),
 preserving the original tag. It uses the same `Club.updateEvent()` path to retain photos,
-assignments, and list position and mark the club for autosave.
+assignments, and list position and mark the club for autosave. Unlike an `editEvent`
+request clearing every field, `clearEvent` also resets the completion state.
+
+The distinction between an omitted and an explicitly blank argument is important:
+`editEvent e/TAG by/` sets the deadline to `null`, whereas `editEvent e/TAG v/Room`
+leaves its existing deadline unchanged. Creating an event still uses normal
+validation and does not treat blank values as an editing operation.
+
 When adding an event field, review both editing and completion copy paths,
 the displayed/searchable details, and the save/load format together.
 
@@ -317,12 +324,18 @@ Search combines predicates over the current event snapshot. A linear scan keeps
 ordering predictable and avoids maintaining indexes as events change. Keep
 filter validation in `FindEventCommand` and matching in `EventSearch`; compile
 filter values once per request. Date range filters (`from/` and `to/`)
-include their endpoints and reject ranges with the start after the end.
+include their endpoints; either bound can be omitted. `FindEventCommand`
+validates ISO dates, rejects a start later than the end, and rejects `d/` values
+outside a supplied range. `EventSearch` excludes undated events from date-range
+matches and combines all supplied predicates with AND semantics.
 Consider indexing only if measured usage justifies the additional update logic.
 
-`UpcomingEventsCommand` queries the current club snapshot at execution time,
-excludes completed, undated, and past events, and sorts the remaining events
-chronologically. This read-only operation does not trigger autosave.
+`UpcomingEventsCommand` captures `LocalDate.now()` once, queries the current
+club snapshot at execution time, and excludes completed, undated, and past
+events. It sorts the remaining events by date, then case-insensitive tag,
+and uses `UserInterface.print(..., 1)` to indent each result below its heading.
+It has no fixed one-month horizon. This read-only operation does not trigger
+autosave and never reorders the club's stored event list.
 
 <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="max-width: 100%; height: auto;"></a>
 
@@ -654,7 +667,15 @@ The following sequence diagram illustrates a successful single-photo import, inc
 
 If no name is provided, the source filename without its extension is used. Duplicate destination filenames are rejected to prevent overwriting existing photos.
 
-Bulk importing uses `AddAllPhotoCommand` and `Event.addPhotos()`. Each regular file is processed independently, allowing valid photos to be imported even when others fail. Successes and failures are counted.
+Bulk importing uses `AddAllPhotoCommand`, `Club.addPhotos()`, and `Event.addPhotos()`.
+The event checks that the source is a directory, then iterates over its direct
+children. Non-file entries are skipped. Each regular file is attempted with
+its extension-stripped filename as the photo name; unsupported formats,
+duplicate names, and invalid files count as failures. Processing continues
+after a `PhotoLoadException` for an individual file. An invalid/unreadable
+directory instead raises `PhotoLoadException` before importing. The command
+reports both counters, and `Club.addPhotos()` marks the club for autosave after
+a directory has been processed.
 
 #### Photo management
 
@@ -843,9 +864,9 @@ organisers coordinating across devices must transfer their files themselves.
 
 ## Appendix B: User Stories
 
-These MVP stories are based on the team's brainstorming list. Overlapping ideas
-about editing events and saving data have been combined. The stories below
-describe features available in the current implementation.
+The original user stories and the ten v2.1 MVP additions are retained in the
+same table. Some overlap because the v2.1 stories restate earlier goals more
+specifically. The listed behaviours are implemented in the current codebase.
 
 Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low
 (unlikely to have) - `*`.
@@ -1134,6 +1155,23 @@ or trigger autosave.
 filename, or file-operation failure is reported. The registration is not changed
 when the filesystem rename fails.
 
+#### UC13: Clear event details
+
+**MSS**
+
+1. The organiser enters `editEvent e/TAG by/` to clear only an event deadline,
+   or `clearEvent e/TAG` to reset the event's editable details.
+2. ClubFlow locates the event by its case-insensitive tag.
+3. For `editEvent`, blank supplied fields become empty text, `null` dates, or a
+   zero budget; omitted fields and the completion state are preserved. For
+   `clearEvent`, all editable fields are cleared and completion becomes pending.
+4. `Club.updateEvent()` replaces the event in its existing position, retaining
+   its photos and re-linking its member assignments to the replacement event.
+5. ClubFlow confirms the change and attempts autosave after the command.
+
+**Extensions:** an unknown tag or invalid nonblank edit is rejected without
+changing the event. Calling `clearEvent` on an already cleared event is allowed.
+
 ## Appendix C: Non-Functional Requirements
 
 The following requirements describe the intended v2.1 release. They are stated
@@ -1141,7 +1179,10 @@ in terms that a tester or maintainer can check:
 
 1. **Operating environment:** ClubFlow must run from a terminal with JDK 25,
    without requiring a GUI framework, a database server, or an internet
-   connection. The release JAR must launch using the documented command.
+   connection for core record management. Opening the hosted User Guide and
+   using system clipboard, image viewer, or browser features additionally
+   depend on the relevant desktop services. The release JAR must launch using
+   the documented command.
 2. **Input and error handling:** an invalid command or an unknown club must
    produce a readable explanation without terminating an otherwise usable
    command session. Recoverable I/O failures must be reported to the user.
@@ -1366,28 +1407,34 @@ report current member indices; obtain a fresh index after deleting a member.
 
 Perform these cases in a new, empty working directory. Choose valid
 `YYYY-MM-DD` dates for **yesterday**, **today**, **tomorrow**, and a **later
-future date** relative to the day of testing.
+future date** relative to the day of testing. Replace the placeholders below
+with actual ISO dates; do not type `TODAY_DATE` literally.
 
-1. Create events with tags `PAST`, `TODAY`, `DONE`, and `FUTURE`, using the
-   corresponding dates, plus an undated event `UNDATED`. Mark `DONE` completed.
-2. Enter `findEvent from/TODAY_DATE to/LATER_DATE`. Expect `TODAY`, `DONE`, and
-   `FUTURE`, including both boundaries, but not `PAST` or `UNDATED`.
-   Then enter `findEvent d/TODAY_DATE`, expecting only `TODAY`.
-3. Enter `findEvent from/LATER_DATE to/TODAY_DATE`. Expect an invalid date-range
-   error. Try one-sided `from/` and `to/` bounds and verify their inclusive
-   results. Invalid calendar dates should be rejected.
-4. Enter `upcomingEvents` and its alias `ue`. Expect `TODAY` followed by
-   `FUTURE`, ordered by date. Completed `DONE`, past `PAST`, and `UNDATED`
-   must not appear. After marking the remaining events completed, expect
-   `No upcoming events found.`
-5. Enter `editEvent e/FUTURE v/"Room A"`, followed by
-   `editEvent e/FUTURE v/""`. Expect the venue to be unset when viewed.
-   **Limitation in the uploaded implementation:** clearing `d/` or `by/` is
-   not yet supported and should not be documented as a passing test until
-   the relevant editing code is updated.
-
-Replace `TODAY_DATE` and `LATER_DATE` in the commands with the chosen ISO dates,
-not the literal placeholder text.
+1. Create `PAST` dated yesterday, `TODAY` dated today, `DONE` dated tomorrow,
+   `FUTURE` dated later, and `UNDATED` without a date. Mark `DONE` completed.
+2. Enter `findEvent from/TODAY_DATE to/LATER_DATE`. Expect `TODAY`, `DONE`,
+   and `FUTURE` in creation order, including both boundaries, but not `PAST`
+   or `UNDATED`. Enter `findEvent d/TODAY_DATE` and expect only `TODAY`.
+3. Enter `findEvent from/LATER_DATE to/TODAY_DATE` and expect a validation
+   error. Test one-sided `from/` and `to/` bounds, an invalid calendar date,
+   and `d/TODAY_DATE from/LATER_DATE`; invalid searches must not modify data.
+4. Enter `upcomingEvents` and `ue`. Expect `TODAY` then `FUTURE`, ordered by
+   date; neither `DONE`, `PAST`, nor `UNDATED` appears. Check that the displayed
+   event lines are indented. Mark `TODAY` and `FUTURE` completed and retry:
+   expect `No upcoming events found.`
+5. Enter `editEvent e/FUTURE v/"Room A"`, then `editEvent e/FUTURE v/ by/ d/`.
+   Confirm with `viewEvent e/FUTURE` that venue, deadline, and event date are
+   unset, but the event remains completed. Restore a future date using
+   `editEvent e/FUTURE d/LATER_DATE` and verify the date appears again.
+6. Create a member with `createMember n/Tester t/tester` and assign them with
+   `assignMember e/FUTURE i/1 r/Host`. Enter `clearEvent e/FUTURE`, then
+   `viewEvent e/FUTURE` and `viewMemberEvents i/1`. Expect all editable event
+   details to be unset (budget zero), completion to be `Not completed`, and
+   the member assignment with role `Host` to remain. The tag is still `FUTURE`.
+   Exit and restart to verify that the cleared details persist.
+7. Repeat `clearEvent e/FUTURE` and confirm the event still exists. Enter
+   `clearEvent e/UNKNOWN` and expect an event-not-found error. No unrelated
+   events should be changed.
 
 ### Multiple clubs and restart persistence
 
@@ -1444,7 +1491,15 @@ The following tests verify photo importing, listing, opening, deletion, persiste
 4. Run `openphoto e/CAMP n/group`.
     - Expected: The imported photo opens in the default image viewer.
 5. Run `addallphoto e/CAMP p/testimages`.
-    - Expected: Valid images are imported, and the number of successful and failed imports is displayed.
+    - Expected: Supported images are imported, and the number of successful and
+      failed imports is displayed. Nested folders are ignored.
+6. Place a non-image text file inside `testimages` and run `addAllPhoto` again.
+    - Expected: Files already imported fail due to duplicate names, the text
+      file fails because it is not an image, and the command reports these
+      failures without overwriting the original PNGs.
+7. Run `addAllPhoto e/CAMP p/missing-directory`.
+    - Expected: An invalid-directory error is displayed. ClubFlow continues
+      accepting commands without importing anything from that directory.
 
 #### Renaming photos
 
