@@ -245,6 +245,7 @@ user-visible rules belong in the [User Guide](UserGuide.md).
 | View | [ViewEventCommand](../src/main/java/clubflow/command/event/ViewEventCommand.java) |
 | Edit | [EditEventCommand](../src/main/java/clubflow/command/event/EditEventCommand.java) |
 | Find | [FindEventCommand](../src/main/java/clubflow/command/event/FindEventCommand.java), [EventSearch](../src/main/java/clubflow/search/EventSearch.java) |
+| Upcoming | [UpcomingEventsCommand](../src/main/java/clubflow/command/event/UpcomingEventsCommand.java) |
 | Completed/pending | [CompletionCommand](../src/main/java/clubflow/command/CompletionCommand.java), [EventCompletion](../src/main/java/clubflow/completion/EventCompletion.java) |
 
 Commands share a long-lived [Club](../src/main/java/clubflow/Club.java). Look up
@@ -293,8 +294,13 @@ still points to the previous object.
 Search combines predicates over the current event snapshot. A linear scan keeps
 ordering predictable and avoids maintaining indexes as events change. Keep
 filter validation in `FindEventCommand` and matching in `EventSearch`; compile
-filter values once per request. Consider indexing only if measured usage justifies
-the additional update logic.
+filter values once per request. Date range filters (`from/` and `to/`)
+include their endpoints and reject ranges with the start after the end.
+Consider indexing only if measured usage justifies the additional update logic.
+
+`UpcomingEventsCommand` queries the current club snapshot at execution time,
+excludes completed, undated, and past events, and sorts the remaining events
+chronologically. This read-only operation does not trigger autosave.
 
 <a href="diagrams/events/EventSearchClass.svg"><img src="diagrams/events/EventSearchClass.svg" alt="Class diagram separating event search validation, matching, and current club data" style="max-width: 100%; height: auto;"></a>
 

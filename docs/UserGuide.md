@@ -223,9 +223,10 @@ Example: `deleteEvent e/XMAS`
 
 Searches events using one or more optional field filters. At least one filter is required; `e/` is optional.
 
-Format: `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE] [b/BUDGET] [min/BUDGET] [max/BUDGET] [s/STATUS]`
+Format: `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE] [from/START_DATE] [to/END_DATE] [b/BUDGET] [min/BUDGET] [max/BUDGET] [s/STATUS]`
 
-Examples: `findEvent e/party`, `fe v/"Main Hall"`, `fe n/Party v/Hall`, `fe d/2026-12-25`
+Examples: `findEvent e/party`, `fe v/"Main Hall"`, `fe n/Party v/Hall`, `fe d/2026-12-25`,
+`fe from/2026-11-01 to/2026-11-30`
 
 Budget and status examples: `fe b/100`, `fe min/100 max/500`, `fe s/pending max/500`
 
@@ -236,6 +237,10 @@ Alias: `fe`
 * `n/`, `v/`, and `l/` search only the name, venue, and logistics respectively.
 * `d/` and `by/` match the exact event date and planning deadline in `YYYY-MM-DD` format.
   Events with an unset date or deadline do not match the corresponding date filter.
+* `from/` and `to/` search events by date range, including both boundary dates.
+  Either bound may be used alone. Events without dates are excluded.
+  The start date cannot be after the end date, and an exact `d/` date must fall within the supplied range.
+  All dates use `YYYY-MM-DD` format.
 * `b/` matches an exact numeric budget, so `b/100` and `b/100.00` are equivalent.
   `min/` and `max/` set inclusive lower and upper budget bounds; either can be used alone.
   Budget values must be finite non-negative numbers. A draft event's default budget is zero.
@@ -247,6 +252,18 @@ Alias: `fe`
 * Every supplied filter must have a non-blank value. Spaces at the start and end of each value are ignored.
 * Results show each matching event's tag and name in creation order. Use `viewEvent e/EVENT_TAG` for full details.
 * If there are no matches, ClubFlow displays `No matching events found.`
+
+### Viewing upcoming events: `upcomingEvents`
+
+Lists all pending events happening today or later in the active club, sorted by event date
+(then tag). Completed events, past events, and events without dates are excluded.
+Each result shows its tag, name, and date. The command does not change saved data.
+
+Format: `upcomingEvents`
+
+Alias: `ue`
+
+If there are no upcoming events, ClubFlow displays `No upcoming events found.`
 
 ### Creating a member: `createMember` or `addMember`
 
@@ -561,8 +578,9 @@ club and remember it for future launches.
 * Mark event completed `mark e/TAG`
 * Mark event not completed `unmark e/TAG`
 * Delete event `deleteEvent e/TAG` (alias `de`)
-* Find events `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE] [b/BUDGET] [min/BUDGET] [max/BUDGET] [s/STATUS]`
+* Find events `findEvent [e/KEYWORD] [q/KEYWORD] [n/NAME] [v/VENUE] [l/LOGISTICS] [d/DATE] [by/DEADLINE] [from/START_DATE] [to/END_DATE] [b/BUDGET] [min/BUDGET] [max/BUDGET] [s/STATUS]`
   (alias `fe`; at least one filter is required)
+* View upcoming events `upcomingEvents` (alias `ue`)
 * Create member `createMember n/NAME [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (aliases `cm`, `addMember`)
 * View members `viewMember` (alias `vm`)
 * Edit member `editMember i/INDEX [n/NAME] [t/TELEGRAM] [e/EMAIL] [f/FUNCTION]...` (alias `em`)
