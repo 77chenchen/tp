@@ -59,7 +59,7 @@ public class UpcomingEventsCommand extends Command {
         ui.print("Upcoming events (" + upcomingEvents.size() + "):");
         for (Event event : upcomingEvents) {
             String name = event.getName().isBlank() ? "Not set" : event.getName();
-            ui.print("[" + event.getTag() + "] " + name + " (" + event.getDate() + ")");
+            ui.print("[" + event.getTag() + "] " + name + " (" + event.getDate() + ")", 1);
         }
         return false;
     }

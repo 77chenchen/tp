@@ -124,10 +124,10 @@ class EventDateFeaturesTest {
 
         assertEquals(List.of(
                 "[TEST] Upcoming events (4):",
-                "[TEST] [TODAY] TODAY (" + today + ")",
-                "[TEST] [LATEA] LATEA (" + today.plusDays(2) + ")",
-                "[TEST] [LATEB] LATEB (" + today.plusDays(2) + ")",
-                "[TEST] [LATER] LATER (" + today.plusDays(10) + ")"), lines());
+                "[TEST]   [TODAY] TODAY (" + today + ")",
+                "[TEST]   [LATEA] LATEA (" + today.plusDays(2) + ")",
+                "[TEST]   [LATEB] LATEB (" + today.plusDays(2) + ")",
+                "[TEST]   [LATER] LATER (" + today.plusDays(10) + ")"), lines());
         assertEquals(originalEvents, club.getEvents());
         assertFalse(club.hasUnsavedChanges());
     }

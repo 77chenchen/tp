@@ -205,6 +205,7 @@ class ClubFlowTest {
                 () -> assertEquals(2, result.lines()
                         .filter(line -> line.equals("[CF] > findEvent [e/Keyword] [q/Keyword] [n/Name]"
                                 + " [v/Venue] [l/Logistics] [d/Date] [by/Deadline]"
+                                + " [from/StartDate] [to/EndDate]"
                                 + " [b/Budget] [min/Budget] [max/Budget] [s/completed|pending]")).count()),
                 () -> assertEquals(2, result.lines().filter(line -> line.equals("[CF] 1. Alice")).count()),
                 () -> assertTrue(result.contains("[CF] Aliases: [fe]")),
