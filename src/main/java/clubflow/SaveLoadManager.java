@@ -29,6 +29,15 @@ import clubflow.photo.Photo;
 public class SaveLoadManager {
     private static final Logger LOGGER = Logger.getLogger(SaveLoadManager.class.getName());
 
+    /** Moves photo directories; tests can supply failures at specific stages of replacement. */
+    @FunctionalInterface
+    interface DirectoryMover {
+        void move(Path source, Path destination) throws IOException;
+    }
+
+    /** Directory operation used when installing a staged snapshot or restoring its backup. */
+    private final DirectoryMover directoryMover;
+
     //@@author 77chenchen
     /** Holds an assignment record until all members and events have been read. */
     private record PendingAssignment(String[] fields, int lineNumber) {
@@ -37,6 +46,16 @@ public class SaveLoadManager {
     //@@author
     /** Creates a storage handler. */
     public SaveLoadManager() {
+        this(Files::move);
+    }
+
+    /**
+     * Creates a storage handler with a replaceable directory operation for deterministic failure tests.
+     *
+     * @param directoryMover operation used to move photo snapshots and backups
+     */
+    SaveLoadManager(DirectoryMover directoryMover) {
+        this.directoryMover = Objects.requireNonNull(directoryMover, "Directory mover must not be null");
     }
 
     /**
@@ -296,7 +315,7 @@ public class SaveLoadManager {
     /**
      * Replaces a photo directory using a staged copy.
      */
-    private static void replacePhotos(
+    private void replacePhotos(
             Path source, Path destination, List<Event> events)
             throws IOException {
 
@@ -343,16 +362,16 @@ public class SaveLoadManager {
                         parent, "photos-old-");
 
                 Files.delete(backup);
-                Files.move(destination, backup);
+                directoryMover.move(destination, backup);
             }
 
             try {
-                Files.move(staged, destination);
+                directoryMover.move(staged, destination);
                 installed = true;
             } catch (IOException e) {
                 if (backup != null) {
                     try {
-                        Files.move(backup, destination);
+                        directoryMover.move(backup, destination);
                     } catch (IOException rollbackFailure) {
                         e.addSuppressed(rollbackFailure);
                     }

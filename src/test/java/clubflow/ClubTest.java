@@ -183,6 +183,81 @@ public class ClubTest {
         assertEquals(List.of(secondMember), club.getMembers());
     }
 
+    @Test
+    void findMembers_searchesAllFieldsIgnoringCaseAndPreservesOrder() {
+        Club club = new Club();
+        Member alice = new Member("Alice", "alice_handle", "alice@example.com", List.of("Treasurer"));
+        Member bob = new Member("Bob", "bob_handle", "bob@example.com", List.of("Assistant Treasurer"));
+        club.addMember(alice);
+        club.addMember(bob);
+        club.markSaved();
+
+        assertEquals(List.of(alice), club.findMembers("  ALICE  "));
+        assertEquals(List.of(bob), club.findMembers("BOB_HANDLE"));
+        assertEquals(List.of(alice, bob), club.findMembers("EXAMPLE.COM"));
+        assertEquals(List.of(alice, bob), club.findMembers("treasurer"));
+        assertTrue(club.findMembers("missing").isEmpty());
+        assertThrows(UnsupportedOperationException.class, () -> club.findMembers("treasurer").clear());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void findMembers_invalidQuery_rejectsWithoutChangingData() {
+        Club club = new Club();
+
+        assertThrows(NullPointerException.class, () -> club.findMembers(null));
+        assertThrows(IllegalArgumentException.class, () -> club.findMembers("  "));
+        assertThrows(IllegalArgumentException.class, () -> club.findMembers(""));
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void replaceMember_invalidIndexOrDuplicateObject_preservesMembersAndSavedState() {
+        Club club = new Club();
+        Member alice = new Member("Alice", "alice", "", List.of());
+        Member bob = new Member("Bob", "bob", "", List.of());
+        club.addMember(alice);
+        club.addMember(bob);
+        club.markSaved();
+
+        for (int index : new int[]{-1, 0, 3}) {
+            assertTrue(club.replaceMemberByIndex(index, bob).isEmpty());
+        }
+        assertThrows(IllegalArgumentException.class, () -> club.replaceMemberByIndex(1, bob));
+        assertThrows(NullPointerException.class, () -> club.replaceMemberByIndex(1, null));
+        assertEquals(List.of(alice, bob), club.getMembers());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void assignments_missingEventOrForeignMember_rejectsWithoutDirtyingClub() {
+        Club club = new Club();
+        Member member = new Member("Alice", "alice", "", List.of());
+        Member foreign = new Member("Alice", "alice", "", List.of());
+        club.addMember(member);
+        club.addEvent(createEvent("AGM"));
+        club.markSaved();
+
+        assertThrows(IllegalArgumentException.class, () -> club.assignMemberToEvent("MISSING", member, "Host"));
+        assertThrows(IllegalArgumentException.class, () -> club.unassignMemberFromEvent("MISSING", member));
+        assertThrows(IllegalArgumentException.class, () -> club.assignMemberToEvent("AGM", foreign, "Host"));
+        assertThrows(IllegalArgumentException.class, () -> club.unassignMemberFromEvent("AGM", foreign));
+        assertTrue(club.getAssignments().isEmpty());
+        assertFalse(club.hasUnsavedChanges());
+    }
+
+    @Test
+    void photoOperations_missingEvent_rejectsWithoutDirtyingClub() {
+        Club club = new Club();
+
+        assertThrows(IllegalArgumentException.class, () -> club.addPhoto("MISSING", "unused.png", "photo"));
+        assertThrows(IllegalArgumentException.class, () -> club.addPhotos("MISSING", "unused"));
+        assertThrows(IllegalArgumentException.class, () -> club.deletePhoto("MISSING", "photo"));
+        assertThrows(IllegalArgumentException.class, () -> club.deleteAllPhotos("MISSING"));
+        assertThrows(IllegalArgumentException.class, () -> club.renamePhoto("MISSING", "old", "new"));
+        assertFalse(club.hasUnsavedChanges());
+    }
+
     //@@author Eugene3129
     /**
      * Creates a valid event fixture with the supplied tag.
