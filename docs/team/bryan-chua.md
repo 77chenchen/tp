@@ -19,9 +19,14 @@ Given below are my contributions to the project.
     - **Highlights:** Introduced unsaved-change tracking and connected it to member and event operations. Integrated saving into the application loop, clearing the flag only after a successful save. Failed saves retain the in-memory changes for a later retry and display a warning. Added a configurable save path so application tests can use temporary files. Teammates subsequently extended this foundation for multiple clubs, assignments, and photos.
 
 - **New Feature: Event Invitation Generation** ([PR #53](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/53))
-    - **What it does:** Generates a copyable invitation from an existing event using `invite e/TAG`.
+    - **What it does:** Generates an invitation from an existing event using `invite e/TAG`, offers to fill in missing details, and automatically copies the invitation to the clipboard.
     - **Justification:** Saves organisers from repeatedly typing event details when preparing invitations to share with members.
-    - **Highlights:** Implemented `InviteCommand`, connected it to the application's command registration, and added `printWithoutPrefix()` to the user interface. Invitations use the event's name, date, and venue, with placeholders for missing details. The command generates text for the user to copy and share.
+    - **Highlights:** Implemented `InviteCommand`, connected it to the application's command registration, and added `printWithoutPrefix()` to the user interface. Invitations use the event's name, date, and venue. Added automatic clipboard copying with a manual-copy fallback when clipboard access fails ([change](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/3a23e177f8ec8e3c98468466a35f6e1eefced596)). Added warnings and Y/N confirmation for missing details, followed by validated prompts for only the missing fields ([change](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/f618bc9c418626afe1b075d7f00c4ed683e2eb36)). Completed edits are applied together and saved through autosave while preserving other event details, completion state, photos, and assignments. Declining the prompts leaves the event unchanged and uses placeholders.
+
+- **New Feature: Restoring the Last Active Club** ([implementation](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/22adb41b0c45b2e2480d1cd547ed63d773d5c327))
+    - **What it does:** Remembers the last successfully selected club and restores it when the application restarts, displaying the active club ID at startup.
+    - **Justification:** Lets organisers managing several clubs resume their work without selecting the same club again on every launch.
+    - **Highlights:** Extended `ClubManager` to store the normalised club ID in `saves/clubs/last-active.txt` after a successful switch, including switches back to `default`. Startup validates the preference and loads the remembered club, retaining the default club and logging a warning if the preference or remembered club cannot be loaded. Preference-write failures are logged without undoing a successful switch. Creating a club alone does not change the startup preference.
 
 - **New Feature: Command Spelling Correction** ([PR #56](https://github.com/AY2627S1-CS2113-W10-2/tp/pull/56))
     - **What it does:** Suggests a likely intended command when users mistype a command name, then lets them confirm or cancel it.
@@ -34,17 +39,17 @@ Given below are my contributions to the project.
     - Adapted application tests from manual saving to autosave, including restoration across separate application sessions and completion-state persistence.
     - Added parser tests for common typos, case-insensitive matching, quoted arguments, exact commands and aliases, short or distant inputs, tied suggestions, and closest-match selection.
     - Added six application-level correction tests covering confirmation, cancellation, repeated invalid confirmation input, argument validation after correction, exact commands, and end-of-input during confirmation.
+    - Added `InviteCommandTest` coverage for clipboard copying and failures, missing-detail prompts, Y/N handling, field validation, preservation of existing event data, and interrupted input. Injected a replaceable clipboard operation so tests can verify copied text without accessing the system clipboard.
+    - Added `InvitationPersistenceTest` using separate headless application sessions and temporary directories to verify that invitation edits are autosaved and restored after restart.
+    - Added `ClubManagerLastActiveClubTest` for preference normalisation, restoration, fallback, failed switches, and preference-write failures. Extended `ClubFlowMultiClubTest` to check the restored club's startup message and event data.
     - Updated CI to use Intel macOS runners to address ARM64 runner-capacity constraints ([change](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/7bbd8d3)).
 
 - **Documentation**:
-    - **User Guide:** Updated instructions and examples when manual saving was replaced by autosave. Explained startup loading, importing saved data, save-failure warnings and retries, and saving on exit. Updated related event-editing and completion instructions.
+    - **User Guide:** Updated instructions and examples when manual saving was replaced by autosave. Explained startup loading, importing saved data, save-failure warnings and retries, and saving on exit. Updated related event-editing and completion instructions. Documented invitation generation, clipboard copying and fallback, missing-detail prompts and validation, and restoration of the last active club.
+    - **Developer Guide:** Expanded the storage component and autosave/import/file-format explanations. Documented invitation prompting, event updates, clipboard integration, and startup preference storage and recovery. Updated related user stories, use cases, requirements, automated-test descriptions, and manual testing instructions ([storage documentation](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/0d6210d83daa3cfffbcf7aba84c482ba9e806371), [latest guide updates](https://github.com/AY2627S1-CS2113-W10-2/tp/commit/c21145795531528e5f9e4da7ddbfdeb176c311b5)).
 
 - **Team-based Contributions**:
     - Provided the original persistence foundation used by the team's member and event workflows and later extended for assignments, photos, and multiple clubs.
     - Integrated storage, autosave, invitations, and command correction with shared application components rather than leaving them as standalone commands.
     - Resolved merge conflicts while integrating the autosave changes with teammates' work.
     - Added scoped RepoSense author annotations to identify my contributions within shared files while retaining credit for teammates' later additions.
-
-- **Use of AI Tools**:
-    - **Implementation:** Used ChatGPT to discuss implementation approaches and assist with developing and refining event features, argument validation, and error handling.
-    - **Testing:** Used ChatGPT to identify edge cases and help generate and refine JUnit tests for event editing, search, completion tracking, and persistence.
